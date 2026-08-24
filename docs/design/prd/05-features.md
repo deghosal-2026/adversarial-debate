@@ -16,8 +16,9 @@
 | F8 | **Bring-your-own-model registry** | Config-driven provider registry; any OpenAI-compatible endpoint; PydanticAI + LangGraph adapters; heterogeneous pairs supported |
 | F9 | **Transcript storage** | SQLite persistence of full lineage: every LLM call, claim event, concession, verdict; JSONL export |
 | F10 | **CLI** | `advdeb review`, `advdeb report <artifact-id>`, `advdeb init` |
-| F11 | **Basic review UI** | Side-by-side A/B reviews with agreement/disagreement highlighting; debate timeline showing concessions and unresolved threads |
+| F11 | **Basic review UI** | Side-by-side A/B reviews with agreement/disagreement highlighting; debate timeline showing concessions and unresolved threads. **Accessibility:** WCAG 2.1 AA target — keyboard-navigable, screen-reader labels on all claim/objection/concession elements, high-contrast disagreement highlighting (not color-only). |
 | F12 | **Hermetic test suite** | Scripted reviewers in CI; zero paid LLM calls; coverage gate ≥95% target |
+| F13 | **Multi-language artifact support** | Reviewers process artifacts in any language the chosen model supports; reports are generated in the artifact's source language by default with an optional `--report-language` override. Non-English contract/code-comment artifacts are first-class, not an afterthought. |
 
 ## 5.2 Nice-to-have (stretch for 0.1.0, first candidates for 0.2.0)
 

@@ -17,6 +17,8 @@
 - **BYOM boundary:** artifacts go only to user-designated providers — including private VPC or local deployments for sensitive documents. No telemetry home.
 - **Secrets hygiene:** provider keys via env/config, never logged, never persisted into transcripts or reports.
 - **Retention controls (nice-to-have 0.1, committed 0.2):** configurable transcript retention + redaction hooks before export.
+- **Data-classification handling:** exported transcripts may contain proprietary artifact text (code, contract clauses, claim details). v0.1 ships a `--redact` export flag that replaces artifact content blocks with `[REDACTED]` while preserving claim/objection/concession structure. v0.2 adds classification tags (`public`, `internal`, `confidential`) on artifacts that gate export and sharing.
+- **Telemetry stance:** no telemetry home, ever, by default. v0.2 adds an explicit opt-in `--telemetry` flag that sends anonymous adoption metrics only (artifact count, domain, verdict kind, convergence rate — never artifact content, never model responses). Opt-in metrics help the project prioritize adapters and rubrics; they hurt nobody who doesn't turn them on.
 
 ## 6.3 Threat model (v0.1.0 scope)
 
