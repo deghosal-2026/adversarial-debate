@@ -1,64 +1,63 @@
 # 05 — Features (What v0.1.0 Ships)
 
-> Sub-document of the [Design overview](../README.md). Feature list for v0.1.0 — must-have vs nice-to-have — plus explicit exclusions.
+> Sub-document of the [Design overview](../README.md). Feature list for v0.1.0 — a lean MVP that proves the loop. Everything else is explicitly versioned.
 
-## 5.1 Must-have (v0.1.0)
+## 5.1 Must-have (v0.1.0 — lean MVP)
+
+The MVP proves one thing: two isolated reviewers produce materially different conclusions than a single reviewer, on real code, with full transcripts.
 
 | # | Feature | Notes |
 |---|---------|-------|
 | F1 | **Independent dual-review pass** | Two isolated reviewer sessions per artifact; engine-enforced context separation |
 | F2 | **Delayed answer revelation** | Explicit state transition `isolated → revealed`; provable from audit log |
 | F3 | **Structured debate schema** | First-class `Claim`, `Objection`, `Concession`, `UnresolvedPoint` objects |
-| F4 | **Bounded debate rounds** | Default 2 rounds; mandatory point-by-point response to outstanding objections; configurable cap |
+| F4 | **Bounded debate rounds** | Default 2 rounds; mandatory point-by-point response; configurable cap |
 | F5 | **Converged-verdict output** | Joint decision + strongest surviving arguments from each side |
 | F6 | **Disagreement-report output** | `resolved[]`, `unresolved[].position_a/position_b/would_resolve_if` |
-| F7 | **PR-review domain adapter** | Git diff + metadata → `ReviewArtifact`; the one shipping domain |
-| F8 | **Bring-your-own-model registry** | Config-driven provider registry; any OpenAI-compatible endpoint; PydanticAI + LangGraph adapters; heterogeneous pairs supported |
-| F9 | **Transcript storage** | SQLite persistence of full lineage: every LLM call, claim event, concession, verdict; JSONL export |
-| F10 | **CLI** | `advdeb review`, `advdeb report <artifact-id>`, `advdeb init` |
-| F11 | **Basic review UI** | Side-by-side A/B reviews with agreement/disagreement highlighting; debate timeline showing concessions and unresolved threads. **Accessibility:** WCAG 2.1 AA target — keyboard-navigable, screen-reader labels on all claim/objection/concession elements, high-contrast disagreement highlighting (not color-only). |
-| F12 | **Hermetic test suite** | Scripted reviewers in CI; zero paid LLM calls; coverage gate ≥95% target |
-| F13 | **Multi-language artifact support** | Reviewers process artifacts in any language the chosen model supports; reports are generated in the artifact's source language by default with an optional `--report-language` override. Non-English contract/code-comment artifacts are first-class, not an afterthought. |
+| F7 | **PR-review domain adapter** | Git diff + metadata → `ReviewArtifact`; the only shipping domain |
+| F8 | **Bring-your-own-model registry** | Config-driven; any OpenAI-compatible endpoint; PydanticAI + LangGraph adapters; heterogeneous pairs supported |
+| F9 | **Transcript storage** | SQLite persistence of full lineage; JSONL export |
+| F10 | **CLI** | `advdeb init`, `advdeb review --pr`, `advdeb report` |
 
-## 5.2 Nice-to-have (stretch for 0.1.0, first candidates for 0.2.0)
+**That's it.** No UI, no multi-language, no GitHub Action, no cost tiering. The MVP is terminal-only, English-only, PR-only. It proves the loop or it doesn't.
 
-- GitHub Action wrapper for PR-review adapter
-- Debate-usefulness score ("did anything change?") surfaced in reports
-- Heterogeneous pairing presets (`--pair diverse`) and same-model mode flag
-- Convergence-threshold tuning per artifact severity class
-- Cost tiering config (cheap pair default → frontier pair on dispute)
-- Redaction hooks for transcripts
+## 5.2 Deferred to v0.2.0 (explicitly)
 
-## 5.3 Adapter contribution protocol (design direction, no code in v0.1)
+| Feature | Why deferred |
+|---------|-------------|
+| F11 — Basic review UI | Terminal output proves the loop in 0.1; UI is adoption accelerator, not proof |
+| F13 — Multi-language artifacts | English PRs are sufficient to prove independence; i18n is reach, not validation |
+| GitHub Action wrapper | CLI is sufficient for 0.1; CI integration is 0.2 adoption work |
+| Cost tiering | MVP uses one pair per run; tiering is optimization, not proof |
+| Redaction hooks | No sensitive artifacts in 0.1 (public repos only) |
+| Debate-usefulness score | Metric needs corpus to calibrate; ships with field-test data in 0.2 |
+| Heterogeneous pairing presets | Config supports it; UX presets are 0.2 polish |
+
+## 5.3 Adapter contribution protocol (design direction, spec in v0.1, code in v0.2)
 
 Each domain adapter is a spec and an implementation — no engine changes required to add a new domain:
 
-1. **Artifact normalizer** — converts domain-specific input (git diff, contract PDF, CR ticket) → `ReviewArtifact` schema (content blocks, metadata, domain tags).
-2. **Claim extraction rubric** — tells the reviewer *what constitutes a relevant claim* in this domain (e.g., for contracts: "find uncapped liabilities"; for CRs: "find missing rollback steps").
-3. **Evidence expectations** — what counts as evidence in this domain (code diff lines, contract clause cross-references, ticket timeline entries).
-4. **No engine changes required** — adapters sit in `adversarial_debate/adapters/<domain>/`; the engine routes `ReviewArtifact` through the generic loop regardless of domain tag.
+1. **Artifact normalizer** — converts domain-specific input → `ReviewArtifact` schema
+2. **Claim extraction rubric** — what constitutes a relevant claim in this domain
+3. **Evidence expectations** — what counts as evidence (diff lines, clause cross-refs, timeline entries)
+4. **No engine changes required** — adapters sit in `adversarial_debate/adapters/<domain>/`
 
-Anyone writing a new domain adapter can do so without modifying a single line of engine code. The protocol spec ships as a design document in v0.1; the first external adapter (change management) validates it in v0.2.
+The protocol spec ships as a design document in v0.1; the first external adapter (change management) validates it in v0.2.
 
-## 5.4 Mid-debate human injection (scoped to v0.2)
+## 5.4 Mid-debate human injection (scoped to v0.3.0)
 
-Users in CAB, incident response, and legal workflows ask: *"Can I interrupt the debate to ask both reviewers a clarifying question?"* This is valuable during live decisions but adds complexity:
-
-- **v0.1 stance:** human reads the final report only. Reports include `would_resolve_if` — the question is asked post-hoc.
-- **v0.2 commitment:** optional human-injection turn: at any debate round, a human operator can submit a clarifying question that both reviewers must address. The question (and human's identity) are logged as part of the audit trail.
+- **v0.1 stance:** human reads the final report only. Reports include `would_resolve_if`.
+- **v0.3.0 commitment:** optional human-injection turn at any debate round; question + identity logged in audit trail.
 
 ## 5.5 API surface sketch (v0.1.0)
-
-Three surfaces, one engine:
 
 ### CLI
 
 ```
-advdeb init                                    # scaffold config (provider registry, reviewer slots)
+advdeb init                                    # scaffold config
 advdeb review --pr <url|path>                  # run a debate on a PR diff
-advdeb review --file <path> --domain <name>    # run on any artifact file
-advdeb report <artifact-id>                    # render the verdict/disagreement report
-advdeb resume <artifact-id>                    # resume an interrupted debate
+advdeb report <artifact-id>                    # render the report
+advdeb resume <artifact-id>                    # resume interrupted debate
 advdeb transcript <artifact-id> --export jsonl # export full lineage
 ```
 
@@ -80,21 +79,14 @@ if result.verdict == "disputed":
         print(f"  Resolve if: {point.would_resolve_if}")
 ```
 
-### HTTP service (FastAPI)
-
-```
-POST /review          → submit artifact, returns artifact-id
-GET  /report/:id      → verdict or disagreement report
-GET  /transcript/:id  → full lineage (JSONL)
-POST /resume/:id      → resume interrupted debate
-```
-
-Platform teams embed the Python API into pipelines; CI uses the CLI; enterprise deployments use the HTTP service behind their own auth.
+### HTTP service (v0.5.0+ — not in MVP)
 
 ## 5.6 Explicitly out of scope for v0.1.0
 
-- N-agent jury orchestration (→ AgentJury companion project)
-- Fully automated production action based on debate outcome — output is advisory to humans
-- Additional domain adapters beyond PR review (change-management adapter is the planned second)
+- N-agent jury orchestration (→ AgentJury, v0.6.0)
+- Fully automated production action (output is advisory to humans)
+- Additional domain adapters beyond PR review (change-management is v0.2.0)
 - Fine-tuning or training of any model
 - Hosted multi-tenant service
+- UI (terminal only in 0.1.0)
+- Multi-language (English only in 0.1.0)
