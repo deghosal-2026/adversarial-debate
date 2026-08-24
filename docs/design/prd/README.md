@@ -1,17 +1,18 @@
 # PRD — AdversarialDebate v0.1.0
 
-> Sub-documents of the [Design overview](../README.md). Authored at **AD-M1**.
+> Sub-documents of the [Design overview](../README.md). Customer-focused product requirements: why the market needs independent adversarial review, who buys it across twenty-seven industry domains, what ships, and why the business case closes.
 
-| # | Document | Covers |
-|---|----------|--------|
-| 01 | `01-why.md` | Market context, the pain we remove, why now |
-| 02 | `02-architecture.md` | Component overview, pipeline stages, data model |
-| 03 | `03-landscape.md` | Competitive landscape: MAD research, AI code review tools, LLM-as-judge |
-| 04 | `04-users-and-cujs.md` | Primary/secondary users, core user journeys |
-| 05 | `05-features.md` | Feature list for v0.1.0, must-have vs nice-to-have |
-| 06 | `06-security-baseline.md` | Isolation guarantees, transcript privacy, threat model |
-| 07 | `07-success-metrics.md` | What makes v0.1.0 good enough |
-| 08 | `08-risks.md` | Fake disagreement, shared blind spots, verbose reports |
-| 09 | `09-roadmap.md` | v0.1.0 → v0.4.0 |
+| # | Document | Covers | Status |
+|---|----------|--------|--------|
+| 01 | [01-why.md](01-why.md) | Market context, the primed-agreement pain, why now | ✅ authored |
+| 02 | [02-architecture.md](02-architecture.md) | The loop, components, data model, provider layer | ✅ authored |
+| 03 | [03-landscape.md](03-landscape.md) | AI review vendors vs MAD research vs judges; the open position | ✅ authored |
+| 04 | [04-users-and-cujs.md](04-users-and-cujs.md) | **27 industry domains**, 8 core user journeys, BYOM-per-cluster fit | ✅ authored |
+| 05 | [05-features.md](05-features.md) | v0.1.0 must-have / nice-to-have / exclusions | ✅ authored |
+| 06 | [06-security-baseline.md](06-security-baseline.md) | Isolation guarantees, data handling, threat model | ✅ authored |
+| 07 | [07-success-metrics.md](07-success-metrics.md) | The binary v0.1.0 bar; debate-quality + anti-metrics | ✅ authored |
+| 08 | [08-risks.md](08-risks.md) | Theater, shared blind spots, cost blowout, research counter-evidence | ✅ authored |
+| 09 | [09-roadmap.md](09-roadmap.md) | v0.1.0 → v0.4.0 sequencing principle | ✅ authored |
+| 10 | [10-business-case.md](10-business-case.md) | Economic argument, buyer personas, BYOM strategic unlock, GTM | ✅ authored |
 
-**Status:** not started.
+**Reading order for newcomers:** 01 → 04 → 10 → 05.
