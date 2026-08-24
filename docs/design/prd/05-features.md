@@ -28,7 +28,25 @@
 - Cost tiering config (cheap pair default → frontier pair on dispute)
 - Redaction hooks for transcripts
 
-## 5.3 Explicitly out of scope for v0.1.0
+## 5.3 Adapter contribution protocol (design direction, no code in v0.1)
+
+Each domain adapter is a spec and an implementation — no engine changes required to add a new domain:
+
+1. **Artifact normalizer** — converts domain-specific input (git diff, contract PDF, CR ticket) → `ReviewArtifact` schema (content blocks, metadata, domain tags).
+2. **Claim extraction rubric** — tells the reviewer *what constitutes a relevant claim* in this domain (e.g., for contracts: "find uncapped liabilities"; for CRs: "find missing rollback steps").
+3. **Evidence expectations** — what counts as evidence in this domain (code diff lines, contract clause cross-references, ticket timeline entries).
+4. **No engine changes required** — adapters sit in `adversarial_debate/adapters/<domain>/`; the engine routes `ReviewArtifact` through the generic loop regardless of domain tag.
+
+Anyone writing a new domain adapter can do so without modifying a single line of engine code. The protocol spec ships as a design document in v0.1; the first external adapter (change management) validates it in v0.2.
+
+## 5.4 Mid-debate human injection (scoped to v0.2)
+
+Users in CAB, incident response, and legal workflows ask: *"Can I interrupt the debate to ask both reviewers a clarifying question?"* This is valuable during live decisions but adds complexity:
+
+- **v0.1 stance:** human reads the final report only. Reports include `would_resolve_if` — the question is asked post-hoc.
+- **v0.2 commitment:** optional human-injection turn: at any debate round, a human operator can submit a clarifying question that both reviewers must address. The question (and human's identity) are logged as part of the audit trail.
+
+## 5.5 Explicitly out of scope for v0.1.0
 
 - N-agent jury orchestration (→ AgentJury companion project)
 - Fully automated production action based on debate outcome — output is advisory to humans

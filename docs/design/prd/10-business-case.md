@@ -71,3 +71,27 @@ AdversarialDebate sells **no model** — it orchestrates the reviewers the custo
 ## 10.7 What makes v0.1.0 credible to a customer
 
 Not benchmarks — **one inspectable case study**: a real public-repo PR where two isolated reviewers disagreed, the disagreement report named the exact risk and what would resolve it, and resolution confirmed reviewer B. Everything else in this PRD exists to make that moment repeatable and auditable.
+
+## 10.8 Human-reviewer baseline comparison
+
+When a buyer asks "why not just ask another human?" — the realistic calculation, not the ideal:
+
+| Dimension | Human second opinion | Single AI reviewer | AdversarialDebate |
+|-----------|--------------------|--------------------|-------------------|
+| **Cost per review (code)** | $50-150 (senior eng, 20-40 min) | $0.01-0.10 | $0.02-0.40 |
+| **Latency** | 4-24 hrs (async review) | 30-120s | 60-300s |
+| **Coverage (24/7)** | No (sleep, meetings, weekends) | Yes | Yes |
+| **Independence guarantee** | Social: human can choose not to peek at the first review | None (sees the first answer) | Mechanical: engine-enforced |
+| **Dissent preserved?** | Only if reviewer writes it separately | No | Yes — structured |
+| **Audit trail** | Memory + comments | One-pass inline comments | Full lineage: claims, objections, concessions, verdicts |
+| **Maturing/degrading** | Gets better with experience, slower at scale | Gets better per-model-release, zero marginal accumulation | Gets better per-run (adapters, rubrics), per-model-release |
+
+**Honest trade-off:** AdversarialDebate cannot replace the human who knows the context of a specific decision. What it replaces is the *second human reviewer whose job is to find things the first one missed* — the four-eyes check. And it does that faster, cheaper, and with a better audit trail.
+
+## 10.9 OSS sustainability & open-core boundary
+
+- **Engine + CLI + all adapters:** MIT open source, forever. No source-available bait-and-switch.
+- **Revenue boundary (conceptual, post-0.1):** hosted UI/dashboard, enterprise policy server, compliance pack generator, priority support. These are aspirational — not funded, not committed.
+- **Patent stance:** zero software patents. The project competes on execution and adoption, not IP.
+- **Why build OSS with no revenue model today:** every project in the fleet ships MIT; the portfolio builds career evidence and community pull; the article series funds the effort through reach. If adoption outpaces capacity, the open-core boundary provides a sustainable path without threatening the OSS base.
+- **Contributor model:** MIT license means companies can deploy the engine internally without GPL-style disclosure concerns — aligns with the BYOM / self-hosted deployment model. Adapter contributions flow through the protocol (normalizer + rubric) without requiring engine expertise.

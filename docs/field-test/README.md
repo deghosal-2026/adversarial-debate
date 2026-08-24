@@ -1,6 +1,10 @@
 # Field Test — AdversarialDebate
 
-> Field test plans, corpora, and reports, one directory per version.
+> Field test plans, corpora, and reports, one directory per version. Cross-version strategy lives in [field-testing-strategy.md](field-testing-strategy.md).
+
+## Cross-version strategy
+
+[field-testing-strategy.md](field-testing-strategy.md) — the 4-tier plan for testing across all 27 verticals when v0.1.0 ships only one adapter. Covers measurement protocol (bifurcated: bug-caught vs expert-rated), domain-selection rubric, public data sources, and the `debate-eval` harness design.
 
 ## v0.1.0 Goal
 
