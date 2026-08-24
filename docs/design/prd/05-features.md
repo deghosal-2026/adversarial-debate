@@ -47,7 +47,51 @@ Users in CAB, incident response, and legal workflows ask: *"Can I interrupt the 
 - **v0.1 stance:** human reads the final report only. Reports include `would_resolve_if` — the question is asked post-hoc.
 - **v0.2 commitment:** optional human-injection turn: at any debate round, a human operator can submit a clarifying question that both reviewers must address. The question (and human's identity) are logged as part of the audit trail.
 
-## 5.5 Explicitly out of scope for v0.1.0
+## 5.5 API surface sketch (v0.1.0)
+
+Three surfaces, one engine:
+
+### CLI
+
+```
+advdeb init                                    # scaffold config (provider registry, reviewer slots)
+advdeb review --pr <url|path>                  # run a debate on a PR diff
+advdeb review --file <path> --domain <name>    # run on any artifact file
+advdeb report <artifact-id>                    # render the verdict/disagreement report
+advdeb resume <artifact-id>                    # resume an interrupted debate
+advdeb transcript <artifact-id> --export jsonl # export full lineage
+```
+
+### Python API
+
+```python
+from adversarial_debate import Engine, ReviewConfig
+
+engine = Engine(config="advdeb.toml")
+result = engine.review(
+    artifact="pr-482.diff",
+    domain="pr_review",
+    config=ReviewConfig(rounds=2, pair="diverse")
+)
+
+if result.verdict == "disputed":
+    for point in result.unresolved:
+        print(f"{point.position_a} vs {point.position_b}")
+        print(f"  Resolve if: {point.would_resolve_if}")
+```
+
+### HTTP service (FastAPI)
+
+```
+POST /review          → submit artifact, returns artifact-id
+GET  /report/:id      → verdict or disagreement report
+GET  /transcript/:id  → full lineage (JSONL)
+POST /resume/:id      → resume interrupted debate
+```
+
+Platform teams embed the Python API into pipelines; CI uses the CLI; enterprise deployments use the HTTP service behind their own auth.
+
+## 5.6 Explicitly out of scope for v0.1.0
 
 - N-agent jury orchestration (→ AgentJury companion project)
 - Fully automated production action based on debate outcome — output is advisory to humans

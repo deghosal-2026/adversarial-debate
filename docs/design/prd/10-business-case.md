@@ -95,3 +95,24 @@ When a buyer asks "why not just ask another human?" — the realistic calculatio
 - **Patent stance:** zero software patents. The project competes on execution and adoption, not IP.
 - **Why build OSS with no revenue model today:** every project in the fleet ships MIT; the portfolio builds career evidence and community pull; the article series funds the effort through reach. If adoption outpaces capacity, the open-core boundary provides a sustainable path without threatening the OSS base.
 - **Contributor model:** MIT license means companies can deploy the engine internally without GPL-style disclosure concerns — aligns with the BYOM / self-hosted deployment model. Adapter contributions flow through the protocol (normalizer + rubric) without requiring engine expertise.
+
+## 10.10 Time-to-first-value (the first 10 minutes)
+
+A buyer's first question after "why?" is "how fast do I get value?" The onboarding CUJ:
+
+```
+1. pip install adversarial-debate                    # 10 seconds
+2. advdeb init                                         # creates config: provider registry, 2 reviewer slots
+3. edit config: add 2 model endpoints (your keys)     # 1 minute
+4. advdeb review --pr https://github.com/owner/repo/pull/123
+                                                       # 60-300 seconds: independent passes + debate
+5. read the report                                     # verdict or disagreement, side-by-side in terminal or UI
+```
+
+**Target:** from install to first inspectable report in under 10 minutes, using the buyer's own models, on a real PR. No signup, no API key from us, no vendor portal.
+
+**Why this matters:** CodeRabbit's adoption curve was seeded by one-click GitHub marketplace install + free OSS tier. AdversarialDebate's wedge is even lower friction — no account at all, just `pip install` + your models. The first debate a user runs is either the "B caught what A missed" moment or it isn't. If it is, they configure it into CI. If it isn't, nothing else in this PRD matters.
+
+## 10.11 What makes v0.1.0 credible to a customer
+
+Not benchmarks — **one inspectable case study**: a real public-repo PR where two isolated reviewers disagreed, the disagreement report named the exact risk and what would resolve it, and resolution confirmed reviewer B. Everything else in this PRD exists to make that moment repeatable and auditable.
