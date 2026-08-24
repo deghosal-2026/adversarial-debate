@@ -17,17 +17,17 @@ Upstream: M1 (schemas). Downstream: M5/M6 consume artifacts; M10 consumes fixtur
 
 ### WS 4.a — Framework
 
-- [ ] T4.1 Normalizer framework: `Normalizer` protocol (`normalize(raw, hints) -> ReviewArtifact`), registry keyed by domain, plugin-style registration under `adapters/<domain>/`; unknown domain → actionable error listing available domains
+- [ ] T4.1 (#18) Normalizer framework: `Normalizer` protocol (`normalize(raw, hints) -> ReviewArtifact`), registry keyed by domain, plugin-style registration under `adapters/<domain>/`; unknown domain → actionable error listing available domains
 
 ### WS 4.b — PR-review adapter
 
-- [ ] T4.2 Git diff parser: unified-diff → `ContentBlock[]` (per-file blocks; hunks preserved; add/remove/context markers); robust to binary files, renames, mode changes; never crashes on malformed hunks (skip + warn)
-- [ ] T4.3 PR metadata extractor: accepts local path or GitHub PR URL (via `gh` when available); extracts title/body/files/commit info as metadata; language hints per file extension; missing `gh` → clear degrade-to-local-path message ([FM-10](../../design/prd/13-failure-modes.md): metadata validated against actual diff content)
-- [ ] T4.4 Chunking strategy: budget-aware split by file then hunk-group when estimated tokens exceed model window fraction (configurable, default 80%); emits chunk count + per-chunk budget % into artifact metadata (report header feeds from here); claim-dedup keys prepared for cross-chunk merge
+- [ ] T4.2 (#19) Git diff parser: unified-diff → `ContentBlock[]` (per-file blocks; hunks preserved; add/remove/context markers); robust to binary files, renames, mode changes; never crashes on malformed hunks (skip + warn)
+- [ ] T4.3 (#20) PR metadata extractor: accepts local path or GitHub PR URL (via `gh` when available); extracts title/body/files/commit info as metadata; language hints per file extension; missing `gh` → clear degrade-to-local-path message ([FM-10](../../design/prd/13-failure-modes.md): metadata validated against actual diff content)
+- [ ] T4.4 (#21) Chunking strategy: budget-aware split by file then hunk-group when estimated tokens exceed model window fraction (configurable, default 80%); emits chunk count + per-chunk budget % into artifact metadata (report header feeds from here); claim-dedup keys prepared for cross-chunk merge
 
 ### WS 4.c — Fixtures
 
-- [ ] T4.5 Fixture corpus v1: 8-10 seeded diffs modeled on real public-repo patterns — each with `fixtures.json` manifest: known_issues[], expected severity, should_disagree flag, one case where only reviewer B's framing would catch it (M10 exit-bar rehearsal); all synthetic/public-domain, PII-free
+- [ ] T4.5 (#22) Fixture corpus v1: 8-10 seeded diffs modeled on real public-repo patterns — each with `fixtures.json` manifest: known_issues[], expected severity, should_disagree flag, one case where only reviewer B's framing would catch it (M10 exit-bar rehearsal); all synthetic/public-domain, PII-free
 
 ## Acceptance criteria / exit gate
 

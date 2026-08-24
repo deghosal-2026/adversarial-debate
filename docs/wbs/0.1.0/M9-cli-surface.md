@@ -17,15 +17,15 @@ Upstream: M8 (store/resume), M7 (reports). Downstream: M10 field test drives eve
 
 ### WS 9.a — Commands
 
-- [ ] T9.1 `advdeb init`: writes commented `advdeb.toml` (slots A/B examples incl. OpenAI-compatible + Ollama), validates on next run; refuses to overwrite without `--force`
-- [ ] T9.2 `advdeb review`: accepts `--pr <url|path>` (URL requires `gh`, degrades gracefully per T4.3), `--domain pr_review`, `--rounds`, `--pair diverse|same`, `--budget`; streams progress (passes/rounds/events); exits non-zero on error with actionable message
-- [ ] T9.3 `advdeb report <id>`: terminal rendering — verdict banner (green CONVERGED / amber DISPUTED), convergence score + denominator, resolved[], unresolved[] with positions + would_resolve_if, header block (models, prompt versions, seeds, stability-unknown notice per single-run), failure-mode flags ([06 §6.4](../../design/prd/06-security-baseline.md))
-- [ ] T9.4 `advdeb transcript <id> --export jsonl [--redact]` and `advdeb list` (recent artifacts): export honors completeness header; `--redact` replaces content blocks with `[REDACTED]` preserving structure
-- [ ] T9.5 `advdeb resume <id>`: wires M8 resume; UX pass over all commands — consistent exit codes (0 ok / 1 usage / 2 engine error / 3 budget), no raw tracebacks, `--verbose` for debug
+- [ ] T9.1 (#40) `advdeb init`: writes commented `advdeb.toml` (slots A/B examples incl. OpenAI-compatible + Ollama), validates on next run; refuses to overwrite without `--force`
+- [ ] T9.2 (#41) `advdeb review`: accepts `--pr <url|path>` (URL requires `gh`, degrades gracefully per T4.3 (#20)), `--domain pr_review`, `--rounds`, `--pair diverse|same`, `--budget`; streams progress (passes/rounds/events); exits non-zero on error with actionable message
+- [ ] T9.3 (#42) `advdeb report <id>`: terminal rendering — verdict banner (green CONVERGED / amber DISPUTED), convergence score + denominator, resolved[], unresolved[] with positions + would_resolve_if, header block (models, prompt versions, seeds, stability-unknown notice per single-run), failure-mode flags ([06 §6.4](../../design/prd/06-security-baseline.md))
+- [ ] T9.4 (#43) `advdeb transcript <id> --export jsonl [--redact]` and `advdeb list` (recent artifacts): export honors completeness header; `--redact` replaces content blocks with `[REDACTED]` preserving structure
+- [ ] T9.5 (#44) `advdeb resume <id>`: wires M8 resume; UX pass over all commands — consistent exit codes (0 ok / 1 usage / 2 engine error / 3 budget), no raw tracebacks, `--verbose` for debug
 
 ### WS 9.b — DX polish
 
-- [ ] T9.6 Onboarding rehearsal script: fresh venv → pip install -e . → init → scripted-reviewer smoke debate → report; asserted in CI as the "first 10 minutes" test ([10 §10.10](../../design/prd/10-business-case.md))
+- [ ] T9.6 (#45) Onboarding rehearsal script: fresh venv → pip install -e . → init → scripted-reviewer smoke debate → report; asserted in CI as the "first 10 minutes" test ([10 §10.10](../../design/prd/10-business-case.md))
 
 ## Acceptance criteria / exit gate
 

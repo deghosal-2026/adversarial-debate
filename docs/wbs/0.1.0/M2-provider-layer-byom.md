@@ -17,15 +17,15 @@ Upstream: M1 (config, schemas). Downstream: M5 (controller drives reviewers via 
 
 ### WS 2.a — Registry & transports
 
-- [ ] T2.1 ProviderRegistry: TOML slots A/B → provider instances; validates heterogeneous vs same-family; exposes `pair_mode` (`diverse|same`); clear errors for missing key-env
-- [ ] T2.2 OpenAI-compatible transport: chat completions; connect/read timeouts; exponential-backoff retries on 429/5xx (jitter); structured-output mode (JSON schema response_format) with fallback
-- [ ] T2.3 PydanticAI adapter: wrap a PydanticAI model as a reviewer backend honoring the same ReviewRequest/ReviewResult contract as T2.2
+- [ ] T2.1 (#8) ProviderRegistry: TOML slots A/B → provider instances; validates heterogeneous vs same-family; exposes `pair_mode` (`diverse|same`); clear errors for missing key-env
+- [ ] T2.2 (#9) OpenAI-compatible transport: chat completions; connect/read timeouts; exponential-backoff retries on 429/5xx (jitter); structured-output mode (JSON schema response_format) with fallback
+- [ ] T2.3 (#10) PydanticAI adapter: wrap a PydanticAI model as a reviewer backend honoring the same ReviewRequest/ReviewResult contract as T2.2 (#9)
 
 ### WS 2.b — Adapters & determinism
 
-- [ ] T2.4 LangGraph adapter: wrap a LangGraph chat model node as a reviewer backend (same contract)
-- [ ] T2.5 Seed + prompt-version plumbing: every call passes `seed`, stamps `prompt_version`; both recorded in returned metadata (feeds M8 transcripts and flakiness sweeps)
-- [ ] T2.6 ScriptedReviewer: deterministic test double implementing the reviewer contract from canned YAML scenarios — including malformed-output cases (feeds fail-closed tests in M7); CI uses ONLY these
+- [ ] T2.4 (#11) LangGraph adapter: wrap a LangGraph chat model node as a reviewer backend (same contract)
+- [ ] T2.5 (#12) Seed + prompt-version plumbing: every call passes `seed`, stamps `prompt_version`; both recorded in returned metadata (feeds M8 transcripts and flakiness sweeps)
+- [ ] T2.6 (#13) ScriptedReviewer: deterministic test double implementing the reviewer contract from canned YAML scenarios — including malformed-output cases (feeds fail-closed tests in M7); CI uses ONLY these
 
 ## Acceptance criteria / exit gate
 

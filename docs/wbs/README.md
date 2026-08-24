@@ -4,7 +4,7 @@
 
 ## v0.1.0
 
-- `wbs-v0.1.0-index.md` — milestone index *(authored at AD-M1)*
+- [`0.1.0/index.md`](0.1.0/index.md) — 11-milestone WBS index (M1-M11), each task wired to a live GitHub issue on milestone `[Release-Milestone] v0.1.0`
 - Part files per milestone group, every task row wired to a GitHub issue
 
 ### Milestone skeleton (from work schedule)

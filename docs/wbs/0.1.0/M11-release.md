@@ -18,19 +18,19 @@ Upstream: M10 PASS (kill criterion: do not ship on FAIL). Downstream: none — t
 
 ### WS 11.a — Hardening & docs
 
-- [ ] T11.1 Security sweep: bandit, pip-audit, secret-scan (gitleaks) clean or findings fixed; dependency pin review; SECURITY.md published with disclosure SLA from [§17](../../design/prd/17-security-disclosure.md)
-- [ ] T11.2 Docs pass: README final (house badge header), quickstart mirrors M9 onboarding test verbatim; docs/ refreshed to match implementation (no aspirational text in v0.1 paths); brand-voice banned-word grep over user-facing strings
+- [ ] T11.1 (#51) Security sweep: bandit, pip-audit, secret-scan (gitleaks) clean or findings fixed; dependency pin review; SECURITY.md published with disclosure SLA from [§17](../../design/prd/17-security-disclosure.md)
+- [ ] T11.2 (#52) Docs pass: README final (house badge header), quickstart mirrors M9 onboarding test verbatim; docs/ refreshed to match implementation (no aspirational text in v0.1 paths); brand-voice banned-word grep over user-facing strings
 
 ### WS 11.b — OSS hygiene
 
-- [ ] T11.3 Community files: CONTRIBUTING (adapter-first path from [16 §16.2](../../design/prd/16-contributor-journey.md)), CODE_OF_CONDUCT, SUPPORT, GOVERNANCE, CHANGELOG v0.1.0
-- [ ] T11.4 OpenSSF Best Practices: submit project, complete Passing-level checklist, embed badge
+- [ ] T11.3 (#53) Community files: CONTRIBUTING (adapter-first path from [16 §16.2](../../design/prd/16-contributor-journey.md)), CODE_OF_CONDUCT, SUPPORT, GOVERNANCE, CHANGELOG v0.1.0
+- [ ] T11.4 (#54) OpenSSF Best Practices: submit project, complete Passing-level checklist, embed badge
 
 ### WS 11.c — Ship
 
-- [ ] T11.5 Packaging: build sdist+wheel; twine check; clean-venv install + `advdeb --help` smoke; version 0.1.0 everywhere (pyproject, __init__, docs)
-- [ ] T11.6 Publish: PyPI `adversarial-debate==0.1.0`; GitHub Release v0.1.0 with notes (incl. field-test headline result); flip repo **public**; set description/topics (`llm`,`multi-agent`,`debate`,`code-review`,`ai-safety`,`llm-agents`,`adversarial-ai`)
-- [ ] T11.7 Launch articles: Article 1 ("…They Disagreed.") and Article 2 ("Agreement with Extra Steps") per [18 §18.2](../../design/prd/18-article-plan.md) — real transcripts only, honest-limitation section each; publish dev.to (+ Hashnode cross-post); announce on LinkedIn
+- [ ] T11.5 (#55) Packaging: build sdist+wheel; twine check; clean-venv install + `advdeb --help` smoke; version 0.1.0 everywhere (pyproject, __init__, docs)
+- [ ] T11.6 (#56) Publish: PyPI `adversarial-debate==0.1.0`; GitHub Release v0.1.0 with notes (incl. field-test headline result); flip repo **public**; set description/topics (`llm`,`multi-agent`,`debate`,`code-review`,`ai-safety`,`llm-agents`,`adversarial-ai`)
+- [ ] T11.7 (#57) Launch articles: Article 1 ("…They Disagreed.") and Article 2 ("Agreement with Extra Steps") per [18 §18.2](../../design/prd/18-article-plan.md) — real transcripts only, honest-limitation section each; publish dev.to (+ Hashnode cross-post); announce on LinkedIn
 
 ## Acceptance criteria / exit gate
 

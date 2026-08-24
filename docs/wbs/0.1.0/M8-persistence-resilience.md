@@ -17,14 +17,14 @@ Upstream: M7 (outputs to persist). Downstream: M9 (CLI drives store), M10 (sweep
 
 ### WS 8.a — Store
 
-- [ ] T8.1 SQLiteStore: tables per [PRD §2.4 data model](../../design/prd/02-architecture.md); WAL mode; append-only transcript rows with per-artifact monotonic sequence; unique per-artifact active-run lock (second run rejected with clear message)
-- [ ] T8.2 Schema versioning: `schema_version` singleton table (value 1); migration runner skeleton (`advdeb migrate`) — forward-only, transactional, idempotent; refuses newer-than-supported DB ([14 §14.2](../../design/prd/14-schema-migration.md))
+- [ ] T8.1 (#35) SQLiteStore: tables per [PRD §2.4 data model](../../design/prd/02-architecture.md); WAL mode; append-only transcript rows with per-artifact monotonic sequence; unique per-artifact active-run lock (second run rejected with clear message)
+- [ ] T8.2 (#36) Schema versioning: `schema_version` singleton table (value 1); migration runner skeleton (`advdeb migrate`) — forward-only, transactional, idempotent; refuses newer-than-supported DB ([14 §14.2](../../design/prd/14-schema-migration.md))
 
 ### WS 8.b — Resilience
 
-- [ ] T8.3 Resume: on restart, load last completed round state; continue debate from there; resumed runs marked `resumed_from_round=k` in report header; resume of completed artifact is a no-op with message
-- [ ] T8.4 Budget & backoff integration: wire M2 retries to a per-artifact token/cost budget; exhaustion at round k → stop + synthesize **partial** report labeled `incomplete: budget_exhausted` with rounds completed so far ([06 §6.5](../../design/prd/06-security-baseline.md))
-- [ ] T8.5 Crash safety: kill -9 / SIGTERM mid-round leaves valid partial transcript (sequence-integrity test); reopen+resume produces identical continuation as uninterrupted run (property test); corruption attempts detected via sequence gaps
+- [ ] T8.3 (#37) Resume: on restart, load last completed round state; continue debate from there; resumed runs marked `resumed_from_round=k` in report header; resume of completed artifact is a no-op with message
+- [ ] T8.4 (#38) Budget & backoff integration: wire M2 retries to a per-artifact token/cost budget; exhaustion at round k → stop + synthesize **partial** report labeled `incomplete: budget_exhausted` with rounds completed so far ([06 §6.5](../../design/prd/06-security-baseline.md))
+- [ ] T8.5 (#39) Crash safety: kill -9 / SIGTERM mid-round leaves valid partial transcript (sequence-integrity test); reopen+resume produces identical continuation as uninterrupted run (property test); corruption attempts detected via sequence gaps
 
 ## Acceptance criteria / exit gate
 

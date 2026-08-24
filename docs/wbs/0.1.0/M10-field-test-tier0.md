@@ -17,14 +17,14 @@ Upstream: M9 (CLI drives everything). Downstream: M11 publishes results; article
 
 ### WS 10.a — Corpus & harness
 
-- [ ] T10.1 Corpus selection: 20-30 public-repo PRs stratified by size (S/M/L) × outcome (merged-clean / merged-then-reverted / security-advisory); **corpus list published in repo before any runs**; each entry: URL, outcome, revert/advisory reason, expected-debate flag
-- [ ] T10.2 Flakiness sweep runner: N=5 seed-controlled runs per artifact; stability rate per artifact; flags verdict flips >20%; output feeds report stability table ([06 §6.4](../../design/prd/06-security-baseline.md))
-- [ ] T10.3 Single-reviewer baseline runner: same model(s), one pass, no debate; captures issues/cost/latency; anonymized as "Tool X" for rating ([19 §19.2](../../design/prd/19-competitor-benchmark.md))
+- [ ] T10.1 (#46) Corpus selection: 20-30 public-repo PRs stratified by size (S/M/L) × outcome (merged-clean / merged-then-reverted / security-advisory); **corpus list published in repo before any runs**; each entry: URL, outcome, revert/advisory reason, expected-debate flag
+- [ ] T10.2 (#47) Flakiness sweep runner: N=5 seed-controlled runs per artifact; stability rate per artifact; flags verdict flips >20%; output feeds report stability table ([06 §6.4](../../design/prd/06-security-baseline.md))
+- [ ] T10.3 (#48) Single-reviewer baseline runner: same model(s), one pass, no debate; captures issues/cost/latency; anonymized as "Tool X" for rating ([19 §19.2](../../design/prd/19-competitor-benchmark.md))
 
 ### WS 10.b — Execution & reporting
 
-- [ ] T10.4 Full sweep execution: adversarial run on all corpus artifacts (heterogeneous pair primary; homogeneous subsample for diversity delta); collect transcripts, latency, cost; resume/budget exercised naturally on failures
-- [ ] T10.5 FIELD_TEST_REPORT.md: per-PR results vs exit bar — distinct-issue yield (vs baseline, blind-rated), theater rate, convergence/disputed bands, actionability of would_resolve_if (self-rater for Tier 0 with rubric from [21-eval-harness](../../design/prd/21-eval-harness.md)), flakiness table, honest misses section ("both reviewers missed X"); explicit PASS/FAIL vs [§7.1](../../design/prd/07-success-metrics.md) bar
+- [ ] T10.4 (#49) Full sweep execution: adversarial run on all corpus artifacts (heterogeneous pair primary; homogeneous subsample for diversity delta); collect transcripts, latency, cost; resume/budget exercised naturally on failures
+- [ ] T10.5 (#50) FIELD_TEST_REPORT.md: per-PR results vs exit bar — distinct-issue yield (vs baseline, blind-rated), theater rate, convergence/disputed bands, actionability of would_resolve_if (self-rater for Tier 0 with rubric from [21-eval-harness](../../design/prd/21-eval-harness.md)), flakiness table, honest misses section ("both reviewers missed X"); explicit PASS/FAIL vs [§7.1](../../design/prd/07-success-metrics.md) bar
 
 ## Acceptance criteria / exit gate
 

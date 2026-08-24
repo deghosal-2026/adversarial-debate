@@ -6,19 +6,21 @@
 
 ## Milestones
 
-| M | File | Focus | Depends on |
-|---|------|-------|-----------|
-| M1 | [M1-foundation-core-schemas.md](M1-foundation-core-schemas.md) | Repo scaffold, core Pydantic schemas, config, CI gates | — |
-| M2 | [M2-provider-layer-byom.md](M2-provider-layer-byom.md) | Provider registry, OpenAI-compatible transport, PydanticAI/LangGraph adapters, seeds, scripted reviewers | M1 |
-| M3 | [M3-isolation-engine.md](M3-isolation-engine.md) | Reviewer sessions, revelation gate, commit immutability, leakage test suite | M1 |
-| M4 | [M4-normalizer-pr-adapter.md](M4-normalizer-pr-adapter.md) | Normalizer framework, git diff parser, chunking, fixture corpus | M1 |
-| M5 | [M5-debate-controller.md](M5-debate-controller.md) | Bounded rounds, point-by-point enforcement, caps, degradation detection | M2, M3 |
-| M6 | [M6-evidence-convergence.md](M6-evidence-convergence.md) | Claim lifecycle, convergence score, theater detector, evidence validation | M5 |
-| M7 | [M7-synthesis-reports.md](M7-synthesis-reports.md) | Joint verdict, disagreement report, fail-closed synthesis, JSONL export | M6 |
-| M8 | [M8-persistence-resilience.md](M8-persistence-resilience.md) | SQLite store, schema versioning, resume, budget/backoff, crash safety | M7 |
-| M9 | [M9-cli-surface.md](M9-cli-surface.md) | init / review / report / resume / transcript commands; terminal rendering | M8 |
-| M10 | [M10-field-test-tier0.md](M10-field-test-tier0.md) | Public-PR corpus, flakiness sweep, baseline comparison, field-test report | M9 |
-| M11 | [M11-release.md](M11-release.md) | Security sweep, docs, OSS files, OpenSSF, packaging, PyPI, public flip, articles | M10 |
+| M | File | Focus | Issues | Depends on |
+|---|------|-------|--------|-----------|
+| M1 | [M1-foundation-core-schemas.md](M1-foundation-core-schemas.md) | Repo scaffold, core Pydantic schemas, config, CI gates | #1-#7 | — |
+| M2 | [M2-provider-layer-byom.md](M2-provider-layer-byom.md) | Provider registry, OpenAI-compatible transport, PydanticAI/LangGraph adapters, seeds, scripted reviewers | #8-#13 | M1 |
+| M3 | [M3-isolation-engine.md](M3-isolation-engine.md) | Reviewer sessions, revelation gate, commit immutability, leakage test suite | #14-#17 | M1 |
+| M4 | [M4-normalizer-pr-adapter.md](M4-normalizer-pr-adapter.md) | Normalizer framework, git diff parser, chunking, fixture corpus | #18-#22 | M1 |
+| M5 | [M5-debate-controller.md](M5-debate-controller.md) | Bounded rounds, point-by-point enforcement, caps, degradation detection | #23-#26 | M2, M3 |
+| M6 | [M6-evidence-convergence.md](M6-evidence-convergence.md) | Claim lifecycle, convergence score, theater detector, evidence validation | #27-#30 | M5 |
+| M7 | [M7-synthesis-reports.md](M7-synthesis-reports.md) | Joint verdict, disagreement report, fail-closed synthesis, JSONL export | #31-#34 | M6 |
+| M8 | [M8-persistence-resilience.md](M8-persistence-resilience.md) | SQLite store, schema versioning, resume, budget/backoff, crash safety | #35-#39 | M7 |
+| M9 | [M9-cli-surface.md](M9-cli-surface.md) | init / review / report / resume / transcript commands; terminal rendering | #40-#45 | M8 |
+| M10 | [M10-field-test-tier0.md](M10-field-test-tier0.md) | Public-PR corpus, flakiness sweep, baseline comparison, field-test report | #46-#50 | M9 |
+| M11 | [M11-release.md](M11-release.md) | Security sweep, docs, OSS files, OpenSSF, packaging, PyPI, public flip, articles | #51-#57 | M10 |
+
+**Total: 57 issues · milestone `[Release-Milestone] v0.1.0`**
 
 ```
 M1 ──┬──► M2 ──┐
@@ -47,6 +49,6 @@ M1 ──┬──► M2 ──┐
 
 ## Conventions
 
-- Every task id `T<m>.<k>` maps to exactly one GitHub issue (`T2.3` → issue #N, label `milestone-M2`).
+- Every task id `T<m>.<k>` maps to exactly one GitHub issue (`T2.3 (#10)` → issue #N, label `milestone-M2`).
 - Issue bodies carry: what/why, PRD references, acceptance criteria checklist.
 - A task is done when its issue closes AND the global exit gates pass.
