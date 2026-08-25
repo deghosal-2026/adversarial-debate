@@ -38,7 +38,7 @@ def make_minimal_artifact(raw: str) -> ReviewArtifact:
 class DummyNormalizer:
     domain = "dummy_domain"
 
-    def normalize(self, raw: str, hints: Sequence[RubricHint] | None = None) -> ReviewArtifact:  # noqa: ARG002
+    def normalize(self, raw: str, hints: Sequence[RubricHint] | None = None) -> ReviewArtifact:
         return make_minimal_artifact(raw)
 
 
@@ -63,13 +63,13 @@ def test_duplicate_registration_raises(dummy: DummyNormalizer) -> None:
         register("dummy_domain", dummy)
 
 
-def test_unknown_domain_error_lists_available(dummy: DummyNormalizer) -> None:  # noqa: ARG001
+def test_unknown_domain_error_lists_available(dummy: DummyNormalizer) -> None:
     with pytest.raises(UnknownDomainError, match="dummy_domain"):
         get_normalizer("nonexistent_domain")
 
 
 def test_unknown_domain_message_includes_requested_name(
-    dummy: DummyNormalizer,  # noqa: ARG001
+    dummy: DummyNormalizer,
 ) -> None:
     with pytest.raises(UnknownDomainError, match="ghost_domain"):
         get_normalizer("ghost_domain")
@@ -88,18 +88,18 @@ def test_unregister_unknown_domain_raises() -> None:
         unregister("never_registered")
 
 
-def test_normalize_dispatches_to_registered(dummy: DummyNormalizer) -> None:  # noqa: ARG001
+def test_normalize_dispatches_to_registered(dummy: DummyNormalizer) -> None:
     artifact = normalize("RAW_INPUT", hints=None, domain="dummy_domain")
     assert artifact.source_uri == "RAW_INPUT"
     assert artifact.domain == "dummy_domain"
 
 
-def test_normalize_unknown_domain_is_actionable(dummy: DummyNormalizer) -> None:  # noqa: ARG001
+def test_normalize_unknown_domain_is_actionable(dummy: DummyNormalizer) -> None:
     with pytest.raises(UnknownDomainError, match="dummy_domain"):
         normalize("RAW", hints=None, domain="missing_domain")
 
 
-def test_available_domains_sorted(dummy: DummyNormalizer) -> None:  # noqa: ARG001
+def test_available_domains_sorted(dummy: DummyNormalizer) -> None:
     register("aaa_other", DummyOther())
     try:
         assert available_domains() == sorted(available_domains())
@@ -111,5 +111,5 @@ def test_available_domains_sorted(dummy: DummyNormalizer) -> None:  # noqa: ARG0
 class DummyOther:
     domain = "aaa_other"
 
-    def normalize(self, raw: str, hints: Sequence[RubricHint] | None = None) -> ReviewArtifact:  # noqa: ARG002
+    def normalize(self, raw: str, hints: Sequence[RubricHint] | None = None) -> ReviewArtifact:
         return make_minimal_artifact(raw)

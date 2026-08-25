@@ -21,6 +21,10 @@ classifiers = [
 ]
 dependencies = ["pydantic>=2.9"]
 
+[project.optional-dependencies]
+pydanticai = ["pydantic-ai>=0.0.10"]
+langgraph = ["langgraph>=0.2", "langchain-openai>=0.2"]
+
 [project.urls]
 Repository = "https://github.com/deghosal-2026/adversarial-debate"
 
@@ -31,6 +35,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "pre-commit>=4.0",
+    "pyyaml>=6.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -65,12 +70,16 @@ select = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D", "ANN", "PLR2004", "S101"]
+"tests/**" = ["D", "ANN", "PLR2004", "S101", "ARG"]
 
 [tool.mypy]
 strict = true
 python_version = "3.11"
 files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["yaml", "pydantic_ai", "langchain_openai", "langchain_core.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -17,13 +17,13 @@ Upstream: M1 (schemas). Downstream: M5 (controller orchestrates sessions through
 
 ### WS 3.a — Sessions & gate
 
-- [ ] T3.1 (#14) ReviewerSessionManager: creates exactly two sessions per artifact with independent conversation contexts; status lifecycle `isolated→revealed→debating→done|error`; no shared memory objects between sides
-- [ ] T3.2 (#15) RevelationGate: explicit state machine; `reveal()` only callable when both sessions hold committed reviews; every transition emits an audit event (actor=engine, from, to, timestamp)
-- [ ] T3.3 (#16) Commit immutability: committed `Review` is frozen (Pydantic frozen model); post-commit mutation attempts raise; concessions/objections are *new events*, never edits ([06 §6.1](../../design/prd/06-security-baseline.md))
+- [x] T3.1 (#14) ReviewerSessionManager: creates exactly two sessions per artifact with independent conversation contexts; status lifecycle `isolated→revealed→debating→done|error`; no shared memory objects between sides
+- [x] T3.2 (#15) RevelationGate: explicit state machine; `reveal()` only callable when both sessions hold committed reviews; every transition emits an audit event (actor=engine, from, to, timestamp)
+- [x] T3.3 (#16) Commit immutability: committed `Review` is frozen (Pydantic frozen model); post-commit mutation attempts raise; concessions/objections are *new events*, never edits ([06 §6.1](../../design/prd/06-security-baseline.md))
 
 ### WS 3.b — Prove it can't leak
 
-- [ ] T3.4 (#17) Isolation adversarial test suite: (a) reveal-before-commit raises; (b) session A prompt-history never contains B content and vice versa (inspect full request logs); (c) shared-cache/framework-memory probes (same registry instance reused) find zero cross-references; (d) ScriptedReviewer scenario asserting a "peeking" reviewer pattern is impossible by construction; all failures loud, named `IsolationViolation`
+- [x] T3.4 (#17) Isolation adversarial test suite: (a) reveal-before-commit raises; (b) session A prompt-history never contains B content and vice versa (inspect full request logs); (c) shared-cache/framework-memory probes (same registry instance reused) find zero cross-references; (d) ScriptedReviewer scenario asserting a "peeking" reviewer pattern is impossible by construction; all failures loud, named `IsolationViolation`
 
 ## Acceptance criteria / exit gate
 

@@ -1,0 +1,45 @@
+scenarios:
+  - scenario_id: "standard_pass"
+    description: "Normal review with two claims and one risk"
+    match:
+      artifact_prefix: "art_standard"
+    output:
+      raw_text: "I found the following issues in this PR..."
+      claims:
+        - id: "cl_001"
+          review_id: "rv_001"
+          text: "Unvalidated input in user creation endpoint"
+          severity: "high"
+          evidence_refs: ["src/users.py:42-45"]
+          status: "open"
+        - id: "cl_002"
+          review_id: "rv_001"
+          text: "Missing error handling for database connection"
+          severity: "medium"
+          evidence_refs: ["src/db.py:10-15"]
+          status: "open"
+      risks:
+        - id: "risk_001"
+          text: "Potential SQL injection via raw query construction"
+          severity: "high"
+      confidence: 0.78
+
+  - scenario_id: "empty_review"
+    description: "Review that found nothing — clean PR"
+    match:
+      artifact_prefix: "art_clean"
+    output:
+      raw_text: "This PR looks good. No issues found."
+      claims: []
+      risks: []
+      confidence: 0.95
+
+  - scenario_id: "malformed_nonsense"
+    description: "Output simulating a server error / malformed model response"
+    match:
+      artifact_prefix: "art_nonsense"
+    output:
+      raw_text: "ERROR: 500 Internal Server Error - model returned gibberish"
+      claims: []
+      risks: []
+      confidence: 0.0
