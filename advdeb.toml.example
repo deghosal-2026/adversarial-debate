@@ -1,0 +1,23 @@
+# advdeb.toml.example — copy to advdeb.toml and fill in your providers.
+# Secrets are NEVER written here: key_env names the environment variable
+# holding the API key. Heterogeneous pairs (different model families) are
+# encouraged — DD-04.
+#
+# NOTE: scalar keys must appear BEFORE any [table] header (TOML rule).
+
+rounds = 2                       # bounded debate rounds (DD-01: default 2, saturation research)
+max_llm_calls = 50               # cost guardrail: hard cap on LLM calls per run (M8 enforces)
+# keep_transcripts_days = 30     # transcript retention stub (enforced from M8); omit = keep forever
+# seed = 1234                    # reproducibility seed (PRD §6.4); omit for live models
+
+[providers.a]
+type = "openai_compatible"       # registry key; M2 also ships pydantic_ai, langgraph, scripted
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o"
+key_env = "ADVDEB_A_API_KEY"
+
+[providers.b]
+type = "openai_compatible"
+base_url = "https://api.anthropic.com/v1"
+model = "claude-sonnet-4-5"
+key_env = "ADVDEB_B_API_KEY"
