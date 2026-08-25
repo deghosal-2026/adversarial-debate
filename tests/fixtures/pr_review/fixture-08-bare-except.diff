@@ -1,0 +1,14 @@
+diff --git a/src/imports/processor.py b/src/imports/processor.py
+index h8i9j0k..l1m2n3o 100644
+--- a/src/imports/processor.py
++++ b/src/imports/processor.py
+@@ -15,7 +15,7 @@ def process_file(path: str) -> ImportResult:
+     try:
+         data = parse(path)
+         return ImportResult(records=data)
+-    except ParseError as exc:
+-        return ImportResult(error=str(exc))
++    except Exception:
++        return ImportResult(error="processing failed")
+     finally:
+         cleanup(path)

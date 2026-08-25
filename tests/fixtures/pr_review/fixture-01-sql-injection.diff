@@ -1,0 +1,16 @@
+diff --git a/src/users/lookup.py b/src/users/lookup.py
+index a1b2c3d..e4f5g6h 100644
+--- a/src/users/lookup.py
++++ b/src/users/lookup.py
+@@ -5,7 +5,7 @@ def get_user(username: str) -> dict | None:
+     """Fetch user by username."""
+     conn = sqlite3.connect("users.db")
+-    cursor = conn.execute("SELECT * FROM users WHERE username = ?", (username,))
++    cursor = conn.execute(f"SELECT * FROM users WHERE username = '{username}'")
+     row = cursor.fetchone()
+     if row is None:
+         return None
+@@ -14,2 +14,2 @@ def get_user(username: str) -> dict | None:
+         "email": row[1],
+         "role": row[2],
+     }

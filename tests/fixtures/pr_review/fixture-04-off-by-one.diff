@@ -1,0 +1,14 @@
+diff --git a/src/billing/invoice.py b/src/billing/invoice.py
+index d4e5f6g..h7i8j9k 100644
+--- a/src/billing/invoice.py
++++ b/src/billing/invoice.py
+@@ -8,7 +8,7 @@ def days_until_due(start: date) -> int:
+     """Days from start to end-of-month."""
+     import calendar
+-    last_day = calendar.monthrange(start.year, start.month)[1]
++    if start.month == 12:
++        last_day = calendar.monthrange(start.year + 1, 1)[1]
++    else:
++        last_day = calendar.monthrange(start.year, start.month + 1)[1]
+     delta = date(start.year, start.month, last_day) - start
+     return max(0, delta.days)

@@ -1,0 +1,13 @@
+diff --git a/src/orders/list.py b/src/orders/list.py
+index g7h8i9j..k0l1m2n 100644
+--- a/src/orders/list.py
++++ b/src/orders/list.py
+@@ -5,8 +5,8 @@ def list_orders(org_id: str) -> list[dict]:
+     orders = db.query("SELECT id FROM orders WHERE org_id = ?", (org_id,))
+     results = []
+     for order in orders:
+-        items = db.query("SELECT * FROM order_items WHERE order_id = ?", (order.id,))
+-        results.append({"order": order, "items": items})
++        items = order.items.all()
++        results.append({"order": order.to_dict(), "items": [i.to_dict() for i in items]})
+     return results

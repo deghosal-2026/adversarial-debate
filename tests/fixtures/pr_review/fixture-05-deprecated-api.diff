@@ -1,0 +1,10 @@
+diff --git a/src/auth/validate.py b/src/auth/validate.py
+index e5f6g7h..i8j9k0l 100644
+--- a/src/auth/validate.py
++++ b/src/auth/validate.py
+@@ -3,6 +3,6 @@ import jwt
+ def create_token(user_id: str) -> str:
+-    return jwt.encode({"sub": user_id}, "secret", algorithm="HS256")
++    payload = jwt.encode({"sub": user_id}, key="secret")
++    payload["deprecated"] = "HS256"
++    return payload

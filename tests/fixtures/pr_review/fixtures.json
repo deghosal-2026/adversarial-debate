@@ -1,0 +1,110 @@
+[
+  {
+    "id": "fixture-01",
+    "title": "SQL injection in user lookup",
+    "diff_file": "fixture-01-sql-injection.diff",
+    "known_issues": [
+      {"description": "Raw string interpolation in SQL query enables injection", "severity": "high"},
+      {"description": "Error message structure unchanged — no user-info leak but query structure reveals table name in error", "severity": "low"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": true,
+    "only_b_catches": true
+  },
+  {
+    "id": "fixture-02",
+    "title": "Race condition in job queue with late-added lock",
+    "diff_file": "fixture-02-race-condition.diff",
+    "known_issues": [
+      {"description": "Lock added after initial release breaks existing concurrency assumptions", "severity": "medium"},
+      {"description": "Lazy lock init with hasattr creates race in enqueue", "severity": "high"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": false
+  },
+  {
+    "id": "fixture-03",
+    "title": "Hardcoded API secret committed in workflow",
+    "diff_file": "fixture-03-secrets-leak.diff",
+    "known_issues": [
+      {"description": "Hardcoded API key leaks via source control", "severity": "high"},
+      {"description": "GitHub Actions env var exposes secret in logs on failure", "severity": "medium"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": false
+  },
+  {
+    "id": "fixture-04",
+    "title": "Off-by-one in end-of-month billing calculation",
+    "diff_file": "fixture-04-off-by-one.diff",
+    "known_issues": [
+      {"description": "Monthrange on month+1 fails when month is 13", "severity": "high"},
+      {"description": "No validation that start date is reasonable", "severity": "low"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": false
+  },
+  {
+    "id": "fixture-05",
+    "title": "Deprecated JWT encoding API used",
+    "diff_file": "fixture-05-deprecated-api.diff",
+    "known_issues": [
+      {"description": "jwt.encode without algorithm argument defaults to HS256 which may be disabled in newer library versions", "severity": "high"},
+      {"description": "Deprecated API warning in payload field is non-standard", "severity": "low"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": true
+  },
+  {
+    "id": "fixture-06",
+    "title": "Null dereference on missing user in profile handler",
+    "diff_file": "fixture-06-null-ptr.diff",
+    "known_issues": [
+      {"description": "user may be None when user_id missing or invalid", "severity": "high"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": false
+  },
+  {
+    "id": "fixture-07",
+    "title": "N+1 query replaced with lazy-loaded ORM access",
+    "diff_file": "fixture-07-n-plus-one.diff",
+    "known_issues": [
+      {"description": "order.items.all() triggers N+1 if prefetch not configured", "severity": "medium"},
+      {"description": "to_dict() called without checking for lazy load session state", "severity": "medium"}
+    ],
+    "expected_severity": "medium",
+    "should_disagree": false
+  },
+  {
+    "id": "fixture-08",
+    "title": "Swallowed exception with bare except",
+    "diff_file": "fixture-08-bare-except.diff",
+    "known_issues": [
+      {"description": "Bare except catches everything including SystemExit/KeyboardInterrupt", "severity": "high"},
+      {"description": "Original exception context lost — debugging impossible", "severity": "medium"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": false
+  },
+  {
+    "id": "fixture-09",
+    "title": "Rounding in running mean could mask precision issues",
+    "diff_file": "fixture-09-perf-regression.diff",
+    "known_issues": [
+      {"description": "round() in hot loop adds unnecessary allocation per element", "severity": "low"}
+    ],
+    "expected_severity": "low",
+    "should_disagree": false
+  },
+  {
+    "id": "fixture-10",
+    "title": "Removed authz decorator exposes admin endpoint",
+    "diff_file": "fixture-10-authz-gap.diff",
+    "known_issues": [
+      {"description": "Require_role decorator removed — any unauthenticated user can list all users", "severity": "high"}
+    ],
+    "expected_severity": "high",
+    "should_disagree": false
+  }
+]

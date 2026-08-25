@@ -1,0 +1,30 @@
+diff --git a/src/api/handlers.py b/src/api/handlers.py
+index f6g7h8i..j9k0l1m 100644
+--- a/src/api/handlers.py
++++ b/src/api/handlers.py
+@@ -20,7 +20,7 @@ def profile_handler(request: Request) -> Response:
+     user_id = request.query.get("user_id")
+     user = db.fetch_user(user_id)
+-    return Response(
+-        status=200,
+-        body={"name": user.name, "email": user.email},
+-    )
++    return Response(status=200, body={
++        "name": user.name,
++        "email": user.email,
++    })
+ DIFF
+cat > fixture-07-n-plus-one.diff << 'DIFF'
+diff --git a/src/orders/list.py b/src/orders/list.py
+index g7h8i9j..k0l1m2n 100644
+--- a/src/orders/list.py
++++ b/src/orders/list.py
+@@ -5,8 +5,8 @@ def list_orders(org_id: str) -> list[dict]:
+     orders = db.query("SELECT id FROM orders WHERE org_id = ?", (org_id,))
+     results = []
+     for order in orders:
+-        items = db.query("SELECT * FROM order_items WHERE order_id = ?", (order.id,))
+-        results.append({"order": order, "items": items})
++        items = order.items.all()
++        results.append({"order": order.to_dict(), "items": [i.to_dict() for i in items]})
+     return results
