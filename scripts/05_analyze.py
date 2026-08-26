@@ -28,30 +28,48 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-RESULTS_DIR = Path(__file__).parent / "../v0.1.0/results"
-PAIRS_DIR = Path(__file__).parent / "../v0.1.0/pairs"
-ANALYSIS_DIR = Path(__file__).parent / "../v0.1.0/analysis"
-OUT_DIR = Path(__file__).parent / "../v0.1.0"
+BASE = Path(__file__).resolve().parent.parent
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "results"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
+OUT_DIR = BASE / "results" / "field-test" / "v0.1.0"
 
-MODEL_NAMES = ["gpt-4o-mini", "gemini-2.5-flash", "deepseek-chat"]
+MODEL_NAMES = ["openai_gpt-4o-mini", "google_gemini-2-5-flash", "deepseek_deepseek-chat"]
 
 
 def extract_issues(raw_text: str) -> list[str]:
     """Extract distinct issue descriptors from raw LLM output.
 
     Simple heuristic: look for bullet points, numbered items, or
-    severity-marked lines. For v0.1 this is approximate.
+    severity-marked lines. Normalizes text before comparison.
     """
+    import re as _re
+
     issues = []
     for line in raw_text.split("\n"):
         line = line.strip()
         if not line:
             continue
-        if re.match(r"^[\*\-]\s", line) or re.match(r"^\d+[\.\)]\s", line):
-            issues.append(line)
-        elif re.search(r"\b(high|medium|low)\b", line, re.IGNORECASE):
-            issues.append(line)
+        if _re.match(r"^[\*\-]\s", line) or _re.match(r"^\d+[\.\)]\s", line):
+            issues.append(_normalize_issue(line))
+        elif _re.search(r"\b(high|medium|low)\b", line, _re.IGNORECASE):
+            issues.append(_normalize_issue(line))
     return issues
+
+
+def _normalize_issue(text: str) -> str:
+    """Normalize issue text for comparison: lowercase, strip formatting, first sentence."""
+    import re as _re
+
+    text = text.lower().strip()
+    text = _re.sub(r"^[\*\\-]\s*", "", text)  # strip bullet
+    text = _re.sub(r"^\d+[\.\)]\s*", "", text)  # strip number
+    text = _re.sub(r"^(severity:?\s*)?(high|medium|low):?\s*", "", text)  # strip severity prefix
+    text = _re.sub(r"\s+", " ", text)  # collapse whitespace
+    # Take first sentence only
+    text = text.split(".")[0].strip()
+    return text if len(text) > 5 else text
 
 
 def jaccard_similarity(a: set, b: set) -> float:
@@ -170,6 +188,48 @@ def main() -> None:
     print(f"\n=== CROSS-MODEL OVERLAP ===")
     print(f"  Avg Jaccard (GPT-4o-mini vs Gemini): {avg_jaccard:.3f}")
     print(f"  (0 = completely different, 1 = identical)")
+
+    # 5. Debate summary
+    debate_rows = []
+    if DEBATES_DIR.is_dir():
+        for pair_dir in sorted(DEBATES_DIR.iterdir()):
+            if not pair_dir.is_dir():
+                continue
+            for pr_dir in sorted(pair_dir.iterdir()):
+                report_path = pr_dir / "report.json"
+                if not report_path.is_file():
+                    continue
+                data = json.loads(report_path.read_text())
+                debate_rows.append({
+                    "pair": data.get("pair", ""),
+                    "pr_id": data.get("pr_id", ""),
+                    "termination": data.get("termination_reason", ""),
+                    "rounds": str(data.get("rounds_completed", 0)),
+                    "verdict_kind": data.get("verdict_kind", ""),
+                    "convergence_score": str(round(data.get("convergence_score", 0), 3)),
+                    "theater": str(data.get("theater", False)),
+                    "capitulation": str(data.get("capitulation_cascade", False)),
+                    "resolved_count": str(data.get("resolved_count", 0)),
+                    "total_claims": str(data.get("total_claims", 0)),
+                    "concessions": str(data.get("concessions_count", 0)),
+                    "unresolved": str(len(data.get("report", {}).get("unresolved", []))),
+                })
+
+    if debate_rows:
+        debate_path = ANALYSIS_DIR / "debate-summary.csv"
+        with open(debate_path, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=debate_rows[0].keys())
+            w.writeheader()
+            w.writerows(debate_rows)
+        print(f"\n=== DEBATE SUMMARY ===")
+        print(f"  {len(debate_rows)} debates analyzed")
+        verdicts = Counter(r["verdict_kind"] for r in debate_rows)
+        print(f"  Verdicts: {dict(verdicts)}")
+        theater_count = sum(1 for r in debate_rows if r["theater"] == "True")
+        print(f"  Theater: {theater_count}/{len(debate_rows)}")
+        avg_score = sum(float(r["convergence_score"]) for r in debate_rows) / len(debate_rows)
+        print(f"  Avg convergence score: {avg_score:.3f}")
+        print(f"  Wrote {debate_path}")
 
     print(f"\nAnalysis artifacts written to {ANALYSIS_DIR}")
 

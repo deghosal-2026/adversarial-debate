@@ -11,22 +11,30 @@ gh auth login
 # 2. OpenRouter API key (same key for all LLMs)
 export OPENROUTER_API_KEY=sk-or-...
 
-# 3. corpus.csv at results/field-test/v0.1.0/corpus.csv (or --corpus path)
+# 3. corpus.csv at results/field-test/v0.1.0/corpus.csv
+#    Generate with: python3 scripts/gen_corpus.py --out results/field-test/v0.1.0/corpus.csv
 ```
 
 ## Workflow
 
-### Step 1 — Download corpus (one-time)
+### Step 0 — Generate corpus (one-time)
 
 ```bash
-# Download full corpus
+python3 scripts/gen_corpus.py --out results/field-test/v0.1.0/corpus.csv
+```
+
+Creates `corpus.csv` with 150 PRs from 45+ repos across 12+ languages. Fetches real PR data via `gh` CLI.
+
+### Step 1 — Download corpus diffs (one-time)
+
+```bash
 python3 scripts/01_download_corpus.py --corpus results/field-test/v0.1.0/corpus.csv
 
 # Re-download everything
 python3 scripts/01_download_corpus.py --corpus results/field-test/v0.1.0/corpus.csv --force
 ```
 
-Downloads PR diffs + metadata from GitHub via `gh` CLI. Stores under `results/field-test/v0.1.0/corpus/`. Skips already-downloaded PRs.
+Downloads PR diffs + metadata from GitHub. Stores under `results/field-test/v0.1.0/corpus/`. Skips already-downloaded PRs.
 
 ### Step 2 — Run LLM reviewers (one model at a time)
 
@@ -41,26 +49,24 @@ python3 scripts/02_run_reviewer.py --model google/gemini-2.5-flash --corpus resu
 python3 scripts/02_run_reviewer.py --model deepseek/deepseek-chat --corpus results/field-test/v0.1.0/corpus.csv
 ```
 
-Each model runs independently. If one fails, just re-run that model — it skips already-completed PRs via a `CHECKPOINT` file.
+Each model runs independently. If one fails, re-run that model — it skips completed PRs via a `CHECKPOINT` file.
 
 **Useful flags:**
 ```bash
 # Test on 5 PRs first (cost control)
 python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --limit 5
 
-# Use a different corpus file (e.g. mini test corpus)
+# Use mini test corpus
 python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus_test.csv
 
-# Dry run (no API calls, shows what would run + cost estimate)
+# Dry run (no API calls, shows cost estimate)
 python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --dry-run
 
 # Run a single PR (debugging)
 python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --pr kubernetes_kubernetes_PR12345
 ```
 
-**Output:** `results/field-test/v0.1.0/results/<model_slug>/<pr_id>.json`
-
-Each JSON contains: raw LLM response, latency, token counts, computed cost.
+**Output:** `results/field-test/v0.1.0/results/<model_slug>/<pr_id>.json` — raw LLM response, latency, token counts, computed cost.
 
 ### Step 3 — Combine into pairs
 
@@ -68,26 +74,47 @@ Each JSON contains: raw LLM response, latency, token counts, computed cost.
 python3 scripts/03_combine_results.py --corpus results/field-test/v0.1.0/corpus.csv
 ```
 
-Maps individual model outputs into the pair configurations defined in the field test plan:
+Maps individual model outputs into pair configurations:
 - `pair1_gpt_gemini` — GPT-4o-mini + Gemini 2.5 Flash
 - `pair2_gemini_deepseek` — Gemini 2.5 Flash + DeepSeek
 - `homogeneous_gpt` — GPT-4o-mini both sides
 - `baseline_gpt` — GPT-4o-mini single pass (no debate)
 
-Reports missing results per pair. Re-run step 2 for any missing models.
-
-### Step 4 — Analyze and compare
+### Step 4 — Run debate engine
 
 ```bash
-python3 scripts/04_analyze.py
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv
+
+# Run a specific pair only
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pair pair1_gpt_gemini
+
+# Run a single PR (debugging)
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pr kubernetes_kubernetes_PR141554
+
+# Limit PRs (testing)
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --limit 5
+```
+
+Runs the full engine pipeline on paired reviews:
+- M5 DebateController (bounded rounds, point-by-point enforcement)
+- M6 EvidenceTracker (claim lifecycle, convergence score, theater detection)
+- M7 SynthesisReport (verdict/disputed, `would_resolve_if`, flags)
+
+**Output:** `results/field-test/v0.1.0/debates/<pair_name>/<pr_id>/report.json` — termination reason, convergence score, concessions, unresolved points, theater/capitulation flags, full event log.
+
+### Step 5 — Analyze and compare
+
+```bash
+python3 scripts/05_analyze.py
 ```
 
 Produces:
 - `results/field-test/v0.1.0/analysis/cross-model-overlap.csv` — Jaccard similarity per PR per model pair
 - `results/field-test/v0.1.0/analysis/distinctness-ratings.csv` — Issue counts per model per PR
 - `results/field-test/v0.1.0/analysis/cost-latency.csv` — Cost, latency, token totals per model
+- `results/field-test/v0.1.0/analysis/debate-summary.csv` — Per-PR debate outcomes (verdict, score, theater, concessions)
 
-Prints a summary table to stdout.
+Prints summary tables to stdout.
 
 ## Output Structure
 
@@ -95,23 +122,24 @@ Prints a summary table to stdout.
 results/field-test/v0.1.0/
 ├── corpus.csv                # input: 150 PRs
 ├── corpus/                   # downloaded diffs + metadata
-│   ├── <repo>_PR<num>.diff
-│   └── <repo>_PR<num>.json
-├── results/                  # raw LLM outputs (per model)
+├── results/                  # raw LLM outputs (per model, from step 2)
 │   ├── openai_gpt-4o-mini/
-│   │   ├── <pr_id>.json
-│   │   └── CHECKPOINT
-│   ├── google_gemini-2.5-flash/
+│   ├── google_gemini-2-5-flash/
 │   └── deepseek_deepseek-chat/
-├── pairs/                    # combined pair data
+├── pairs/                    # combined pair data (from step 3)
 │   ├── pair1_gpt_gemini/
 │   ├── pair2_gemini_deepseek/
 │   ├── homogeneous_gpt/
 │   └── baseline_gpt/
-├── analysis/                 # analysis CSVs
+├── debates/                  # debate engine output (from step 4)
+│   └── <pair_name>/
+│       └── <pr_id>/
+│           └── report.json
+├── analysis/                 # analysis CSVs (from step 5)
 │   ├── cross-model-overlap.csv
 │   ├── distinctness-ratings.csv
-│   └── cost-latency.csv
+│   ├── cost-latency.csv
+│   └── debate-summary.csv
 └── FIELD_TEST_REPORT.md      # final report (written manually)
 ```
 
@@ -119,6 +147,6 @@ results/field-test/v0.1.0/
 
 - **Keys are never saved or logged.** `OPENROUTER_API_KEY` is read from env var only.
 - **Cost is computed per PR** from token counts using the pricing table in `02_run_reviewer.py`.
-- **Resume is automatic.** Each model tracks completed PRs in a `CHECKPOINT` file.
+- **Resume is automatic.** Steps 2 and 4 skip already-completed PRs.
 - **Rate limiting:** 1 second sleep between API calls, 3 retries with backoff on failure.
 - **All LLM calls go through OpenRouter** (`openrouter.ai/api/v1`) with a single API key.
