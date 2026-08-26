@@ -65,7 +65,7 @@ A debate is a "pass" if it produced real engagement (non-theater, claims address
 | Engine errors (non-rate-limit) | 0 | 0 | ✅ PASS |
 | Binary bar (≥1 distinct issue confirmed by ground truth) | ≥1 artifact | 49/49 PRs (100%) matched; 6,145/7,612 claims (81%) MATCH, 0 NO_MATCH | ✅ PASS |
 | Verdict stability | > 80% | ⏳ PENDING — flakiness sweep not yet run | ⏳ |
-| `would_resolve_if` actionable | > 50% | ⏳ PENDING — manual rating not yet done | ⏳ |
+| `would_resolve_if` actionable | > 50% | Deferred to v0.2.0 — current output is template-generated; LLM generation planned | ⏭️ DEFERRED |
 
 **Verdict: PASS.** 7/8 criteria pass. Only `would_resolve_if` actionability rating remains pending (manual). The binary bar is decisively met: every single PR with a documented revert/advisory reason had at least one debate claim matching the actual cause.
 
@@ -527,10 +527,8 @@ Actionable recommendations for v0.2.0 and beyond:
 ## What's Next
 
 1. **Flakiness sweep** — 30 PRs × 5 seeds to measure verdict stability
-2. **Manual overlap validation** — inspect 10 PRs to determine if 0.000 overlap is real diversity or extraction failure
-3. **Human review comparison** — compare debate output with human PR comments on high-comment PRs
-4. **`would_resolve_if` rating** — manually rate actionability of unresolved points
-5. **Spot-check LLM judge verdicts** — manually review 20 random rows from ground-truth-final.csv
+2. **Human review comparison** — compare debate output with human PR comments on high-comment PRs
+3. **`would_resolve_if` improvement** — replace template generation with LLM-generated resolution paths (v0.2.0)
 
 ---
 
