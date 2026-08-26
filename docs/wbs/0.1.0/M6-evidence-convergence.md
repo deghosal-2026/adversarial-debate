@@ -17,13 +17,13 @@ Upstream: M5 (debate events). Downstream: M7 (synthesis reads final states).
 
 ### WS 6.a — Evidence tracking
 
-- [ ] T6.1 (#27) EvidenceTracker: applies controller events to claim lifecycle (`open→conceded|upheld|resolved`); every transition is an append-only `Concession`/`ResolutionEvent` with round + rationale; committed reviews remain immutable (M3), transitions are separate records
-- [ ] T6.2 (#28) Convergence scoring: `resolved_claims / total_claims` at debate end → `Outcome.convergence_score`; healthy-band telemetry emitted (feeds 0.2 dashboards); verdict kind derived: all resolved ⇒ candidate-verdict else disputed
+- [x] T6.1 (#27) EvidenceTracker: applies controller events to claim lifecycle (`open→conceded|upheld|resolved`); every transition is an append-only `Concession`/`ResolutionEvent` with round + rationale; committed reviews remain immutable (M3), transitions are separate records
+- [x] T6.2 (#28) Convergence scoring: `resolved_claims / total_claims` at debate end → `Outcome.convergence_score`; healthy-band telemetry emitted (feeds 0.2 dashboards); verdict kind derived: all resolved ⇒ candidate-verdict else disputed
 
 ### WS 6.b — Honesty checks
 
-- [ ] T6.3 (#29) Theater detector: debate with zero state changes (no concessions, no new objections, no evidence shifts) → `theater=true` on Outcome + explicit report flag ([07 §7.2](../../design/prd/07-success-metrics.md)); capitulation-cascade signature (≥80% round-1 concessions, zero rebuttals) flagged separately ([FM-2](../../design/prd/13-failure-modes.md))
-- [ ] T6.4 (#30) Evidence-reference validator: every `evidence_refs[]` must resolve to artifact content blocks; unresolved refs → warning + claim marked `unverified_evidence`; high-severity claim with empty refs rejected at validation ([FM-7](../../design/prd/13-failure-modes.md))
+- [x] T6.3 (#29) Theater detector: debate with zero state changes (no concessions, no new objections, no evidence shifts) → `theater=true` on Outcome + explicit report flag ([07 §7.2](../../design/prd/07-success-metrics.md)); capitulation-cascade signature (≥80% round-1 concessions, zero rebuttals) flagged separately ([FM-2](../../design/prd/13-failure-modes.md))
+- [x] T6.4 (#30) Evidence-reference validator: every `evidence_refs[]` must resolve to artifact content blocks; unresolved refs → warning + claim marked `unverified_evidence`; high-severity claim with empty refs rejected at validation ([FM-7](../../design/prd/13-failure-modes.md))
 
 ## Acceptance criteria / exit gate
 
