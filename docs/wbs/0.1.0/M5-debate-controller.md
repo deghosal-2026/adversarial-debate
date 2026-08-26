@@ -17,13 +17,13 @@ Upstream: M2 (providers), M3 (sessions/gate). Downstream: M6 consumes debate eve
 
 ### WS 5.a — Orchestration
 
-- [ ] T5.1 (#23) DebateController: post-revelation round orchestration; per round builds each reviewer's prompt from (own committed review + other side's claims/objections + outstanding objections to them); termination states: `rounds_exhausted`, `all_resolved`, `budget_exhausted`, `error`
-- [ ] T5.2 (#24) Point-by-point enforcement: validator requires each reviewer response to reference every outstanding objection targeted at them with verdict `conceded | rebutted(with argument) | carried(explicit) ; unaddressed objection → validation failure + one repair retry → else round marked error`
+- [x] T5.1 (#23) DebateController: post-revelation round orchestration; per round builds each reviewer's prompt from (own committed review + other side's claims/objections + outstanding objections to them); termination states: `rounds_exhausted`, `all_resolved`, `budget_exhausted`, `error`
+- [x] T5.2 (#24) Point-by-point enforcement: validator requires each reviewer response to reference every outstanding objection targeted at them with verdict `conceded | rebutted(with argument) | carried(explicit) ; unaddressed objection → validation failure + one repair retry → else round marked error`
 
 ### WS 5.b — Caps & health
 
-- [ ] T5.3 (#25) Caps: max claims per review (default 20), max messages per round, per-artifact token budget hook (enforced with M8; interface here); excess claims dropped with warning event ([FM-6 asymmetric effort guardrail](../../design/prd/13-failure-modes.md))
-- [ ] T5.4 (#26) Degradation detector ([FM-9](../../design/prd/13-failure-modes.md)): repetition/truncation/refusal heuristics on reviewer messages → mark message+round `degraded`; degraded rounds surface in report header; option to resume with different model
+- [x] T5.3 (#25) Caps: max claims per review (default 20), max messages per round, per-artifact token budget hook (enforced with M8; interface here); excess claims dropped with warning event ([FM-6 asymmetric effort guardrail](../../design/prd/13-failure-modes.md))
+- [x] T5.4 (#26) Degradation detector ([FM-9](../../design/prd/13-failure-modes.md)): repetition/truncation/refusal heuristics on reviewer messages → mark message+round `degraded`; degraded rounds surface in report header; option to resume with different model
 
 ## Acceptance criteria / exit gate
 

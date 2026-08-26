@@ -1,0 +1,96 @@
+scenarios:
+  - scenario_id: "debate_converge_a"
+    description: "Side A concedes during debate"
+    match:
+      artifact_prefix: "art_debate_converge"
+    output:
+      raw_text: "CONCEDED on cl_001. REBUTTED on cl_002."
+      claims:
+        - id: "cl_001"
+          review_id: "rev_debate_converge_A"
+          text: "Unvalidated input in user creation endpoint"
+          severity: "high"
+          evidence_refs: ["src/users.py:42-45"]
+          status: "open"
+      risks: []
+      confidence: 0.78
+
+  - scenario_id: "debate_converge_b"
+    description: "Side B concedes during debate"
+    match:
+      artifact_prefix: "art_debate_converge"
+    output:
+      raw_text: "CONCEDED on cl_003. REBUTTED on cl_004."
+      claims:
+        - id: "cl_003"
+          review_id: "rev_debate_converge_B"
+          text: "Missing error handling for database connection"
+          severity: "medium"
+          evidence_refs: ["src/db.py:10-15"]
+          status: "open"
+      risks: []
+      confidence: 0.85
+
+  - scenario_id: "debate_hold_a"
+    description: "Side A holds position during debate"
+    match:
+      artifact_prefix: "art_debate_hold"
+    output:
+      raw_text: "CARRIED on cl_001. CARRIED on cl_002."
+      claims:
+        - id: "cl_001"
+          review_id: "rev_debate_hold_A"
+          text: "XSS vulnerability in search endpoint"
+          severity: "high"
+          evidence_refs: ["src/search.py:22-25"]
+          status: "open"
+      risks: []
+      confidence: 0.9
+
+  - scenario_id: "debate_hold_b"
+    description: "Side B holds position during debate"
+    match:
+      artifact_prefix: "art_debate_hold"
+    output:
+      raw_text: "CARRIED on cl_003. REBUTTED on cl_004."
+      claims:
+        - id: "cl_003"
+          review_id: "rev_debate_hold_B"
+          text: "Rate limiting missing on API endpoint"
+          severity: "medium"
+          evidence_refs: ["src/api.py:5-8"]
+          status: "open"
+      risks: []
+      confidence: 0.7
+
+  - scenario_id: "debate_capitulate_a"
+    description: "Side A capitulates — concedes everything"
+    match:
+      artifact_prefix: "art_debate_capitulate"
+    output:
+      raw_text: "CONCEDED on cl_001. CONCEDED on cl_002."
+      claims:
+        - id: "cl_001"
+          review_id: "rev_debate_capitulate_A"
+          text: "Hardcoded secret in config"
+          severity: "high"
+          evidence_refs: ["src/config.py:1"]
+          status: "open"
+      risks: []
+      confidence: 0.6
+
+  - scenario_id: "debate_capitulate_b"
+    description: "Side B holds during capitulation test"
+    match:
+      artifact_prefix: "art_debate_capitulate"
+    output:
+      raw_text: "REBUTTED."
+      claims:
+        - id: "cl_003"
+          review_id: "rev_debate_capitulate_B"
+          text: "No tests for new feature"
+          severity: "low"
+          evidence_refs: []
+          status: "open"
+      risks: []
+      confidence: 0.5
