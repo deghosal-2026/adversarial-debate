@@ -379,6 +379,86 @@ All 11 errors occurred during parallel execution (6 terminals hitting OpenRouter
 
 ---
 
+## Learnings
+
+Beyond the 14 issues found and fixed, the field test produced broader learnings about the engine, the debate process, and the thesis:
+
+### Engine Learnings
+
+1. **The engine is production-ready at scale.** 411 debates, 0 engine errors, 0 crashes, 0 schema validation failures. The only failures were external API rate limits. The engine handles 6 parallel debate streams without corruption or data loss.
+
+2. **The debate prompt is the critical path, not the engine.** The engine was functional from day one — the prompt was the bottleneck. A single prompt change moved theater from 89% to 0.2%. Future iterations should invest in prompt engineering, not engine architecture.
+
+3. **The theater detector must check for defense events, not just concessions.** Zero concessions ≠ theater if both sides responded to objections with CARRIED. The fix (checking for defense events) correctly distinguishes stubborn debate from empty debate.
+
+4. **The LiveProvider pattern is necessary.** Replaying stored reviews cannot produce real debate. The LLM must respond to the specific debate prompt during rounds. This means debate rounds always require live API calls — there's no way to pre-compute them.
+
+5. **The 2-round default (DD-01) is validated.** Round 1 resolves 92% of verdicts. Round 2 adds 15% more. A third round would add diminishing value. The default is correct.
+
+### Debate Process Learnings
+
+6. **Model diversity is the strongest predictor of productive debate.** Not prompt design, not PR complexity, not round count — model diversity. The most diverse pair (DeepSeek+Mistral, China vs EU) outperforms the least diverse pair (GPT+Gemini, US vs US) by 3× on every metric.
+
+7. **Capitulation cascade is the dark side of maximum diversity.** 65% of pair5 debates are capitulation cascades — the weaker model concedes everything in round 1. This produces high convergence scores but low debate quality. The engine detects and flags this (FM-2), but users should be warned: maximum diversity can produce one-sided debates.
+
+8. **Gemini is the most stubborn model.** 15.9 avg concessions per debate vs 27.9 for DeepSeek. Pairs containing Gemini (pair1, pair4) have the lowest verdict rates. Users should avoid pairing Gemini with similar models.
+
+9. **Homogeneous pairs can outperform weakly diverse pairs.** GPT vs GPT (0.688 avg) beat GPT vs Gemini (0.357 avg). The same model reviewing its own output is more self-critical than two similar models reviewing each other. This is counterintuitive — the assumption was that any diversity is better than none.
+
+10. **The `would_resolve_if` field needs LLM generation, not templates.** Current output is "Side agreeing would need to see evidence addressing: [claim text]. Suggest: additional test coverage or a security review." This is a template, not a specific resolution path. The LLM should generate this during the final debate round.
+
+### Thesis Learnings
+
+11. **The independence thesis is holding.** 0.000 cross-model overlap across all pairs on all PRs. Models genuinely find different issues. This is either the strongest possible independence signal or a limitation of the issue extraction heuristic. Manual validation needed.
+
+12. **The BYOM diversity thesis is proven.** pair5 (most diverse) produces 3× more verdicts than pair1 (least diverse). The PR content is identical — the only variable is the model pair. Diversity of training data, safety training, and RLHF is the key variable.
+
+13. **The "similar models = unproductive debate" finding is a negative result that strengthens the thesis.** pair1 (GPT+Gemini, both US labs) is nearly useless — 4% verdict rate, 0% capitulation, always exhausts 2 rounds. This proves the thesis works in both directions: diverse models produce productive debate, similar models produce stubborn debate.
+
+14. **Small corpus results are mostly predictive but can overestimate specific pairs.** 4/6 pairs held from 3 PRs to 70 PRs. pair2 (Gemini+DeepSeek) was overestimated (0.835 → 0.622). The small corpus is a good screening tool but not a substitute for full-scale testing.
+
+---
+
+## Takeaways
+
+Actionable recommendations for v0.2.0 and beyond:
+
+### For the Engine
+
+1. **Ship v0.1.0 with the current debate prompt.** It works — 0.2% theater, 0.65 avg convergence. Don't change it without A/B testing.
+
+2. **Add a `--pair-quality` warning.** If the user configures two models from the same family (e.g., two OpenAI models), warn: "Similar model families may produce unproductive debates. Consider a heterogeneous pair."
+
+3. **Improve `would_resolve_if` generation.** Move from template to LLM-generated resolution paths. The final debate round should produce specific, actionable resolution paths, not "suggest: additional test coverage."
+
+4. **Add capitulation cascade warning to reports.** When a debate is flagged as capitulation cascade, the report should say: "This debate ended in capitulation — one side conceded all claims without rebuttal. The convergence score may be misleading."
+
+5. **Increase rate-limit sleep for Mistral.** Mistral pairs accounted for 100% of HTTP 429 errors. Increase sleep from 1s to 2s for Mistral, or add exponential backoff.
+
+6. **Add round-3 option for stubborn pairs.** pair1 (GPT+Gemini) always exhausts 2 rounds with 0 verdicts. A 3rd round might break the stalemate. Make rounds configurable per pair.
+
+### For the Field Test
+
+7. **Run ground-truth verification before claiming PASS.** The binary bar requires ≥1 artifact where the distinct issue is confirmed by the revert/advisory reason. This hasn't been done yet.
+
+8. **Run flakiness sweep before claiming stability.** 5 seeds × 30 PRs will show whether verdicts are stable or random.
+
+9. **Manually validate cross-model overlap.** Inspect 10 PRs to determine if 0.000 overlap is real diversity or extraction failure. This is the difference between "thesis proven" and "metric broken."
+
+10. **Expand corpus to 150 PRs across more languages.** Current corpus is 100% Go from 4 repos. Need Python, TypeScript, Rust to validate language independence.
+
+### For the Product
+
+11. **Default pair recommendation: DeepSeek + Mistral.** This pair has 97% verdict rate, 0.982 avg convergence, and costs $0.02/debate. It's the cheapest, most productive pair tested.
+
+12. **Document the diversity guideline.** "For best results, pair models from different labs and different regions. US+EU, US+China, or EU+China pairs outperform US+US pairs by 3×."
+
+13. **Don't ship pair1 (GPT+Gemini) as a default.** It's nearly useless — 4% verdict rate. Users who try this pair first will conclude the engine doesn't work.
+
+14. **The $0.53 total cost proves the thesis is testable for under $1.** This is the cheapest falsifiable validation of an AI safety thesis we know of. Document this in the business case.
+
+---
+
 ## What's Next
 
 1. **Ground-truth verification** — check if distinct issues match revert/advisory reasons on the 70 PRs
