@@ -1,0 +1,46 @@
+{
+  "additions": 3,
+  "author": {
+    "id": "MDQ6VXNlcjIzNDg5MQ==",
+    "is_bot": false,
+    "login": "ekalinin",
+    "name": "Eugene Kalinin"
+  },
+  "body": "`scripts/check-go-mod-version.sh` asks go.dev which Go versions are still supported upstream and requires the `test_go_oldest` job to run on the oldest of them. Go 1.27 was released today, so that is now 1.26 while the job still pins `golang-builder:1.25-base`:\n\n```\nChecking CI workflow test_go_oldest uses N-1 Go version\nError: test_go_oldest uses Go 1.25, but should use Go 1.26 (oldest supported version)\nmake: *** [Makefile:211: check-go-mod-version] Error 1\n```\n\nThe check runs as part of `make test`, so `Go tests` and `Go tests with previous Go version` fail on every pull request and will fail on main on its next run. Nothing in the tree changed - the answer from go.dev did.\n\nThe remaining jobs stay on 1.26: `quay.io/prometheus/golang-builder:1.27-base` is not published yet, so bumping them has to wait. The comment above the image is updated to state the rule the script actually enforces, as the job now runs the same version as `test_go` until that image lands.\n\n`go.mod` is untouched: the script only rejects a `go` directive newer than the oldest supported version, and 1.25.10 is older.\n\n```release-notes\nNONE\n```\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABP_wWdg",
+      "author": {
+        "login": "roidelapluie"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Thanks!",
+      "createdAt": "2026-08-21T10:05:57Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "HEART",
+          "users": {
+            "totalCount": 1
+          }
+        },
+        {
+          "content": "ROCKET",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/prometheus/prometheus/pull/19465#issuecomment-5368452726",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 2,
+  "labels": [],
+  "mergedAt": "2026-08-21T10:05:49Z",
+  "state": "MERGED",
+  "title": "ci: run the oldest Go tests on 1.26"
+}

@@ -1,0 +1,48 @@
+{
+  "additions": 165,
+  "author": {
+    "id": "MDQ6VXNlcjI5MTc1MA==",
+    "is_bot": false,
+    "login": "roidelapluie",
+    "name": "Julien"
+  },
+  "body": "Unix socket scrape support passes the socket path to a shared HTTP client's\r\n`DialContext` via the request context. But the transport keys idle connections\r\non scheme and `host:port` only, so two targets sharing the same `__address__`\r\nwith different `__scrape_unix_socket__` paths can reuse each other's pooled\r\nconnections and scrape the wrong endpoint. The same applies to a plain TCP\r\ntarget sharing that address.\r\n\r\nThis gives each unix socket path its own scrape client, cached per scrape pool\r\nand rebuilt on reload.\r\n\r\nFirst commit adds a failing test exposing the mix-up, second one fixes it.\r\n<!--\r\n    - Please give your PR a title in the form \"area: short description\".  For example \"tsdb: reduce disk usage by 95%\"\r\n\r\n    - Please sign CNCF's Developer Certificate of Origin and sign-off your commits by adding the -s / --signoff flag to `git commit`. See https://github.com/apps/dco for more information.\r\n\r\n    - If the PR adds or changes a behaviour or fixes a bug of an exported API it would need a unit/e2e test.\r\n\r\n    - Where possible use only exported APIs for tests to simplify the review and make it as close as possible to an actual library usage.\r\n\r\n    - Performance improvements would need a benchmark test to prove it.\r\n\r\n    - All exposed objects should have a comment.\r\n\r\n    - All comments should start with a capital letter and end with a full stop.\r\n -->\r\n\r\n#### Which issue(s) does the PR fix:\r\n<!--\r\nIf it applies.\r\nAutomatically closes linked issue when PR is merged.\r\nUsage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.\r\nMore at https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword\r\n-->\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n*Reviewers should verify clarity and quality.*\r\n\r\n<!--\r\nWrite NONE only if there is no user-facing change.\r\n\r\nOtherwise use one of: [FEATURE] [ENHANCEMENT] [PERF] [BUGFIX] [SECURITY] [CHANGE]\r\nFollowing the pattern `[TYPE] Component: description.`\r\n\r\nExample: [FEATURE] API: Add `/api/v1/features` endpoint.\r\n\r\nRefer to the existing CHANGELOG for inspiration:  https://github.com/prometheus/\r\nprometheus/blob/main/CHANGELOG.md\r\n-->\r\n```release-notes\r\nNONE\r\n```\r\n",
+  "changedFiles": 2,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABOnFiDg",
+      "author": {
+        "login": "aamoghS"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "**Validate.**\r\n\r\nUnix-socket scrapes stuffing the path into request context while the transport still pools by `scheme` + `host:port` is a real mix-up: two `__scrape_unix_socket__` values (or a TCP target) sharing `__address__` can reuse the wrong idle connection. A dedicated client per socket path, with a failing test first, is the right shape. `NONE` is a bit tight for a scrape correctness fix; `[BUGFIX] Scrape: do not reuse HTTP connections across different Unix socket paths.` would be clearer.\r\n",
+      "createdAt": "2026-08-13T03:10:03Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19399#issuecomment-5275476494",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABO50zuQ",
+      "author": {
+        "login": "roidelapluie"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "I set NONE in CHANGELOG since that has not been released yet.\r\n",
+      "createdAt": "2026-08-14T15:30:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19399#issuecomment-5295125433",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 32,
+  "labels": [],
+  "mergedAt": "2026-08-14T15:39:48Z",
+  "state": "MERGED",
+  "title": "scrape: use a dedicated HTTP client per unix socket target"
+}

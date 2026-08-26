@@ -1,0 +1,17 @@
+{
+  "additions": 37,
+  "author": {
+    "id": "MDQ6VXNlcjU2NTg5NDQ=",
+    "is_bot": false,
+    "login": "serhiy-bzhezytskyy",
+    "name": "Serhiy Bzhezytskyy"
+  },
+  "body": "`go test -shuffle` can kill the `scrape` test run: the process aborts, no test is reported as failing, and CI never sees it because `-shuffle` is in no workflow. One in-bubble name lookup is enough to arm it \u2014 `TestScrapeOffsetDistribution` resolves the host's FQDN from inside a `synctest` bubble, and any later lookup from outside aborts the process. The root cause is in Go's `net`, which I reported as golang/go#80903 and sent a fix for as golang/go#80906 \u2014 and that upstream fix does not remove the need for this change.\n\n`skipJitterOffsetting` would keep the lookup out, but it also zeroes each scrape loop's offset \u2014 exactly what this test asserts, which is why it cannot use the synctest helper. So the FQDN gets its own private option, in the same shape: the helper and that one test supply a fixed value, the offset seed stays real, and no lookup happens inside a bubble.\n\nVerified against the twelve configurations that were fatal on `main` rather than a fresh set \u2014 four shuffle seeds of the whole package, and eight pairings of this test with another that resolves, each at its own fatal seed \u2014 and all twelve pass here. Instrumented, no `GetFQDN` call has `synctest` on the stack, against one on `main`. The new test fails if the helper stops setting the option; I checked by removing the line.\n\nWhat it does not cover: the option is set directly in `TestScrapeOffsetDistribution`, so nothing catches its removal there, and the crash that would return is one CI cannot see.\n\nUpstream covers two of the three channels `net` creates lazily; the third, `net.threadLimit`, takes its capacity from `rlim.Cur`, so it cannot be created eagerly \u2014 and with the other two fixed, the default resolver path here still aborts.\n\ncc @krajorama\n\n#### Which issue(s) does the PR fix:\n\nFixes #19439\n\n#### Release notes for end users (**ALL** commits must be considered).\n\n```release-notes\nNONE\n```\n",
+  "changedFiles": 4,
+  "comments": [],
+  "deletions": 3,
+  "labels": [],
+  "mergedAt": "2026-08-18T08:16:41Z",
+  "state": "MERGED",
+  "title": "scrape: keep the FQDN lookup out of synctest bubbles"
+}

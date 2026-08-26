@@ -1,0 +1,141 @@
+diff --git a/model/textparse/benchmark_test.go b/model/textparse/benchmark_test.go
+index cf63dad260c..60c48aa56d4 100644
+--- a/model/textparse/benchmark_test.go
++++ b/model/textparse/benchmark_test.go
+@@ -129,8 +129,9 @@ func BenchmarkParseOpenMetricsNHCB(b *testing.B) {
+ 	data := readTestdataFile(b, "1histogram.om.txt")
+ 
+ 	for _, parser := range []string{
+-		"omtext",           // Measure OM parser baseline for histograms.
+-		"omtext_with_nhcb", // Measure NHCB over OM parser.
++		"omtext",              // Measure OM parser baseline for histograms.
++		"omtext_with_nhcb",    // Measure NHCB over OM parser without ST parsing.
++		"omtext_with_nhcb_st", // Measure NHCB over OM parser with ST parsing enabled.
+ 	} {
+ 		b.Run(fmt.Sprintf("parser=%v", parser), func(b *testing.B) {
+ 			benchParse(b, data, parser)
+@@ -161,6 +162,15 @@ func benchParse(b *testing.B, data []byte, parser string) {
+ 			require.NoError(b, err)
+ 			return p
+ 		}
++	case "omtext_with_nhcb_st":
++		newParserFn = func(buf []byte, st *labels.SymbolTable) Parser {
++			p, err := New(buf, "application/openmetrics-text", st, ParserOptions{
++				ConvertClassicHistogramsToNHCB: true,
++				OpenMetricsSkipSTSeries:        true,
++			})
++			require.NoError(b, err)
++			return p
++		}
+ 	default:
+ 		b.Fatal("unknown parser", parser)
+ 	}
+diff --git a/model/textparse/interface.go b/model/textparse/interface.go
+index d2a3c94e2f6..4a4e719d420 100644
+--- a/model/textparse/interface.go
++++ b/model/textparse/interface.go
+@@ -194,7 +194,10 @@ func New(b []byte, contentType string, st *labels.SymbolTable, opts ParserOption
+ 	}
+ 
+ 	if baseParser != nil && opts.ConvertClassicHistogramsToNHCB {
+-		baseParser = NewNHCBParser(baseParser, st, opts.KeepClassicOnClassicAndNativeHistograms)
++		// OpenMetricsSkipSTSeries is set to true when the scrape loop
++		// wants start timestamps. NHCBParser uses it to decide if
++		// StartTimestamp calls are necessary.
++		baseParser = NewNHCBParser(baseParser, st, opts.KeepClassicOnClassicAndNativeHistograms, opts.OpenMetricsSkipSTSeries)
+ 	}
+ 
+ 	return baseParser, err
+diff --git a/model/textparse/nhcbparse.go b/model/textparse/nhcbparse.go
+index 3a5288f22a2..ed5f98dc31d 100644
+--- a/model/textparse/nhcbparse.go
++++ b/model/textparse/nhcbparse.go
+@@ -52,6 +52,9 @@ type NHCBParser struct {
+ 	parser Parser
+ 	// Option to keep classic histograms along with converted histograms.
+ 	keepClassicHistograms bool
++	// parseST tells if the caller needs start timestamps. When false,
++	// StartTimestamp calls are skipped because they are expensive.
++	parseST bool
+ 
+ 	// Labels builder.
+ 	builder labels.ScratchBuilder
+@@ -103,10 +106,11 @@ type NHCBParser struct {
+ 	hBuffer []byte
+ }
+ 
+-func NewNHCBParser(p Parser, st *labels.SymbolTable, keepClassicHistograms bool) Parser {
++func NewNHCBParser(p Parser, st *labels.SymbolTable, keepClassicHistograms, parseST bool) Parser {
+ 	return &NHCBParser{
+ 		parser:                p,
+ 		keepClassicHistograms: keepClassicHistograms,
++		parseST:               parseST,
+ 		builder:               labels.NewScratchBuilderWithSymbolTable(st, 16),
+ 		tempNHCB:              convertnhcb.NewTempHistogram(),
+ 	}
+@@ -319,7 +323,11 @@ func (p *NHCBParser) handleClassicHistogramSeries(lset labels.Labels) bool {
+ func (p *NHCBParser) processClassicHistogramSeries(lset labels.Labels, name string, updateHist func(*convertnhcb.TempHistogram)) {
+ 	if p.state != stateCollecting {
+ 		p.storeClassicLabels(name)
+-		p.tempST = p.parser.StartTimestamp()
++		if p.parseST {
++			p.tempST = p.parser.StartTimestamp()
++		} else {
++			p.tempST = 0
++		}
+ 		p.state = stateCollecting
+ 		p.tempLsetNHCB = convertnhcb.GetHistogramMetricBase(lset, name)
+ 	}
+diff --git a/model/textparse/nhcbparse_test.go b/model/textparse/nhcbparse_test.go
+index 43afe3de34f..8f1a9d771a5 100644
+--- a/model/textparse/nhcbparse_test.go
++++ b/model/textparse/nhcbparse_test.go
+@@ -443,7 +443,10 @@ foobar{quantile="0.99"} 150.1`
+ 		},
+ 	}
+ 
+-	p, err := New([]byte(input), "application/openmetrics-text", labels.NewSymbolTable(), ParserOptions{ConvertClassicHistogramsToNHCB: true})
++	p, err := New([]byte(input), "application/openmetrics-text", labels.NewSymbolTable(), ParserOptions{
++		ConvertClassicHistogramsToNHCB: true,
++		OpenMetricsSkipSTSeries:        true,
++	})
+ 	require.NoError(t, err)
+ 	require.NotNil(t, p)
+ 	got := testParse(t, p)
+@@ -603,7 +606,11 @@ func TestNHCBParser_NoNHCBWhenExponential(t *testing.T) {
+ 		func() (string, parserFactory, []int, parserOptions) {
+ 			factory := func(keepClassic, nhcb bool) (Parser, error) {
+ 				input := createTestOpenMetricsHistogram()
+-				return New([]byte(input), "application/openmetrics-text", labels.NewSymbolTable(), ParserOptions{KeepClassicOnClassicAndNativeHistograms: keepClassic, ConvertClassicHistogramsToNHCB: nhcb})
++				return New([]byte(input), "application/openmetrics-text", labels.NewSymbolTable(), ParserOptions{
++					KeepClassicOnClassicAndNativeHistograms: keepClassic,
++					ConvertClassicHistogramsToNHCB:          nhcb,
++					OpenMetricsSkipSTSeries:                 true,
++				})
+ 			}
+ 			return "OpenMetrics", factory, []int{1}, parserOptions{hasStartTimestamp: true}
+ 		},
+@@ -956,7 +963,10 @@ something_bucket{a="b",le="+Inf"} 9
+ 		},
+ 	}
+ 
+-	p, err := New([]byte(input), "application/openmetrics-text", labels.NewSymbolTable(), ParserOptions{ConvertClassicHistogramsToNHCB: true})
++	p, err := New([]byte(input), "application/openmetrics-text", labels.NewSymbolTable(), ParserOptions{
++		ConvertClassicHistogramsToNHCB: true,
++		OpenMetricsSkipSTSeries:        true,
++	})
+ 	require.NoError(t, err)
+ 	require.NotNil(t, p)
+ 	got := testParse(t, p)
+@@ -1087,7 +1097,10 @@ metric: <
+ 		},
+ 	}
+ 
+-	p, err := New(buf.Bytes(), "application/vnd.google.protobuf", labels.NewSymbolTable(), ParserOptions{ConvertClassicHistogramsToNHCB: true})
++	p, err := New(buf.Bytes(), "application/vnd.google.protobuf", labels.NewSymbolTable(), ParserOptions{
++		ConvertClassicHistogramsToNHCB: true,
++		OpenMetricsSkipSTSeries:        true,
++	})
+ 	require.NoError(t, err)
+ 	require.NotNil(t, p)
+ 	got := testParse(t, p)

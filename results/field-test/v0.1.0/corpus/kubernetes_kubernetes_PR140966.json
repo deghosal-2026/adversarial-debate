@@ -1,0 +1,310 @@
+{
+  "additions": 28,
+  "author": {
+    "id": "MDQ6VXNlcjcwMjIxMzk5",
+    "is_bot": false,
+    "login": "alancaldelas",
+    "name": ""
+  },
+  "body": "#### What type of PR is this?\n\n/kind bug\n\n#### What this PR does / why we need it:\n\n#134827 added two methods to the `cache.Store` interface \u2014 `Bookmark(rv string)` and `LastStoreSyncResourceVersion() string` \u2014 but did not update `FakeCustomStore`, so the fake no longer satisfies `cache.Store` and downstream test code that passes a `FakeCustomStore` where a `Store` is expected fails to compile:\n\n```\ncannot use &cache.FakeCustomStore{...} (value of type *cache.FakeCustomStore) as cache.Store value:\n\t*cache.FakeCustomStore does not implement cache.Store (missing method Bookmark)\n```\n\nThis adds the two missing func fields and delegating methods (no-op / `\"\"` when the func is nil), following the file's existing pattern. Backward compatible: existing struct literals keep compiling unchanged.\n\n#### Which issue(s) this PR fixes:\n\nFixes #140965\n\n#### Special notes for your reviewer:\n\nHit in the wild during KubeVirt's bump to client-go v0.36.2 (kubevirt/kubevirt#18315), which had to carry a local wrapper to keep its test suite compiling.\n\n#### Does this PR introduce a user-facing change?\n\n```release-note\nclient-go: FakeCustomStore implements the Bookmark and LastStoreSyncResourceVersion methods added to the cache.Store interface in v0.36, so it satisfies cache.Store again\n```\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABL6aLRA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-27T17:11:43Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5094411076",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL6aMyw",
+      "author": {
+        "login": "linux-foundation-easycla"
+      },
+      "authorAssociation": "NONE",
+      "body": "<a href=\"https://easycla.lfx.linuxfoundation.org/#/?version=2\"><img src=\"https://s3.amazonaws.com/cla-project-logo-prod/cla-signed.svg?v=2\" alt=\"CLA Signed\" align=\"left\" height=\"28\" width=\"328\" ></a><br >The committers listed above are authorized under a signed CLA.<ul><li>:white_check_mark: login: alancaldelas / name: alancaldelas (9ac98af40ac49ff7641dd54ad63562f30e315920)</li></ul>",
+      "createdAt": "2026-07-27T17:11:45Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5094411467",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL6aOeQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-07-27T17:11:48Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5094411897",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL6aOqw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Welcome @alancaldelas! <br><br>It looks like this is your first PR to <a href='https://github.com/kubernetes/kubernetes'>kubernetes/kubernetes</a> \ud83c\udf89. Please refer to our [pull request process documentation](https://www.kubernetes.dev/docs/guide/pull-requests/) to help your PR have a smooth ride to approval. <br><br>You will be prompted by a bot to use commands during the review process. Do not be afraid to follow the prompts! It is okay to experiment. [Here is the bot commands documentation](https://go.k8s.io/bot-commands). <br><br>You can also check if kubernetes/kubernetes has [its own contribution guidelines](https://github.com/kubernetes/kubernetes/tree/master/CONTRIBUTING.md). <br><br>You may want to refer to our [testing guide](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md) if you run into trouble with your tests not passing. <br><br>If you are having difficulty getting your pull request seen, please follow the [recommended escalation practices](https://www.kubernetes.dev/docs/guide/pull-requests/#why-is-my-pull-request-not-getting-reviewed). Also, for tips and tricks in the contribution process you may want to read the [Kubernetes contributor cheat sheet](https://www.kubernetes.dev/docs/contributor-cheatsheet/). We want to make sure your contribution gets all the attention it needs! <br><br>Thank you, and welcome to Kubernetes. :smiley:",
+      "createdAt": "2026-07-27T17:11:48Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5094411947",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL6aPJg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Hi @alancaldelas. Thanks for your PR.\n\nI'm waiting for a [kubernetes](https://github.com/orgs/kubernetes/people) member to verify that this patch is reasonable to test. If it is, they should reply with `/ok-to-test` on its own line. Until that is done, I will not automatically test new commits in this PR, but the usual testing commands by org members will still work.\n\nRegular contributors should [join the org](https://git.k8s.io/community/community-membership.md#member) to skip this step.\n\nOnce the patch is verified, the new status will be reflected by the `ok-to-test` label.\n\nI understand the commands that are listed [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>\n",
+      "createdAt": "2026-07-27T17:11:49Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5094412070",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL8koSA",
+      "author": {
+        "login": "alancaldelas"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/assign @wojtek-t",
+      "createdAt": "2026-07-27T20:50:46Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5096679496",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL8wI9g",
+      "author": {
+        "login": "alaypatel07"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/ok-to-test",
+      "createdAt": "2026-07-27T21:11:46Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5096868086",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL9PDIQ",
+      "author": {
+        "login": "alaypatel07"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/lgtm",
+      "createdAt": "2026-07-27T22:12:39Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5097374497",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL9PG_w",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 68b222c577b606a60c0d4db5b190cc7b7dc0187c</details>",
+      "createdAt": "2026-07-27T22:12:48Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5097375487",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL9bKhQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/assign @liggitt ",
+      "createdAt": "2026-07-27T22:39:17Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5097572997",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMEPU_A",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "this needs to go into 1.37, please add the type assertion and then we'll merge it",
+      "createdAt": "2026-07-28T13:24:30Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5104719100",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMFcwRw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "@alancaldelas can you please confirm you are able to make the change suggested by @liggitt ",
+      "createdAt": "2026-07-28T15:13:36Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5105987655",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMGlYbQ",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm\r\n/approve",
+      "createdAt": "2026-07-28T16:55:37Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5107177581",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMGlpzA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/140966#\" title=\"Author self-approved\">alancaldelas</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5107177581\" title=\"Approved\">liggitt</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[staging/src/k8s.io/client-go/tools/cache/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/cache/OWNERS)~~ [liggitt]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-28T16:56:00Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5107182028",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMHfzwg",
+      "author": {
+        "login": "alancaldelas"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> @alancaldelas can you please confirm you are able to make the change suggested by @liggitt \r\n\r\nYes we are good to go",
+      "createdAt": "2026-07-28T18:25:36Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140966#issuecomment-5108134850",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 9,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTM4MzU=",
+      "name": "sig/api-machinery",
+      "description": "Categorizes an issue or PR as relevant to SIG API Machinery.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyMDAxNDk4MzM=",
+      "name": "release-note",
+      "description": "Denotes a PR that will be considered when it comes time to generate release notes.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA5MzQ=",
+      "name": "size/M",
+      "description": "Denotes a PR that changes 30-99 lines, ignoring generated files.",
+      "color": "eebb00"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0MzU2NjcwMzg=",
+      "name": "release-blocker",
+      "description": "",
+      "color": "d93f0b"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWwxMDg2Nzg3MjYw",
+      "name": "ok-to-test",
+      "description": "Indicates a non-member PR verified by an org member that is safe to test.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-07-28T18:32:08Z",
+  "state": "MERGED",
+  "title": "client-go: restore FakeCustomStore conformance to cache.Store"
+}

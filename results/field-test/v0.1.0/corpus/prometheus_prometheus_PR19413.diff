@@ -1,0 +1,63 @@
+diff --git a/promql/info.go b/promql/info.go
+index 8955d077e09..c5a2d0f1344 100644
+--- a/promql/info.go
++++ b/promql/info.go
+@@ -366,7 +366,7 @@ func (ev *evaluator) combineWithInfoSeries(ctx context.Context, mat, infoMat Mat
+ 				}
+ 				ss.ts = ts
+ 			} else {
+-				ss = seriesAndTimestamp{Series{Metric: sample.Metric}, ts}
++				ss = seriesAndTimestamp{Series{Metric: sample.Metric, DropName: sample.DropName}, ts}
+ 			}
+ 			addToSeries(&ss.Series, enh.Ts, sample.F, sample.H, numSteps)
+ 			seriess[h] = ss
+@@ -439,9 +439,10 @@ func (ev *evaluator) combineWithInfoVector(base, info Vector, ignoreSeries map[u
+ 		if _, exists := ignoreSeries[hash]; exists {
+ 			// This series should not be enriched with info metric data labels.
+ 			enh.Out = append(enh.Out, Sample{
+-				Metric: bs.Metric,
+-				F:      bs.F,
+-				H:      bs.H,
++				Metric:   bs.Metric,
++				F:        bs.F,
++				H:        bs.H,
++				DropName: bs.DropName,
+ 			})
+ 			continue
+ 		}
+@@ -511,9 +512,10 @@ func (ev *evaluator) combineWithInfoVector(base, info Vector, ignoreSeries map[u
+ 		})
+ 
+ 		enh.Out = append(enh.Out, Sample{
+-			Metric: enh.lb.Labels(),
+-			F:      bs.F,
+-			H:      bs.H,
++			Metric:   enh.lb.Labels(),
++			F:        bs.F,
++			H:        bs.H,
++			DropName: bs.DropName,
+ 		})
+ 	}
+ 	return enh.Out, nil
+diff --git a/promql/promqltest/testdata/info.test b/promql/promqltest/testdata/info.test
+index 174610f3449..689afec6cd0 100644
+--- a/promql/promqltest/testdata/info.test
++++ b/promql/promqltest/testdata/info.test
+@@ -133,6 +133,17 @@ eval range from 0m to 10m step 5m info(metric, {__name__=~"target_.+", __name__=
+ eval range from 0m to 10m step 5m info(metric, {__name__=~".+_info", __name__!~".*build.*"})
+     metric{instance="a", job="1", label="value", data="info", another_data="another info"} 0 1 2
+ 
++# A metric name dropped by an operation on the base series stays dropped after enrichment.
++# With delayed name removal the name is only flagged for removal, and info() must preserve
++# the flag rather than resurrect the name.
++eval range from 0m to 10m step 5m info(floor(metric))
++    {data="info", instance="a", job="1", label="value", another_data="another info"} 0 1 2
++
++# The same applies to series that pass through unenriched because they are info series
++# themselves.
++eval range from 0m to 10m step 5m info(floor(target_info))
++    {instance="a", job="1", data="info", another_data="another info"} 1 1 1
++
+ clear
+ 
+ # Overlapping target_info series.

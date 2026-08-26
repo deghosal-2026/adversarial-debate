@@ -1,0 +1,242 @@
+diff --git a/promql/parser/generated_parser.y b/promql/parser/generated_parser.y
+index c33f3a693aa..220b27108f6 100644
+--- a/promql/parser/generated_parser.y
++++ b/promql/parser/generated_parser.y
+@@ -1397,12 +1397,7 @@ duration_expr   : number_duration_literal
+ paren_duration_expr : LEFT_PAREN duration_expr RIGHT_PAREN
+                         {
+                             yylex.(*parser).experimentalDurationExpr($2.(Expr))
+-                            if durationExpr, ok := $2.(*DurationExpr); ok {
+-                                durationExpr.Wrapped = true
+-                                $$ = durationExpr
+-                                break
+-                            }
+-                            $$ = $2
++                            $$ = yylex.(*parser).wrapParenDurationExpr($2.(Expr), $1.PositionRange().Start, $3.PositionRange().End)
+                         }
+                 ;
+ 
+diff --git a/promql/parser/generated_parser.y.go b/promql/parser/generated_parser.y.go
+index 17c4833a45d..f7b2224c2dc 100644
+--- a/promql/parser/generated_parser.y.go
++++ b/promql/parser/generated_parser.y.go
+@@ -2541,12 +2541,7 @@ yydefault:
+ 		yyDollar = yyS[yypt-3 : yypt+1]
+ 		{
+ 			yylex.(*parser).experimentalDurationExpr(yyDollar[2].node.(Expr))
+-			if durationExpr, ok := yyDollar[2].node.(*DurationExpr); ok {
+-				durationExpr.Wrapped = true
+-				yyVAL.node = durationExpr
+-				break
+-			}
+-			yyVAL.node = yyDollar[2].node
++			yyVAL.node = yylex.(*parser).wrapParenDurationExpr(yyDollar[2].node.(Expr), yyDollar[1].item.PositionRange().Start, yyDollar[3].item.PositionRange().End)
+ 		}
+ 	}
+ 	goto yystack /* stack new state and value */
+diff --git a/promql/parser/parse.go b/promql/parser/parse.go
+index a56f16ac3aa..be597b81a76 100644
+--- a/promql/parser/parse.go
++++ b/promql/parser/parse.go
+@@ -1214,33 +1214,56 @@ func (p *parser) experimentalDurationExpr(e Expr) {
+ 	}
+ }
+ 
++// wrapParenDurationExpr marks a duration expression as parenthesised so
++// Expr.String() round-trips. A bare *NumberLiteral has no Wrapped flag, so it
++// is wrapped in a unary-plus *DurationExpr (see DurationExpr.writeTo).
++func (*parser) wrapParenDurationExpr(expr Expr, start, end posrange.Pos) Expr {
++	if de, ok := expr.(*DurationExpr); ok {
++		de.Wrapped = true
++		return de
++	}
++	return &DurationExpr{
++		Op:       ADD,
++		RHS:      expr,
++		Wrapped:  true,
++		StartPos: start,
++		EndPos:   end,
++	}
++}
++
+ // applyUnaryOpToDurationExpr applies a unary operator to a duration expression
+ // node, which may be a *DurationExpr or a *NumberLiteral. When wrapped is true
+ // (parenthesised form), the Wrapped flag is set on *DurationExpr nodes.
+ func (p *parser) applyUnaryOpToDurationExpr(op Item, expr Node, wrapped bool) Node {
+-	switch e := expr.(type) {
++	e, ok := expr.(Expr)
++	if !ok {
++		p.addParseErrf(op.PositionRange(), "expected number literal or duration expression")
++		return &NumberLiteral{Val: 0}
++	}
++	if wrapped {
++		pr := e.PositionRange()
++		e = p.wrapParenDurationExpr(e, pr.Start, pr.End)
++	}
++	switch de := e.(type) {
+ 	case *DurationExpr:
+-		if wrapped {
+-			e.Wrapped = true
+-		}
+ 		if op.Typ == SUB {
+ 			return &DurationExpr{
+ 				Op:       SUB,
+-				RHS:      e,
++				RHS:      de,
+ 				StartPos: op.Pos,
+ 			}
+ 		}
+-		return e
++		return de
+ 	case *NumberLiteral:
+ 		if op.Typ == SUB {
+-			e.Val *= -1
++			de.Val *= -1
+ 		}
+-		if durationLiteralOutOfRange(e.Val) {
++		if durationLiteralOutOfRange(de.Val) {
+ 			p.addParseErrf(op.PositionRange(), "duration out of range")
+ 			return &NumberLiteral{Val: 0}
+ 		}
+-		e.PosRange.Start = op.Pos
+-		return e
++		de.PosRange.Start = op.Pos
++		return de
+ 	default:
+ 		p.addParseErrf(op.PositionRange(), "expected number literal or duration expression")
+ 		return &NumberLiteral{Val: 0}
+diff --git a/promql/parser/parse_test.go b/promql/parser/parse_test.go
+index 2ea3b7bf5a7..dcc2d8a3a3b 100644
+--- a/promql/parser/parse_test.go
++++ b/promql/parser/parse_test.go
+@@ -1716,23 +1716,76 @@ var testExpr = []struct {
+ 	{
+ 		input: "foo offset +(5)",
+ 		expected: &VectorSelector{
+-			Name:           "foo",
+-			OriginalOffset: 5 * time.Second,
++			Name: "foo",
+ 			LabelMatchers: []*labels.Matcher{
+ 				MustLabelMatcher(labels.MatchEqual, model.MetricNameLabel, "foo"),
+ 			},
+ 			PosRange: posrange.PositionRange{Start: 0, End: 15},
++			OriginalOffsetExpr: &DurationExpr{
++				Op:       ADD,
++				RHS:      &NumberLiteral{Val: 5, PosRange: posrange.PositionRange{Start: 13, End: 14}},
++				Wrapped:  true,
++				StartPos: 13,
++				EndPos:   14,
++			},
+ 		},
+ 	},
+ 	{
+ 		input: "foo offset -(5)",
+ 		expected: &VectorSelector{
+-			Name:           "foo",
+-			OriginalOffset: -5 * time.Second,
++			Name: "foo",
+ 			LabelMatchers: []*labels.Matcher{
+ 				MustLabelMatcher(labels.MatchEqual, model.MetricNameLabel, "foo"),
+ 			},
+ 			PosRange: posrange.PositionRange{Start: 0, End: 15},
++			OriginalOffsetExpr: &DurationExpr{
++				Op:       SUB,
++				StartPos: 11,
++				RHS: &DurationExpr{
++					Op:       ADD,
++					RHS:      &NumberLiteral{Val: 5, PosRange: posrange.PositionRange{Start: 13, End: 14}},
++					Wrapped:  true,
++					StartPos: 13,
++					EndPos:   14,
++				},
++			},
++		},
++	},
++	{
++		input: "foo offset (5)",
++		expected: &VectorSelector{
++			Name: "foo",
++			LabelMatchers: []*labels.Matcher{
++				MustLabelMatcher(labels.MatchEqual, model.MetricNameLabel, "foo"),
++			},
++			PosRange: posrange.PositionRange{Start: 0, End: 14},
++			OriginalOffsetExpr: &DurationExpr{
++				Op:       ADD,
++				RHS:      &NumberLiteral{Val: 5, PosRange: posrange.PositionRange{Start: 12, End: 13}},
++				Wrapped:  true,
++				StartPos: 11,
++				EndPos:   14,
++			},
++		},
++	},
++	{
++		input: "foo[(5s)]",
++		expected: &MatrixSelector{
++			VectorSelector: &VectorSelector{
++				Name: "foo",
++				LabelMatchers: []*labels.Matcher{
++					MustLabelMatcher(labels.MatchEqual, model.MetricNameLabel, "foo"),
++				},
++				PosRange: posrange.PositionRange{Start: 0, End: 3},
++			},
++			RangeExpr: &DurationExpr{
++				Op:       ADD,
++				RHS:      &NumberLiteral{Val: 5, Duration: true, PosRange: posrange.PositionRange{Start: 5, End: 7}},
++				Wrapped:  true,
++				StartPos: 4,
++				EndPos:   8,
++			},
++			EndPos: 9,
+ 		},
+ 	},
+ 	{
+diff --git a/promql/parser/prettier.go b/promql/parser/prettier.go
+index 4b9ee17c1fd..980293ceedc 100644
+--- a/promql/parser/prettier.go
++++ b/promql/parser/prettier.go
+@@ -82,8 +82,13 @@ func (e *BinaryExpr) Pretty(level int) string {
+ func (e *DurationExpr) Pretty(int) string {
+ 	var s string
+ 	if e.LHS == nil {
+-		// This is a unary duration expression.
+-		s = fmt.Sprintf("%s%s", e.Op, e.RHS.Pretty(0))
++		// Unary plus is not printed, matching String(), so a parenthesised
++		// number lifted into a unary-plus DurationExpr round-trips as (5).
++		if e.Op == ADD && e.RHS != nil {
++			s = e.RHS.Pretty(0)
++		} else {
++			s = fmt.Sprintf("%s%s", e.Op, e.RHS.Pretty(0))
++		}
+ 	} else {
+ 		s = fmt.Sprintf("%s %s %s", e.LHS.Pretty(0), e.Op, e.RHS.Pretty(0))
+ 	}
+diff --git a/promql/parser/printer_test.go b/promql/parser/printer_test.go
+index 8be35d9a48c..4b39c92e97b 100644
+--- a/promql/parser/printer_test.go
++++ b/promql/parser/printer_test.go
+@@ -270,8 +270,23 @@ func TestExprString(t *testing.T) {
+ 			in: "foo offset -(step())",
+ 		},
+ 		{
+-			in:  "foo offset +(5*2)",
+-			out: "foo offset (5 * 2)",
++			in:  "foo offset +(5)",
++			out: "foo offset (5)",
++		},
++		{
++			in: "foo offset -(5)",
++		},
++		{
++			in: "foo offset (5)",
++		},
++		{
++			in: "foo offset (5m)",
++		},
++		{
++			in: "foo[(5s)]",
++		},
++		{
++			in: "foo[(5m):(1m)]",
+ 		},
+ 		{
+ 			in:  "foo offset +min_of(10s, 20s)",

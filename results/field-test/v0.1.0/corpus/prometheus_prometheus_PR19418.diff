@@ -1,0 +1,131 @@
+diff --git a/discovery/ionos/server.go b/discovery/ionos/server.go
+index bd351625db2..f335a1416bd 100644
+--- a/discovery/ionos/server.go
++++ b/discovery/ionos/server.go
+@@ -118,16 +118,33 @@ func (d *serverDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, er
+ 
+ 		addr := net.JoinHostPort(ips[0], strconv.FormatUint(uint64(d.port), 10))
+ 		labels := model.LabelSet{
+-			model.AddressLabel:          model.LabelValue(addr),
+-			serverAvailabilityZoneLabel: model.LabelValue(*server.Properties.AvailabilityZone),
+-			serverCPUFamilyLabel:        model.LabelValue(*server.Properties.CpuFamily),
+-			serverServersIDLabel:        model.LabelValue(*servers.Id),
+-			serverIDLabel:               model.LabelValue(*server.Id),
+-			serverIPLabel:               model.LabelValue(join(ips, metaLabelSeparator)),
+-			serverLifecycleLabel:        model.LabelValue(*server.Metadata.State),
+-			serverNameLabel:             model.LabelValue(*server.Properties.Name),
+-			serverStateLabel:            model.LabelValue(*server.Properties.VmState),
+-			serverTypeLabel:             model.LabelValue(*server.Properties.Type),
++			model.AddressLabel: model.LabelValue(addr),
++			serverIPLabel:      model.LabelValue(join(ips, metaLabelSeparator)),
++		}
++
++		if server.Properties.AvailabilityZone != nil {
++			labels[serverAvailabilityZoneLabel] = model.LabelValue(*server.Properties.AvailabilityZone)
++		}
++		if server.Properties.CpuFamily != nil {
++			labels[serverCPUFamilyLabel] = model.LabelValue(*server.Properties.CpuFamily)
++		}
++		if servers.Id != nil {
++			labels[serverServersIDLabel] = model.LabelValue(*servers.Id)
++		}
++		if server.Id != nil {
++			labels[serverIDLabel] = model.LabelValue(*server.Id)
++		}
++		if server.Metadata != nil && server.Metadata.State != nil {
++			labels[serverLifecycleLabel] = model.LabelValue(*server.Metadata.State)
++		}
++		if server.Properties.Name != nil {
++			labels[serverNameLabel] = model.LabelValue(*server.Properties.Name)
++		}
++		if server.Properties.VmState != nil {
++			labels[serverStateLabel] = model.LabelValue(*server.Properties.VmState)
++		}
++		if server.Properties.Type != nil {
++			labels[serverTypeLabel] = model.LabelValue(*server.Properties.Type)
+ 		}
+ 
+ 		for nicName, nicIPs := range ipsByNICName {
+diff --git a/discovery/ionos/server_test.go b/discovery/ionos/server_test.go
+index 28fd285f67b..1bd4666fa31 100644
+--- a/discovery/ionos/server_test.go
++++ b/discovery/ionos/server_test.go
+@@ -53,7 +53,7 @@ func TestIONOSServerRefresh(t *testing.T) {
+ 	tg := tgs[0]
+ 	require.NotNil(t, tg)
+ 	require.NotNil(t, tg.Targets)
+-	require.Len(t, tg.Targets, 2)
++	require.Len(t, tg.Targets, 3)
+ 
+ 	for i, lbls := range []model.LabelSet{
+ 		{
+@@ -85,6 +85,15 @@ func TestIONOSServerRefresh(t *testing.T) {
+ 			"__meta_ionos_server_state":             "RUNNING",
+ 			"__meta_ionos_server_type":              "ENTERPRISE",
+ 		},
++		{
++			// A server whose optional pointer fields (id, and everything under
++			// properties/metadata used for labels) are null in the API response
++			// must not panic and must simply omit the corresponding labels.
++			"__address__":                        "10.0.0.99:80",
++			"__meta_ionos_server_ip":             ",10.0.0.99,",
++			"__meta_ionos_server_nic_ip_unnamed": ",10.0.0.99,",
++			"__meta_ionos_server_servers_id":     "8feda53f-15f0-447f-badf-ebe32dad2fc0/servers",
++		},
+ 	} {
+ 		t.Run(fmt.Sprintf("item %d", i), func(t *testing.T) {
+ 			require.Equal(t, lbls, tg.Targets[i])
+diff --git a/discovery/ionos/testdata/servers.json b/discovery/ionos/testdata/servers.json
+index 2af80bfa163..753b7fe7b11 100644
+--- a/discovery/ionos/testdata/servers.json
++++ b/discovery/ionos/testdata/servers.json
+@@ -610,6 +610,49 @@
+           ]
+         }
+       }
++    },
++    {
++      "id": null,
++      "type": "server",
++      "href": "https://api.ionos.com/cloudapi/v6/datacenters/8feda53f-15f0-447f-badf-ebe32dad2fc0/servers/00000000-0000-0000-0000-000000000000",
++      "properties": {
++        "name": null,
++        "cores": 1,
++        "ram": 1024,
++        "availabilityZone": null,
++        "vmState": null,
++        "bootCdrom": null,
++        "bootVolume": null,
++        "cpuFamily": null,
++        "type": null
++      },
++      "entities": {
++        "nics": {
++          "id": "00000000-0000-0000-0000-000000000000/nics",
++          "type": "collection",
++          "href": "https://api.ionos.com/cloudapi/v6/datacenters/8feda53f-15f0-447f-badf-ebe32dad2fc0/servers/00000000-0000-0000-0000-000000000000/nics",
++          "items": [
++            {
++              "id": "00000000-0000-0000-0000-000000000001",
++              "type": "nic",
++              "href": "https://api.ionos.com/cloudapi/v6/datacenters/8feda53f-15f0-447f-badf-ebe32dad2fc0/servers/00000000-0000-0000-0000-000000000000/nics/00000000-0000-0000-0000-000000000001",
++              "properties": {
++                "name": null,
++                "mac": "02:01:00:00:00:01",
++                "ips": [
++                  "10.0.0.99"
++                ],
++                "dhcp": true,
++                "lan": 1,
++                "firewallActive": false,
++                "firewallType": "INGRESS",
++                "deviceNumber": 1,
++                "pciSlot": 5
++              }
++            }
++          ]
++        }
++      }
+     }
+   ]
+ }

@@ -1,0 +1,199 @@
+{
+  "additions": 520,
+  "author": {
+    "id": "MDQ6VXNlcjIzMzA0",
+    "is_bot": false,
+    "login": "dims",
+    "name": "Davanum Srinivas"
+  },
+  "body": "#### What type of PR is this?\n\n/kind cleanup\n\n#### What this PR does / why we need it:\n\nThe release-1.37 branch is cut, so the publishing bot needs rules for it. The first commit adds the release-1.37 rules for every staging repository. It was generated with the upstream tool:\n\n```\ngo run k8s.io/publishing-bot/cmd/update-rules@latest -branch=release-1.37 --rules=./staging/publishing/rules.yaml -o ./staging/publishing/rules.yaml\n```\n\nThe tool drops the comments above `default-go-version`, so I added them back by hand.\n\nThe second commit removes the release-1.33 rules, because release-1.33 is EOL. It only deletes lines.\n\n#### Which issue(s) this PR is related to:\n\nN/A\n\n#### Special notes for your reviewer:\n\n`hack/verify-publishing-bot.sh` passes.\n\n#### Does this PR introduce a user-facing change?\n\n```release-note\nNONE\n```\n\n#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:\n\n```docs\n\n```\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABN5dgew",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n\n---\n\nWe're also in [Test Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#test-freeze) for the `release-1.37` branch. This means every merged PR will be automatically fast-forwarded via the periodic [ci-fast-forward](https://testgrid.k8s.io/sig-release-releng-blocking#git-repo-kubernetes-fast-forward) job to the release branch of the upcoming v1.37.0 release.\n\nFast forwards are scheduled to happen every 6 hours, whereas the most recent run was: Sat Aug  8 18:28:20 UTC 2026.\n",
+      "createdAt": "2026-08-08T19:01:24Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227634811",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABN5dgnA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-08-08T19:01:24Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227634844",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABN5du9Q",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141273#\" title=\"Author self-approved\">dims</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[staging/publishing/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/staging/publishing/OWNERS)~~ [dims]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-08T19:02:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227638517",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABN5dwFw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @kubernetes/release-team-leads ",
+      "createdAt": "2026-08-08T19:02:21Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227638807",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABN5hp4g",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 73f9f49cd05ee5ced253f407903d1056c53a60e7</details>",
+      "createdAt": "2026-08-08T19:18:23Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227702754",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABN5h3zQ",
+      "author": {
+        "login": "dipesh-rawat"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Adding the milestone too.\r\n\r\n/milestone v1.37",
+      "createdAt": "2026-08-08T19:19:20Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227706317",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABN5oOBg",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm",
+      "createdAt": "2026-08-08T19:46:48Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227810310",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABN5oSww",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-08-08T19:47:00Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141273#issuecomment-5227811523",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 460,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMjI3NzU2OTE=",
+      "name": "kind/cleanup",
+      "description": "Categorizes issue or PR as related to cleaning up code, process, or technical debt.",
+      "color": "c7def8"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTEwNTc=",
+      "name": "size/XL",
+      "description": "Denotes a PR that changes 500-999 lines, ignoring generated files.",
+      "color": "ee5500"
+    },
+    {
+      "id": "MDU6TGFiZWwyNjgxOTA2Njg=",
+      "name": "area/release-eng",
+      "description": "Issues or PRs related to the Release Engineering subproject",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw2MTQwMjM5ODk=",
+      "name": "sig/release",
+      "description": "Categorizes an issue or PR as relevant to SIG Release.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-08-08T20:19:59Z",
+  "state": "MERGED",
+  "title": "Add release-1.37 publishing bot rules, drop release-1.33"
+}

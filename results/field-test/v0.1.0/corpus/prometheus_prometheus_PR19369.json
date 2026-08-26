@@ -1,0 +1,78 @@
+{
+  "additions": 12,
+  "author": {
+    "id": "MDQ6VXNlcjczNTA5MjA=",
+    "is_bot": false,
+    "login": "JustDaile",
+    "name": "Daile Alimo"
+  },
+  "body": "Add windows gated logic to both TestOpenAPIGolden_3_2 and TestOpenAPIGolden_3_1 where none is provided. Handled by dealing with CRLF. \r\n\r\n```release-notes\r\nNONE\r\n```\r\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABORbFPg",
+      "author": {
+        "login": "bboreham"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Thank you for your interest in the Prometheus project.\r\n\r\nIf these tests always fail on Windows, why don't the CI jobs fail? e.g. https://github.com/prometheus/prometheus/actions/runs/31414752531/job/93541002757",
+      "createdAt": "2026-08-11T11:49:53Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19369#issuecomment-5252760894",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABOT7bEQ",
+      "author": {
+        "login": "JustDaile"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> Thank you for your interest in the Prometheus project.\r\n> \r\n> If these tests always fail on Windows, why don't the CI jobs fail? e.g. https://github.com/prometheus/prometheus/actions/runs/31414752531/job/93541002757\r\n\r\nThe web package is skipped completely during CI jobs.\r\n\r\n<img width=\"1088\" height=\"213\" alt=\"image\" src=\"https://github.com/user-attachments/assets/c6bf4ae6-bcce-4fd2-9c0b-b0693b2695d7\" />\r\n",
+      "createdAt": "2026-08-11T15:41:37Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19369#issuecomment-5255387921",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABPTMU3Q",
+      "author": {
+        "login": "JustDaile"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@SuperQ can I get a review please. CI Jobs don't fail as web package is skipped. I shared details in the reply to your initial query. ",
+      "createdAt": "2026-08-18T00:05:39Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19369#issuecomment-5321725149",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABPY5kug",
+      "author": {
+        "login": "JustDaile"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@bboreham Thanks, I appreciate the merge and follow up questions. \r\n\r\n-  I think it would be worthwhile to run these tests in CI, particularly now that the Windows-specific golden-file issue is addressed. I was planning to update the CI job now that this is merged. I don't expect these tests to add much to the overall CI runtime, but happy to leave that decision to the maintainers if the additional verification isn't considered worthwhile.\r\n\r\n- I agree this is worth addressing. My current approach of normalizing the line endings in the test works. I didn't considered using .gitattributes to enforce LF for these files at the repository level. That would be a cleaner solution and would remove the need for the Windows-specific guard in the test. Thanks for pointing that out, I'll go back and look at fixing this as a follow-up.\r\n\r\n- Yes, these can definitely be made more DRY. There is quite a bit of duplicated behaviour between the two tests. I kept them separate in this PR to keep the change focused, in line with the CONTRIBUTING.md guidance that commits should be as small as possible. I'd be happy to refactor the shared logic as a follow-up.",
+      "createdAt": "2026-08-18T11:45:46Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19369#issuecomment-5327709370",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 0,
+  "labels": [],
+  "mergedAt": "2026-08-18T11:12:27Z",
+  "state": "MERGED",
+  "title": "web/api/v1: Fix tests that will always fail on windows - no guard/han\u2026"
+}

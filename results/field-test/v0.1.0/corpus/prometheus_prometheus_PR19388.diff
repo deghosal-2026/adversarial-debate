@@ -1,0 +1,353 @@
+diff --git a/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw.go b/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw.go
+index de9edbeed22..f92987a70e2 100644
+--- a/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw.go
++++ b/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw.go
+@@ -137,12 +137,41 @@ type targetInfoKey struct {
+ 	timestamp  int64
+ }
+ 
++const maxSanitizedLabels = 64
++
+ func NewPrometheusConverter(appender storage.AppenderV2) *PrometheusConverter {
+-	return &PrometheusConverter{
+-		scratchBuilder:  labels.NewScratchBuilder(0),
+-		builder:         labels.NewBuilder(labels.EmptyLabels()),
++	c := &PrometheusConverter{}
++	c.Reset(appender)
++	return c
++}
++
++// Reset prepares c for conversion with appender. It must only be called after
++// Commit or Rollback has completed on the previous appender. Passing nil clears
++// request-local references before c is returned to a pool.
++func (c *PrometheusConverter) Reset(appender storage.AppenderV2) {
++	sanitizedLabels := c.sanitizedLabels
++	if len(sanitizedLabels) > maxSanitizedLabels {
++		sanitizedLabels = nil
++	} else {
++		clear(sanitizedLabels)
++	}
++
++	// Preserve only the bounded label cache across requests.
++	*c = PrometheusConverter{
+ 		appender:        appender,
+-		sanitizedLabels: make(map[string]string, 64), // Pre-size for typical label count.
++		sanitizedLabels: sanitizedLabels,
++	}
++
++	if appender == nil {
++		return
++	}
++
++	// Builders retain their input strings in backing arrays after Reset, so use
++	// fresh builders for every request.
++	c.scratchBuilder = labels.NewScratchBuilder(0)
++	c.builder = labels.NewBuilder(labels.EmptyLabels())
++	if c.sanitizedLabels == nil {
++		c.sanitizedLabels = make(map[string]string, maxSanitizedLabels)
+ 	}
+ }
+ 
+diff --git a/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw_test.go b/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw_test.go
+index 2e656aa6598..722803bd8e4 100644
+--- a/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw_test.go
++++ b/storage/remote/otlptranslator/prometheusremotewrite/metrics_to_prw_test.go
+@@ -18,6 +18,7 @@ package prometheusremotewrite
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"fmt"
+ 	"testing"
+ 	"time"
+@@ -34,9 +35,100 @@ import (
+ 	"github.com/prometheus/prometheus/model/labels"
+ 	"github.com/prometheus/prometheus/model/metadata"
+ 	"github.com/prometheus/prometheus/storage"
++	"github.com/prometheus/prometheus/util/annotations"
+ 	"github.com/prometheus/prometheus/util/teststorage"
+ )
+ 
++func TestPrometheusConverter_Reset(t *testing.T) {
++	t.Run("isolates requests", func(t *testing.T) {
++		request := pmetricotlp.NewExportRequest()
++		metrics := request.Metrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
++		metric := metrics.AppendEmpty()
++		metric.SetName("test_gauge")
++		dataPoint := metric.SetEmptyGauge().DataPoints().AppendEmpty()
++		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
++		dataPoint.SetIntValue(1)
++		dataPoint.Attributes().PutStr("foo.bar", "value")
++
++		converter := NewPrometheusConverter(nil)
++		for _, tc := range []struct {
++			name           string
++			allowUTF8      bool
++			labelName      string
++			otherLabelName string
++		}{
++			{
++				name:           "escaped labels",
++				labelName:      "foo_bar",
++				otherLabelName: "foo.bar",
++			},
++			{
++				name:           "UTF-8 labels",
++				allowUTF8:      true,
++				labelName:      "foo.bar",
++				otherLabelName: "foo_bar",
++			},
++		} {
++			t.Run(tc.name, func(t *testing.T) {
++				appendable := teststorage.NewAppendable()
++				appender := appendable.AppenderV2(t.Context())
++				converter.Reset(appender)
++
++				annots, err := converter.FromMetrics(t.Context(), request.Metrics(), Settings{
++					AllowUTF8:         tc.allowUTF8,
++					DisableTargetInfo: true,
++				})
++				require.NoError(t, err)
++				require.Empty(t, annots)
++				require.NoError(t, appender.Commit())
++
++				samples := appendable.ResultSamples()
++				require.Len(t, samples, 1)
++				require.Equal(t, "value", samples[0].L.Get(tc.labelName))
++				require.False(t, samples[0].L.Has(tc.otherLabelName))
++
++				converter.Reset(nil)
++			})
++		}
++	})
++
++	t.Run("clears request state", func(t *testing.T) {
++		converter := NewPrometheusConverter(&noOpAppender{})
++		converter.everyN = everyNTimes{n: 128, i: 1, err: context.Canceled}
++		converter.scratchBuilder.Add("request_label", "request_value")
++		converter.builder.Set("request_label", "request_value")
++		converter.seenTargetInfo = map[targetInfoKey]struct{}{{}: {}}
++		converter.resourceLabels = &cachedResourceLabels{jobLabel: "request_job"}
++		converter.scopeLabels = &cachedScopeLabels{scopeName: "request_scope"}
++		converter.labelNamer = otlptranslator.LabelNamer{UTF8Allowed: true}
++		converter.sanitizedLabels["request_label"] = "request_label"
++		converter.collisionAnnots = annotations.Annotations{"request": errors.New("request annotation")}
++		converter.recordedCollisions = map[string]struct{}{"request_label": {}}
++		converter.collisionSource = collisionFromResource
++
++		converter.Reset(nil)
++
++		require.Equal(t, PrometheusConverter{
++			sanitizedLabels: map[string]string{},
++		}, *converter)
++	})
++
++	t.Run("drops large label cache", func(t *testing.T) {
++		converter := NewPrometheusConverter(&noOpAppender{})
++		for i := range maxSanitizedLabels + 1 {
++			label := fmt.Sprintf("request_label_%d", i)
++			converter.sanitizedLabels[label] = label
++		}
++
++		converter.Reset(nil)
++		require.Nil(t, converter.sanitizedLabels)
++
++		converter.Reset(&noOpAppender{})
++		require.NotNil(t, converter.sanitizedLabels)
++		require.Empty(t, converter.sanitizedLabels)
++	})
++}
++
+ func TestFromMetrics(t *testing.T) {
+ 	t.Run("Successful", func(t *testing.T) {
+ 		for _, tc := range []struct {
+diff --git a/storage/remote/write_otlp_handler.go b/storage/remote/write_otlp_handler.go
+index 6c014d9e88e..7ce5d69dda1 100644
+--- a/storage/remote/write_otlp_handler.go
++++ b/storage/remote/write_otlp_handler.go
+@@ -19,6 +19,7 @@ import (
+ 	"fmt"
+ 	"log/slog"
+ 	"net/http"
++	"sync"
+ 	"time"
+ 
+ 	deltatocumulative "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
+@@ -67,6 +68,11 @@ func NewOTLPWriteHandler(logger *slog.Logger, reg prometheus.Registerer, appenda
+ 		allowDeltaTemporality:   opts.NativeDelta,
+ 		lookbackDelta:           opts.LookbackDelta,
+ 		enableTypeAndUnitLabels: opts.EnableTypeAndUnitLabels,
++		converterPool: sync.Pool{
++			New: func() any {
++				return otlptranslator.NewPrometheusConverter(nil)
++			},
++		},
+ 		translationWarnings: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+ 			Namespace: "prometheus",
+ 			Subsystem: "api",
+@@ -113,6 +119,7 @@ type rwExporter struct {
+ 	lookbackDelta           time.Duration
+ 	enableTypeAndUnitLabels bool
+ 	translationWarnings     *prometheus.CounterVec
++	converterPool           sync.Pool
+ }
+ 
+ func (rw *rwExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+@@ -121,7 +128,8 @@ func (rw *rwExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) er
+ 		AppenderV2: rw.appendable.AppenderV2(ctx),
+ 		maxTime:    timestamp.FromTime(time.Now().Add(maxAheadTime)),
+ 	}
+-	converter := otlptranslator.NewPrometheusConverter(app)
++	converter := rw.converterPool.Get().(*otlptranslator.PrometheusConverter)
++	converter.Reset(app)
+ 	annots, err := converter.FromMetrics(ctx, md, otlptranslator.Settings{
+ 		AddMetricSuffixes:                    otlpCfg.TranslationStrategy.ShouldAddSuffixes(),
+ 		AllowUTF8:                            !otlpCfg.TranslationStrategy.ShouldEscape(),
+@@ -139,9 +147,11 @@ func (rw *rwExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) er
+ 	defer func() {
+ 		if err != nil {
+ 			_ = app.Rollback()
+-			return
++		} else {
++			err = app.Commit()
+ 		}
+-		err = app.Commit()
++		converter.Reset(nil)
++		rw.converterPool.Put(converter)
+ 	}()
+ 	ws, _ := annots.AsStrings("", 0, 0)
+ 	if len(ws) > 0 {
+diff --git a/storage/remote/write_otlp_handler_test.go b/storage/remote/write_otlp_handler_test.go
+index b552c281699..4a9a11d6b08 100644
+--- a/storage/remote/write_otlp_handler_test.go
++++ b/storage/remote/write_otlp_handler_test.go
+@@ -15,6 +15,7 @@ package remote
+ 
+ import (
+ 	"bytes"
++	"context"
+ 	"errors"
+ 	"fmt"
+ 	"log/slog"
+@@ -25,6 +26,7 @@ import (
+ 	"reflect"
+ 	"runtime"
+ 	"strconv"
++	"sync"
+ 	"testing"
+ 	"time"
+ 
+@@ -303,6 +305,27 @@ func TestOTLPWriteHandler(t *testing.T) {
+ 			require.Equal(t, 1.0, testutil.ToFloat64(ex.translationWarnings.WithLabelValues("histogram_zero_count_non_zero_sum")))
+ 		})
+ 	})
++
++	t.Run("concurrent requests", func(t *testing.T) {
++		handler, payload := newOTLPWriteHandlerFixture(t)
++
++		const requests = 64
++		statuses := make(chan int, requests)
++		var wg sync.WaitGroup
++		for range requests {
++			wg.Go(func() {
++				recorder := httptest.NewRecorder()
++				handler.ServeHTTP(recorder, newOTLPWriteHandlerRequest(payload))
++				statuses <- recorder.Code
++			})
++		}
++		wg.Wait()
++		close(statuses)
++
++		for status := range statuses {
++			require.Equal(t, http.StatusOK, status)
++		}
++	})
+ }
+ 
+ func handleOTLP(t *testing.T, exportRequest pmetricotlp.ExportRequest, otlpCfg config.OTLPConfig, otlpOpts OTLPOptions) *teststorage.Appendable {
+@@ -468,6 +491,85 @@ func TestOTLPDelta(t *testing.T) {
+ 	}
+ }
+ 
++// BenchmarkOTLPWriteHandler measures a decoded OTLP request through the HTTP
++// handler, translation, and appender commit paths. The appendable discards
++// samples so that the benchmark does not retain prior requests.
++func BenchmarkOTLPWriteHandler(b *testing.B) {
++	handler, payload := newOTLPWriteHandlerFixture(b)
++
++	b.Run("serial", func(b *testing.B) {
++		b.ReportAllocs()
++		for b.Loop() {
++			recorder := httptest.NewRecorder()
++			handler.ServeHTTP(recorder, newOTLPWriteHandlerRequest(payload))
++			if recorder.Code != http.StatusOK {
++				b.Fatalf("unexpected status code %d", recorder.Code)
++			}
++		}
++	})
++
++	b.Run("parallel", func(b *testing.B) {
++		b.ReportAllocs()
++		b.RunParallel(func(pb *testing.PB) {
++			for pb.Next() {
++				recorder := httptest.NewRecorder()
++				handler.ServeHTTP(recorder, newOTLPWriteHandlerRequest(payload))
++				if recorder.Code != http.StatusOK {
++					b.Errorf("unexpected status code %d", recorder.Code)
++					return
++				}
++			}
++		})
++	})
++}
++
++func newOTLPWriteHandlerFixture(tb testing.TB) (http.Handler, []byte) {
++	tb.Helper()
++
++	request := generateOTLPWriteRequest(time.Unix(0, 0), time.Unix(0, 0))
++	payload, err := request.MarshalProto()
++	require.NoError(tb, err)
++
++	handler := NewOTLPWriteHandler(
++		slog.New(slog.DiscardHandler),
++		nil,
++		discardAppendable{},
++		func() config.Config { return config.Config{OTLPConfig: config.DefaultOTLPConfig} },
++		OTLPOptions{},
++	)
++	return handler, payload
++}
++
++func newOTLPWriteHandlerRequest(payload []byte) *http.Request {
++	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(payload))
++	req.Header.Set("Content-Type", pbContentType)
++	return req
++}
++
++type discardAppendable struct{}
++
++var _ storage.AppendableV2 = discardAppendable{}
++
++func (discardAppendable) AppenderV2(context.Context) storage.AppenderV2 {
++	return discardAppender{}
++}
++
++type discardAppender struct{}
++
++var _ storage.AppenderV2 = discardAppender{}
++
++func (discardAppender) Append(storage.SeriesRef, labels.Labels, int64, int64, float64, *histogram.Histogram, *histogram.FloatHistogram, storage.AOptions) (storage.SeriesRef, error) {
++	return 0, nil
++}
++
++func (discardAppender) Commit() error {
++	return nil
++}
++
++func (discardAppender) Rollback() error {
++	return nil
++}
++
+ func BenchmarkOTLP(b *testing.B) {
+ 	start := time.Date(2000, 1, 2, 3, 4, 5, 0, time.UTC)
+ 

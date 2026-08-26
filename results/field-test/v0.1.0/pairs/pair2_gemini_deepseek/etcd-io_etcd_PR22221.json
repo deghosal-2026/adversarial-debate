@@ -1,0 +1,27 @@
+{
+  "pair": "pair2_gemini_deepseek",
+  "pr_id": "etcd-io_etcd_PR22221",
+  "pr_url": "https://github.com/etcd-io/etcd/pull/22221",
+  "side_a": {
+    "model": "google/gemini-2.5-flash",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22221",
+    "pr_id": "etcd-io_etcd_PR22221",
+    "diff_lines": 45,
+    "raw_text": "## Code Review Report\n\n### Issues\n\n**1. Inconsistent Pull Request References**\n\n*   **Severity:** Medium\n*   **Evidence:**\n    *   `CHANGELOG/CHANGELOG-3.5.md:8` - `https://github.com/etcd-io/etcd/pull/22219`\n    *   `CHANGELOG/CHANGELOG-3.6.md:8` - `https://github.com/etcd-io/etcd/pull/22218`\n    *   `CHANGELOG/CHANGELOG-3.7.md:13` - `https://github.com/etcd-io/etcd/pull/22208`\n*   **Description:** The same fix description \"Fix duplicate `RaftTerm` field in the `endpoint status` output when using `--write-out=fields`\" is associated with three different pull request numbers across the three changelog files. This suggests that either:\n    *   The fix was backported to multiple branches, and each backport has a unique PR number, which is common. In this case, the changelog entries are correct.\n    *   There's a copy-paste error, and the PR numbers should be consistent if it's truly the *same* PR being referenced across different versions (which is unlikely for backports).\n    *   It's possible that the fix was implemented slightly differently in each version, leading to different PRs, but the description remains identical.\n\n    While this might be intended for backports, it's worth double-checking to ensure the correct PR is linked for each specific version's changelog. If these are indeed separate backport PRs, the current state is acceptable. If not, it's an error.\n\n**2. Missing Release Date for v3.5.34 and v3.6.15**\n\n*   **Severity:** Low\n*   **Evidence:**\n    *   `CHANGELOG/CHANGELOG-3.5.md:6` - `## v3.5.34 (TBC)`\n    *   `CHANGELOG/CHANGELOG-3.6.md:6` - `## v3.6.15 (TBC)`\n*   **Description:** The release dates for `v3.5.34` and `v3.6.15` are marked as \"TBC\" (To Be Confirmed). While this is expected for upcoming releases, it's a reminder that these placeholders will need to be updated with actual dates before the final release. This is not a code error but a documentation completeness issue.\n\n### Non-Claim Risks\n\n*   **Changelog Maintenance Overhead:** Maintaining separate changelog files for different major/minor versions (3.5, 3.6, 3.7) can become cumbersome. While necessary for tracking specific version changes, it increases the chance of inconsistencies or missed updates if not carefully managed.\n*   **Clarity of Backports:** If the different PR numbers for the \"Fix duplicate `RaftTerm`\" entry are indeed backports, it might be beneficial (though not strictly necessary for a changelog) to add a small note in the PR description or commit message of the backport to indicate its origin (e.g., \"Backport of #XXXXX\"). This improves traceability for maintainers.\n*   **Future \"TBC\" Updates:** The \"TBC\" placeholders for release dates are a common practice, but they rely on a manual process to be updated. A process should be in place to ensure these are filled in when the releases are finalized to maintain accurate historical records.",
+    "latency_ms": 5439,
+    "prompt_tokens": 813,
+    "completion_tokens": 796,
+    "cost": 0.0006
+  },
+  "side_b": {
+    "model": "deepseek/deepseek-chat",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22221",
+    "pr_id": "etcd-io_etcd_PR22221",
+    "diff_lines": 45,
+    "raw_text": "Here's my code review of the git diff:\n\n===== Issues Found =====\n\n1. Inconsistent PR References (High Severity)\n- Files/Lines:\n  - CHANGELOG/CHANGELOG-3.5.md:9 (PR #22219)\n  - CHANGELOG/CHANGELOG-3.6.md:9 (PR #22218)\n  - CHANGELOG/CHANGELOG-3.7.md:13 (PR #22208)\n- Description: The same bug fix is referenced with different PR numbers across changelogs. This suggests either:\n  a) The fix was implemented differently in each version (unlikely for same bug)\n  b) There was a copy-paste error in PR references\n- Risk: Could mislead users about which PR actually fixed the issue.\n\n2. Future Date Usage (Medium Severity)\n- Files/Lines:\n  - CHANGELOG/CHANGELOG-3.5.md:12 (2026-07-23)\n  - CHANGELOG/CHANGELOG-3.6.md:12 (2026-07-23)\n  - CHANGELOG/CHANGELOG-3.7.md:17 (2026-07-23)\n- Description: Using future dates (2026) for release entries is unconventional and could cause confusion.\n- Risk: May lead to questions about whether these are placeholder dates or actual planned release dates.\n\n===== Non-Claim Risks =====\n\n1. Changelog Maintenance\n- The same change being added to multiple version changelogs suggests a maintenance burden where fixes need to be documented across multiple files. Consider whether a unified changelog approach might be better.\n\n2. Version Synchronization\n- The identical bug fix appearing in three different major versions suggests tight coupling between versions, which could complicate independent version maintenance.\n\n===== Recommendations =====\n1. Verify and standardize the correct PR reference for the bug fix\n2. Replace future dates with either:\n   - Actual release dates when known\n   - \"Unreleased\" placeholder text\n3. Consider whether this bug fix warrants documentation in all three version changelogs",
+    "latency_ms": 12132,
+    "prompt_tokens": 740,
+    "completion_tokens": 455,
+    "cost": 0.0007
+  }
+}

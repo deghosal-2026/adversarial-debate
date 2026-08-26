@@ -1,0 +1,17 @@
+{
+  "additions": 80,
+  "author": {
+    "id": "U_kgDOB5d7TA",
+    "is_bot": false,
+    "login": "om7057",
+    "name": "Om Kulkarni"
+  },
+  "body": "#### Which issue(s) does the PR fix:\n\nFixes #19417\n\n---\n\n### What this PR does\n\n`refresh()` in `discovery/ionos/server.go` built part of the label set from a struct literal that dereferenced several optional pointer fields with no nil check:\n\n```go\nlabels := model.LabelSet{\n    model.AddressLabel:          model.LabelValue(addr),\n    serverAvailabilityZoneLabel: model.LabelValue(*server.Properties.AvailabilityZone),\n    serverCPUFamilyLabel:        model.LabelValue(*server.Properties.CpuFamily),\n    serverServersIDLabel:        model.LabelValue(*servers.Id),\n    serverIDLabel:               model.LabelValue(*server.Id),\n    serverIPLabel:               model.LabelValue(join(ips, metaLabelSeparator)),\n    serverLifecycleLabel:        model.LabelValue(*server.Metadata.State),\n    serverNameLabel:             model.LabelValue(*server.Properties.Name),\n    serverStateLabel:            model.LabelValue(*server.Properties.VmState),\n    serverTypeLabel:             model.LabelValue(*server.Properties.Type),\n}\n```\n\nAll of these are declared `omitempty` in the IONOS SDK, so the API can legitimately omit any of them. If it does, this panics, and since `discovery/` has no `recover()`, it takes down the whole process.\n\nThis replaces the literal with individual nil-guarded assignments, matching the pattern already used a few lines below for `BootCdrom`/`BootVolume`/`Image`, and adds a regression test case (a server with all these fields null) that panics on the old code and passes with the fix.\n\n---\n\n#### Release notes for end users\n\n```release-notes\n[BUGFIX] discovery/ionos: Fix panic when the IONOS API omits optional server fields.\n```",
+  "changedFiles": 3,
+  "comments": [],
+  "deletions": 11,
+  "labels": [],
+  "mergedAt": "2026-08-14T08:39:23Z",
+  "state": "MERGED",
+  "title": "discovery/ionos: guard nil optional fields to avoid panic"
+}

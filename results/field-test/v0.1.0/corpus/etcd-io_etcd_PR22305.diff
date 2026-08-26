@@ -1,0 +1,90 @@
+diff --git a/tests/common/maintenance_auth_test.go b/tests/common/maintenance_auth_test.go
+index a593463f08b..3635af998b6 100644
+--- a/tests/common/maintenance_auth_test.go
++++ b/tests/common/maintenance_auth_test.go
+@@ -20,8 +20,10 @@ import (
+ 	"testing"
+ 	"time"
+ 
++	"github.com/Masterminds/semver/v3"
+ 	"github.com/stretchr/testify/require"
+ 
++	"go.etcd.io/etcd/api/v3/version"
+ 	clientv3 "go.etcd.io/etcd/client/v3"
+ 	"go.etcd.io/etcd/tests/v3/framework/config"
+ 	intf "go.etcd.io/etcd/tests/v3/framework/interfaces"
+@@ -72,9 +74,16 @@ func TestDowngradeWithUserAuth(t *testing.T) {
+ 	testDowngradeWithAuth(t, false, true, WithAuth("user0", "user0Pass"))
+ }
+ 
+-func testDowngradeWithAuth(t *testing.T, _expectConnectionError, _expectOperationError bool, _opts ...config.ClientOption) {
+-	// TODO(ahrtr): finish this after we added interface methods `Downgrade` into `Client`
+-	t.Skip()
++func testDowngradeWithAuth(t *testing.T, expectConnectionError, expectOperationError bool, opts ...config.ClientOption) {
++	currentVersion, err := semver.StrictNewVersion(version.Version)
++	require.NoError(t, err)
++	// downgrade validate only accepts a target of exactly one minor version below the current one
++	targetVersion := semver.New(currentVersion.Major(), currentVersion.Minor()-1, 0, "", "")
++
++	testMaintenanceOperationWithAuth(t, expectConnectionError, expectOperationError, func(ctx context.Context, cc intf.Client) error {
++		_, err := cc.Downgrade(ctx, clientv3.DowngradeValidate, targetVersion.String())
++		return err
++	}, opts...)
+ }
+ 
+ /*
+diff --git a/tests/framework/e2e/etcdctl.go b/tests/framework/e2e/etcdctl.go
+index e0334524ed4..94c363bb837 100644
+--- a/tests/framework/e2e/etcdctl.go
++++ b/tests/framework/e2e/etcdctl.go
+@@ -105,6 +105,23 @@ func (ctl *EtcdctlV3) DowngradeEnable(ctx context.Context, version string) error
+ 	return err
+ }
+ 
++func (ctl *EtcdctlV3) Downgrade(ctx context.Context, action clientv3.DowngradeAction, version string) (*clientv3.DowngradeResponse, error) {
++	var args []string
++	switch action {
++	case clientv3.DowngradeValidate:
++		args = []string{"downgrade", "validate", version}
++	case clientv3.DowngradeEnable:
++		args = []string{"downgrade", "enable", version}
++	case clientv3.DowngradeCancel:
++		args = []string{"downgrade", "cancel"}
++	default:
++		return nil, fmt.Errorf("unknown downgrade action %v", action)
++	}
++	resp := clientv3.DowngradeResponse{}
++	err := ctl.spawnJSONCmd(ctx, &resp, args...)
++	return &resp, err
++}
++
+ func (ctl *EtcdctlV3) DowngradeCancel(ctx context.Context) error {
+ 	_, err := SpawnWithExpectLines(ctx, ctl.cmdArgs("downgrade", "cancel"), nil, expect.ExpectedResponse{Value: "Downgrade cancel success"})
+ 	return err
+diff --git a/tests/framework/integration/integration.go b/tests/framework/integration/integration.go
+index b8dc690e9e8..817efad8c18 100644
+--- a/tests/framework/integration/integration.go
++++ b/tests/framework/integration/integration.go
+@@ -350,6 +350,10 @@ func (c integrationClient) Snapshot(ctx context.Context, outFile string) error {
+ 	return err
+ }
+ 
++func (c integrationClient) Downgrade(ctx context.Context, action clientv3.DowngradeAction, version string) (*clientv3.DowngradeResponse, error) {
++	return c.Client.Downgrade(ctx, action, version)
++}
++
+ func (c integrationClient) TimeToLive(ctx context.Context, id clientv3.LeaseID, o config.LeaseOption) (*clientv3.LeaseTimeToLiveResponse, error) {
+ 	var leaseOpts []clientv3.LeaseOption
+ 	if o.WithAttachedKeys {
+diff --git a/tests/framework/interfaces/interface.go b/tests/framework/interfaces/interface.go
+index 55fa9159771..0576b164e94 100644
+--- a/tests/framework/interfaces/interface.go
++++ b/tests/framework/interfaces/interface.go
+@@ -52,6 +52,7 @@ type Client interface {
+ 	Health(context context.Context) error
+ 	Defragment(context context.Context, opts config.DefragOption) error
+ 	Snapshot(context context.Context, outFile string) error
++	Downgrade(ctx context.Context, action clientv3.DowngradeAction, version string) (*clientv3.DowngradeResponse, error)
+ 	AlarmList(context context.Context) (*clientv3.AlarmResponse, error)
+ 	AlarmDisarm(context context.Context, alarmMember *clientv3.AlarmMember) (*clientv3.AlarmResponse, error)
+ 	Grant(context context.Context, ttl int64) (*clientv3.LeaseGrantResponse, error)

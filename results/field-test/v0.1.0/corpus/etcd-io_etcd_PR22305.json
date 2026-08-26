@@ -1,0 +1,133 @@
+{
+  "additions": 34,
+  "author": {
+    "id": "MDQ6VXNlcjM0NDcxOTQx",
+    "is_bot": false,
+    "login": "ribhavjain",
+    "name": "Ribhav Jain"
+  },
+  "body": "Completes the `TODO(ahrtr)` stub for `testDowngradeWithAuth` in tests/common, following the same pattern as #22289 (Snapshot) and #22262 (MoveLeader):\n\n- add `DowngradeValidate` to the test framework `Client` interface\n- integration backend wraps `clientv3.Maintenance.Downgrade` with the `DowngradeValidate` action\n- e2e backend invokes `etcdctl downgrade validate <target>`, expecting \"Downgrade validate success\"\n- fill in `testDowngradeWithAuth`, deriving the target version (current minor version - 1) from `api/version.Version`\n\nThe VALIDATE action is used because it exercises the same root-only auth gate as the other maintenance operations while mutating nothing, so all four auth variants run against an unmodified cluster.\n\nVerified locally with both backends:\n\n- `go test ./common/ -run 'TestDowngradeWith' --tags integration`: 4/4 pass\n- `go test ./common/ -run 'TestDowngradeWith' --tags e2e`: 4/4 pass\n\nThe denied variants fail with the expected auth errors (\"user name is empty\", \"authentication failed\", \"permission denied\"), and the root variant genuinely succeeds against the derived target version.\n\nNote: this PR inserts at the same anchors in interface.go/integration.go as #22289 and #22262, so whichever lands later will need a trivial rebase.\n\nPer the AI guidance referenced in the PR template: AI tooling was used in preparing this change. I have reviewed it and can explain every line.\n",
+  "changedFiles": 4,
+  "comments": [
+    {
+      "id": "IC_kwDOAKtHts8AAAABPiQpjA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "NONE",
+      "body": "Hi @ribhavjain. Thanks for your PR.\n\nI'm waiting for a [etcd-io](https://github.com/orgs/etcd-io/people) member to verify that this patch is reasonable to test. If it is, they should reply with `/ok-to-test` on its own line. Until that is done, I will not automatically test new commits in this PR, but the usual testing commands by org members will still work.\n\nRegular contributors should [join the org](https://github.com/etcd-io/etcd/blob/main/CONTRIBUTING.md) to skip this step.\n\nOnce the patch is verified, the new status will be reflected by the `ok-to-test` label.\n\nI understand the commands that are listed [here](https://go.k8s.io/bot-commands?repo=etcd-io%2Fetcd).\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>\n",
+      "createdAt": "2026-08-19T04:26:41Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22305#issuecomment-5337524620",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABPiYJhw",
+      "author": {
+        "login": "ribhavjain"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/assign @ahrtr",
+      "createdAt": "2026-08-19T04:46:01Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22305#issuecomment-5337647495",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABPzFMpw",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/ok-to-test",
+      "createdAt": "2026-08-20T11:20:11Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22305#issuecomment-5355162791",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABPzXAOw",
+      "author": {
+        "login": "codecov"
+      },
+      "authorAssociation": "NONE",
+      "body": "## [Codecov](https://app.codecov.io/gh/etcd-io/etcd/pull/22305?dropdown=coverage&src=pr&el=h1&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io) Report\n:white_check_mark: All modified and coverable lines are covered by tests.\n:white_check_mark: Project coverage is 69.67%. Comparing base ([`053cf52`](https://app.codecov.io/gh/etcd-io/etcd/commit/053cf52e3417eb5e95aa0fdfa05f114e21ec9430?dropdown=coverage&el=desc&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)) to head ([`733f98b`](https://app.codecov.io/gh/etcd-io/etcd/commit/733f98b5ace7b8cc10b92cb94a776dc2b7df2aaa?dropdown=coverage&el=desc&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)).\n:warning: Report is 5 commits behind head on main.\n\n<details><summary>Additional details and impacted files</summary>\n\n\n[see 26 files with indirect coverage changes](https://app.codecov.io/gh/etcd-io/etcd/pull/22305/indirect-changes?src=pr&el=tree-more&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)\n\n```diff\n@@            Coverage Diff             @@\n##             main   #22305      +/-   ##\n==========================================\n- Coverage   69.71%   69.67%   -0.04%     \n==========================================\n  Files         449      448       -1     \n  Lines       38196    38159      -37     \n==========================================\n- Hits        26628    26588      -40     \n+ Misses      10139    10138       -1     \n- Partials     1429     1433       +4     \n```\n\n------\n\n[Continue to review full report in Codecov by Harness](https://app.codecov.io/gh/etcd-io/etcd/pull/22305?dropdown=coverage&src=pr&el=continue&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io).\n> **Legend** - [Click here to learn more](https://docs.codecov.io/docs/codecov-delta?utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)\n> `\u0394 = absolute <relative> (impact)`, `\u00f8 = not affected`, `? = missing data`\n> Powered by [Codecov](https://app.codecov.io/gh/etcd-io/etcd/pull/22305?dropdown=coverage&src=pr&el=footer&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io). Last update [053cf52...733f98b](https://app.codecov.io/gh/etcd-io/etcd/pull/22305?dropdown=coverage&src=pr&el=lastupdated&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io). Read the [comment docs](https://docs.codecov.io/docs/pull-request-comments?utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io).\n</details>\n<details><summary> :rocket: New features to boost your workflow: </summary>\n\n- :snowflake: [Test Analytics](https://docs.codecov.com/docs/test-analytics): Detect flaky tests, report on failures, and find test suite problems.\n</details>",
+      "createdAt": "2026-08-20T11:49:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22305#issuecomment-5355454523",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABP0KERQ",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-08-20T13:06:18Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22305#issuecomment-5356291141",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABP06cww",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "NONE",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/etcd-io/etcd/pull/22305#pullrequestreview-4983659502\" title=\"Approved\">ahrtr</a>*, *<a href=\"https://github.com/etcd-io/etcd/pull/22305#\" title=\"Author self-approved\">ribhavjain</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=etcd-io%2Fetcd).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[OWNERS](https://github.com/etcd-io/etcd/blob/main/OWNERS)~~ [ahrtr]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-20T14:13:11Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22305#issuecomment-5357083843",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 3,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMjUxMDQ5NDc=",
+      "name": "area/testing",
+      "description": "",
+      "color": "f9ea9a"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABclmLxA",
+      "name": "ok-to-test",
+      "description": "",
+      "color": "ededed"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABpPzhbA",
+      "name": "size/M",
+      "description": "",
+      "color": "ededed"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABqyqBaw",
+      "name": "approved",
+      "description": "",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-08-20T14:13:15Z",
+  "state": "MERGED",
+  "title": "tests/common: complete the downgrade auth tests"
+}

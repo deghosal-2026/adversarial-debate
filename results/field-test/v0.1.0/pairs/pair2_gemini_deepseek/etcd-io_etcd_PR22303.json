@@ -1,0 +1,27 @@
+{
+  "pair": "pair2_gemini_deepseek",
+  "pr_id": "etcd-io_etcd_PR22303",
+  "pr_url": "https://github.com/etcd-io/etcd/pull/22303",
+  "side_a": {
+    "model": "google/gemini-2.5-flash",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22303",
+    "pr_id": "etcd-io_etcd_PR22303",
+    "diff_lines": 45,
+    "raw_text": "## Code Review Report\n\n### Issues\n\n#### 1. Inconsistent Go Version for etcd 3.5 and 3.6\n\n*   **Severity**: Medium\n*   **Evidence**:\n    *   `CHANGELOG/CHANGELOG-3.5.md:13`\n    *   `CHANGELOG/CHANGELOG-3.6.md:13`\n*   **Description**: The changelog for `etcd` version 3.5 and 3.6 both state that binaries are compiled using `go 1.25.13`. Given that these are separate major/minor versions, it's unusual for them to be compiled with the exact same Go patch version, especially if they are actively maintained. This might indicate a copy-paste error or an oversight in updating the Go version for one of the branches. Typically, newer branches would use a newer Go version if available and compatible.\n\n#### 2. Go Version 1.25.13 is Non-Existent\n\n*   **Severity**: High\n*   **Evidence**:\n    *   `CHANGELOG/CHANGELOG-3.5.md:13`\n    *   `CHANGELOG/CHANGELOG-3.6.md:13`\n*   **Description**: Go version `1.25.13` does not exist. As of the current Go release cycle, Go versions are typically `1.x.y` where `x` is the major minor version and `y` is the patch version. The `1.25` series has not been released. This is likely a typo and should probably be `1.20.13`, `1.21.13`, or a similar existing version. This indicates incorrect information being published in the changelog.\n\n#### 3. Go Version 1.26.6 is Non-Existent\n\n*   **Severity**: High\n*   **Evidence**:\n    *   `CHANGELOG/CHANGELOG-3.7.md:13`\n*   **Description**: Similar to the above, Go version `1.26.6` does not exist. The `1.26` series has not been released. This is likely a typo and should probably be `1.20.6`, `1.21.6`, or a similar existing version. This indicates incorrect information being published in the changelog.\n\n#### 4. Future Date in Changelog (Minor)\n\n*   **Severity**: Low\n*   **Evidence**:\n    *   `CHANGELOG/CHANGELOG-3.5.md:17`\n    *   `CHANGELOG/CHANGELOG-3.6.md:17`\n    *   `CHANGELOG/CHANGELOG-3.7.md:17`\n*   **Description**: The release dates for `v3.5.33`, `v3.6.14`, and `v3.7.1` are all listed as `2026-07-23`. This is a future date, suggesting that these changelogs are being prepared in advance for releases that haven't happened yet, or it's a placeholder date. While not a functional issue, it's unusual to see future dates in a changelog that is being committed. It might be a template that hasn't been updated.\n\n### Non-Claim Risks\n\n*   **Misleading Information**: The incorrect Go versions (`1.25.13`, `1.26.6`) in the changelogs could mislead users about the actual Go version used for compilation, potentially causing confusion or issues if users try to replicate the build environment based on this information.\n*   **Build Reproducibility**: If the actual Go versions used are different from what's stated, it could impact the reproducibility of builds for users who rely on the changelog for environment details.\n*   **Maintenance Overhead**: If these changelogs are generated from templates, the presence of placeholder dates and potentially incorrect Go versions suggests that the template or the process for updating it might need refinement to ensure accuracy.",
+    "latency_ms": 5558,
+    "prompt_tokens": 852,
+    "completion_tokens": 894,
+    "cost": 0.000664
+  },
+  "side_b": {
+    "model": "deepseek/deepseek-chat",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22303",
+    "pr_id": "etcd-io_etcd_PR22303",
+    "diff_lines": 45,
+    "raw_text": "Here is my code review of the git diff:\n\n=== Issues ===\n\n1. Inconsistent Go Version References\n- Severity: Medium\n- Location: \n  - CHANGELOG/CHANGELOG-3.5.md line 13\n  - CHANGELOG/CHANGELOG-3.6.md line 13\n  - CHANGELOG/CHANGELOG-3.7.md line 16\n- Description: The changelogs reference different Go versions (1.25.13 for 3.5/3.6 vs 1.26.6 for 3.7). This inconsistency should be verified - either all versions should be the same or there should be a clear reason for the difference.\n\n2. Future Version Dates\n- Severity: Low\n- Location:\n  - CHANGELOG/CHANGELOG-3.5.md line 17 (v3.5.33 2026-07-23)\n  - CHANGELOG/CHANGELOG-3.6.md line 17 (v3.6.14 2026-07-23)\n  - CHANGELOG/CHANGELOG-3.7.md line 20 (v3.7.1 2026-07-23)\n- Description: The changelogs contain future dates (2026). While this might be placeholder text, it could cause confusion. Consider using a more neutral format like \"Unreleased\" or the actual planned release date.\n\n=== Non-claim Risks ===\n\n1. The PR references (#22285, #22286, #22287) appear to be sequential but point to different Go versions. This might indicate the changes were made separately when they should have been coordinated.\n\n2. The duplicate `RaftTerm` fixes referenced in each changelog point to different PR numbers (22219, 22218, 22208), suggesting these were separate fixes for different branches. This should be verified as intentional.\n\n3. The changelog formatting is inconsistent between files (3.5/3.6 use 10 line spacing before dependencies section, 3.7 uses 13). Consider standardizing the spacing.",
+    "latency_ms": 11038,
+    "prompt_tokens": 771,
+    "completion_tokens": 460,
+    "cost": 0.000714
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "additions": 68,
+  "author": {
+    "id": "U_kgDOByr-pA",
+    "is_bot": false,
+    "login": "aamoghS",
+    "name": "Aamogh"
+  },
+  "body": "#### Which issue(s) does the PR fix:\r\nFixes #14398\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n*Reviewers should verify clarity and quality.*\r\n\r\n```release-notes\r\n[BUGFIX] discovery/kubernetes: Populate `__meta_kubernetes_service_loadbalancer_ip` from `status.loadBalancer.ingress`, falling back to deprecated `spec.loadBalancerIP`.\r\n```\r\n\r\nKubernetes 1.24 dropped automatic `spec.loadBalancerIP`. Controllers (MetalLB, AKS, \u2026) now only write IPs to `status.loadBalancer.ingress`, so the meta label was empty.\r\n\r\nThis PR:\r\n- Prefers ingress IPs (comma-separated for dual-stack)\r\n- Falls back to `spec.loadBalancerIP` when status has no IPs\r\n- Leaves hostname-only ingress (EKS) for a follow-up, as discussed on the issue\r\n\r\nRelated: #17136 (stalled on DCO). @machine424 @brancz @rexagod\r\n",
+  "changedFiles": 3,
+  "comments": [],
+  "deletions": 3,
+  "labels": [],
+  "mergedAt": "2026-08-18T11:29:21Z",
+  "state": "MERGED",
+  "title": "discovery/kubernetes: populate loadbalancer IP from status.ingress"
+}

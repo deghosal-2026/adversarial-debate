@@ -1,0 +1,33 @@
+{
+  "additions": 110,
+  "author": {
+    "id": "U_kgDOB4VyTw",
+    "is_bot": false,
+    "login": "r0h1tb",
+    "name": "Rohit Behera"
+  },
+  "body": "ECS SD dereferences optional task fields without guarding them. Any task missing one\npanics the refresh goroutine and takes the process down instead of degrading a single\ntarget.\n\n`types.Task.Group`, `TaskArn`, `LastStatus`, `DesiredStatus`, `AvailabilityZone`,\n`ClusterArn`, `ClusterName` and `TaskDefinitionArn` are all optional \u2014 none carry the\nSDK's `This member is required.` marker. `Group` is dereferenced twice, including in\nthe `strings.CutPrefix(*task.Group, \"service:\")` added by the recent service-lookup\nrefactor, so a task with no group panics there.\n\nThe ENI attachment loop is the one that fires first: it switches on `*detail.Name`\nand `*detail.Value`, and both members of `KeyValuePair` are optional.\n\nChanges:\n\n- Guard the eight optional fields in the label literal.\n- `aws.ToString(task.Group)` in the service-name check, and for the three\n  `logger.Debug` sites \u2014 the idiom already used throughout `msk.go`.\n- Guard `*detail.Name` / `*detail.Value` in the ENI loop.\n\nTests fail on main at `ecs.go:879` without the fix.\n\n`TestECSDiscoveryRefresh` builds `&ECSDiscovery{...}` directly rather than going\nthrough `NewECSDiscovery`, so `d.logger` is nil and any `Debug` call panics; the new\ncases set `logger: promslog.NewNopLogger()`, which is what the constructor substitutes\nanyway.\n\nFollow-up to #19324, same bug class. `elasticache.go` has it too and is ready as a\nseparate PR.\n\n```release-notes\n[BUGFIX] discovery/aws: Don't panic on ECS tasks with absent optional fields.\n```\n",
+  "changedFiles": 2,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABOmVfZg",
+      "author": {
+        "login": "aamoghS"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Looks correct to me \u2014 this is a real crash, the guards match the pattern already used in `msk.go` / `lightsail.go`, and the new `TaskWithNilOptionalFields` case is the right regression test.\r\n\r\nOne leftover deref on the same path:\r\n\r\n```go\r\nd.logger.Debug(\"Container instance not found in map\", \"arn\", *task.ContainerInstanceArn, \"task\", aws.ToString(task.TaskArn))\r\n```\r\n\r\n`TaskArn` is now `aws.ToString`, but `ContainerInstanceArn` is still unguarded. Worth using `aws.ToString` there too so a missing container-instance ARN cannot panic the refresh goroutine.\r\n\r\nOtherwise this is good to land. Thanks for calling out ElastiCache as a follow-up \u2014 same bug class.\r\n",
+      "createdAt": "2026-08-13T01:08:02Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19396#issuecomment-5274689382",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 17,
+  "labels": [],
+  "mergedAt": "2026-08-13T08:15:21Z",
+  "state": "MERGED",
+  "title": "discovery/aws: don't panic on ECS tasks with absent optional fields"
+}

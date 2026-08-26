@@ -1,0 +1,326 @@
+diff --git a/test/e2e/apps/statefulset.go b/test/e2e/apps/statefulset.go
+index fab8c1854d4b8..b181bfd368ae9 100644
+--- a/test/e2e/apps/statefulset.go
++++ b/test/e2e/apps/statefulset.go
+@@ -66,8 +66,6 @@ import (
+ )
+ 
+ const (
+-	zookeeperManifestPath   = "test/e2e/testing-manifests/statefulset/zookeeper"
+-	mysqlGaleraManifestPath = "test/e2e/testing-manifests/statefulset/mysql-galera"
+ 	cockroachDBManifestPath = "test/e2e/testing-manifests/statefulset/cockroachdb"
+ 	// We don't restart MySQL cluster regardless of restartCluster, since MySQL doesn't handle restart well
+ 	restartCluster = true
+@@ -1496,22 +1494,6 @@ var _ = SIGDescribe("StatefulSet", func() {
+ 			e2estatefulset.DeleteAllStatefulSets(ctx, c, ns)
+ 		})
+ 
+-		// Do not mark this as Conformance.
+-		// StatefulSet Conformance should not be dependent on specific applications.
+-		ginkgo.It("should creating a working zookeeper cluster", func(ctx context.Context) {
+-			e2epv.SkipIfNoDefaultStorageClass(ctx, c)
+-			appTester.statefulPod = &zookeeperTester{client: c}
+-			appTester.run(ctx)
+-		})
+-
+-		// Do not mark this as Conformance.
+-		// StatefulSet Conformance should not be dependent on specific applications.
+-		ginkgo.It("should creating a working mysql cluster", func(ctx context.Context) {
+-			e2epv.SkipIfNoDefaultStorageClass(ctx, c)
+-			appTester.statefulPod = &mysqlGaleraTester{client: c}
+-			appTester.run(ctx)
+-		})
+-
+ 		// Do not mark this as Conformance.
+ 		// StatefulSet Conformance should not be dependent on specific applications.
+ 		ginkgo.It("should creating a working CockroachDB cluster", func(ctx context.Context) {
+@@ -2271,18 +2253,6 @@ func uncordonNode(ctx context.Context, c clientset.Interface, oldData, newData [
+ 	framework.ExpectNoError(err)
+ }
+ 
+-func kubectlExecWithRetries(ns string, args ...string) (out string) {
+-	var err error
+-	for range 3 {
+-		if out, err = e2ekubectl.RunKubectl(ns, args...); err == nil {
+-			return
+-		}
+-		framework.Logf("Retrying %v:\nerror %v\nstdout %v", args, err, out)
+-	}
+-	framework.Failf("Failed to execute \"%v\" with retries: %v", args, err)
+-	return
+-}
+-
+ type statefulPodTester interface {
+ 	deploy(ctx context.Context, ns string) *appsv1.StatefulSet
+ 	write(statefulPodIndex int, kv map[string]string)
+@@ -2303,15 +2273,10 @@ func (c *clusterAppTester) run(ctx context.Context) {
+ 	ginkgo.By("Creating foo:bar in member with index 0")
+ 	c.statefulPod.write(0, map[string]string{"foo": "bar"})
+ 
+-	switch c.statefulPod.(type) {
+-	case *mysqlGaleraTester:
+-		// Don't restart MySQL cluster since it doesn't handle restarts well
+-	default:
+-		if restartCluster {
+-			ginkgo.By("Restarting stateful set " + ss.Name)
+-			e2estatefulset.Restart(ctx, c.client, ss)
+-			e2estatefulset.WaitForRunningAndReady(ctx, c.client, *ss.Spec.Replicas, ss)
+-		}
++	if restartCluster {
++		ginkgo.By("Restarting stateful set " + ss.Name)
++		e2estatefulset.Restart(ctx, c.client, ss)
++		e2estatefulset.WaitForRunningAndReady(ctx, c.client, *ss.Spec.Replicas, ss)
+ 	}
+ 
+ 	ginkgo.By("Reading value under foo from member with index 2")
+@@ -2320,77 +2285,6 @@ func (c *clusterAppTester) run(ctx context.Context) {
+ 	}
+ }
+ 
+-type zookeeperTester struct {
+-	ss     *appsv1.StatefulSet
+-	client clientset.Interface
+-}
+-
+-func (z *zookeeperTester) name() string {
+-	return "zookeeper"
+-}
+-
+-func (z *zookeeperTester) deploy(ctx context.Context, ns string) *appsv1.StatefulSet {
+-	z.ss = e2estatefulset.CreateStatefulSet(ctx, z.client, zookeeperManifestPath, ns)
+-	return z.ss
+-}
+-
+-func (z *zookeeperTester) write(statefulPodIndex int, kv map[string]string) {
+-	name := fmt.Sprintf("%v-%d", z.ss.Name, statefulPodIndex)
+-	for k, v := range kv {
+-		cmd := fmt.Sprintf("/opt/zookeeper/bin/zkCli.sh create /%v %v", k, v)
+-		framework.Logf("%s", e2ekubectl.RunKubectlOrDie(z.ss.Namespace, "exec", name, "--", "/bin/sh", "-c", cmd))
+-	}
+-}
+-
+-func (z *zookeeperTester) read(statefulPodIndex int, key string) string {
+-	name := fmt.Sprintf("%v-%d", z.ss.Name, statefulPodIndex)
+-	cmd := fmt.Sprintf("/opt/zookeeper/bin/zkCli.sh get /%v", key)
+-	return lastLine(e2ekubectl.RunKubectlOrDie(z.ss.Namespace, "exec", name, "--", "/bin/sh", "-c", cmd))
+-}
+-
+-type mysqlGaleraTester struct {
+-	ss     *appsv1.StatefulSet
+-	client clientset.Interface
+-}
+-
+-func (m *mysqlGaleraTester) name() string {
+-	return "mysql: galera"
+-}
+-
+-func (m *mysqlGaleraTester) mysqlExec(cmd, ns, podName string) string {
+-	cmd = fmt.Sprintf("/usr/bin/mysql -u root -B -e '%v'", cmd)
+-	// TODO: Find a readiness probe for mysql that guarantees writes will
+-	// succeed and ditch retries. Current probe only reads, so there's a window
+-	// for a race.
+-	return kubectlExecWithRetries(ns, "exec", podName, "--", "/bin/sh", "-c", cmd)
+-}
+-
+-func (m *mysqlGaleraTester) deploy(ctx context.Context, ns string) *appsv1.StatefulSet {
+-	m.ss = e2estatefulset.CreateStatefulSet(ctx, m.client, mysqlGaleraManifestPath, ns)
+-
+-	framework.Logf("Deployed statefulset %v, initializing database", m.ss.Name)
+-	for _, cmd := range []string{
+-		"create database statefulset;",
+-		"use statefulset; create table foo (k varchar(20), v varchar(20));",
+-	} {
+-		framework.Logf("%s", m.mysqlExec(cmd, ns, fmt.Sprintf("%v-0", m.ss.Name)))
+-	}
+-	return m.ss
+-}
+-
+-func (m *mysqlGaleraTester) write(statefulPodIndex int, kv map[string]string) {
+-	name := fmt.Sprintf("%v-%d", m.ss.Name, statefulPodIndex)
+-	for k, v := range kv {
+-		cmd := fmt.Sprintf("use statefulset; insert into foo (k, v) values (\"%v\", \"%v\");", k, v)
+-		framework.Logf(cmd, m.mysqlExec(cmd, m.ss.Namespace, name))
+-	}
+-}
+-
+-func (m *mysqlGaleraTester) read(statefulPodIndex int, key string) string {
+-	name := fmt.Sprintf("%v-%d", m.ss.Name, statefulPodIndex)
+-	return lastLine(m.mysqlExec(fmt.Sprintf("use statefulset; select v from foo where k=\"%v\";", key), m.ss.Namespace, name))
+-}
+-
+ type cockroachDBTester struct {
+ 	ss     *appsv1.StatefulSet
+ 	client clientset.Interface
+@@ -2407,7 +2301,11 @@ func (c *cockroachDBTester) cockroachDBExec(cmd, ns, podName string) string {
+ 
+ func (c *cockroachDBTester) deploy(ctx context.Context, ns string) *appsv1.StatefulSet {
+ 	c.ss = e2estatefulset.CreateStatefulSet(ctx, c.client, cockroachDBManifestPath, ns)
+-	framework.Logf("Deployed statefulset %v, initializing database", c.ss.Name)
++	framework.Logf("Deployed statefulset %v, initializing cluster", c.ss.Name)
++	podName := fmt.Sprintf("%v-0", c.ss.Name)
++	initCmd := fmt.Sprintf("/cockroach/cockroach init --insecure --host %s.cockroachdb", podName)
++	framework.Logf("%s", e2ekubectl.RunKubectlOrDie(ns, "exec", podName, "--", "/bin/sh", "-c", initCmd))
++	framework.Logf("Initialized cluster, initializing database")
+ 	for _, cmd := range []string{
+ 		"CREATE DATABASE IF NOT EXISTS foo;",
+ 		"CREATE TABLE IF NOT EXISTS foo.bar (k STRING PRIMARY KEY, v STRING);",
+diff --git a/test/e2e/testing-manifests/statefulset/cockroachdb/statefulset.yaml b/test/e2e/testing-manifests/statefulset/cockroachdb/statefulset.yaml
+index 9fc233fdd55bc..3bd8e41a06250 100644
+--- a/test/e2e/testing-manifests/statefulset/cockroachdb/statefulset.yaml
++++ b/test/e2e/testing-manifests/statefulset/cockroachdb/statefulset.yaml
+@@ -25,7 +25,7 @@ spec:
+       # data from a previous execution, that data will always be used.
+       initContainers:
+       - name: bootstrap
+-        image: cockroachdb/cockroach-k8s-init:0.1
++        image: cockroachdb/cockroach-k8s-init:0.2
+         imagePullPolicy: IfNotPresent
+         args:
+         - "-on-start=/on-start.sh"
+@@ -52,7 +52,7 @@ spec:
+               topologyKey: kubernetes.io/hostname
+       containers:
+       - name: cockroachdb
+-        image: cockroachdb/cockroach:v1.0
++        image: cockroachdb/cockroach:latest-v24.1
+         imagePullPolicy: IfNotPresent
+         ports:
+         - containerPort: 26257
+@@ -69,21 +69,7 @@ spec:
+             # The use of qualified `hostname -f` is crucial:
+             # Other nodes aren't able to look up the unqualified hostname.
+             CRARGS=("start" "--logtostderr" "--insecure" "--host" "$(hostname -f)" "--http-host" "0.0.0.0")
+-            # We only want to initialize a new cluster (by omitting the join flag)
+-            # if we're sure that we're the first node (i.e. index 0) and that
+-            # there aren't any other nodes running as part of the cluster that
+-            # this is supposed to be a part of (which indicates that a cluster
+-            # already exists and we should make sure not to create a new one).
+-            # It's fine to run without --join on a restart if there aren't any
+-            # other nodes.
+-            if [ ! "$(hostname)" == "cockroachdb-0" ] || \
+-               [ -e "/cockroach/cockroach-data/cluster_exists_marker" ]
+-            then
+-              # We don't join cockroachdb in order to avoid a node attempting
+-              # to join itself, which currently doesn't work
+-              # (https://github.com/cockroachdb/cockroach/issues/9625).
+-              CRARGS+=("--join" "cockroachdb-0.cockroachdb,cockroachdb-1.cockroachdb,cockroachdb-2.cockroachdb")
+-            fi
++            CRARGS+=("--join" "cockroachdb-0.cockroachdb,cockroachdb-1.cockroachdb,cockroachdb-2.cockroachdb")
+             exec /cockroach/cockroach ${CRARGS[*]}
+       # No pre-stop hook is required, a SIGTERM plus some time is all that's
+       # needed for graceful shutdown of a node.
+diff --git a/test/e2e/testing-manifests/statefulset/mysql-galera/service.yaml b/test/e2e/testing-manifests/statefulset/mysql-galera/service.yaml
+deleted file mode 100644
+index 514e605ab85af..0000000000000
+--- a/test/e2e/testing-manifests/statefulset/mysql-galera/service.yaml
++++ /dev/null
+@@ -1,16 +0,0 @@
+-# A headless service to create DNS records
+-apiVersion: v1
+-kind: Service
+-metadata:
+-  name: galera
+-  labels:
+-    app: mysql
+-spec:
+-  ports:
+-  - port: 3306
+-    name: mysql
+-  # *.galear.default.svc.cluster.local
+-  clusterIP: None
+-  selector:
+-    app: mysql
+-  publishNotReadyAddresses: true
+diff --git a/test/e2e/testing-manifests/statefulset/mysql-galera/statefulset.yaml b/test/e2e/testing-manifests/statefulset/mysql-galera/statefulset.yaml
+deleted file mode 100644
+index 376522716c56f..0000000000000
+--- a/test/e2e/testing-manifests/statefulset/mysql-galera/statefulset.yaml
++++ /dev/null
+@@ -1,87 +0,0 @@
+-apiVersion: apps/v1
+-kind: StatefulSet
+-metadata:
+-  name: mysql
+-spec:
+-  serviceName: "galera"
+-  replicas: 3
+-  selector:
+-    matchLabels:
+-      app: mysql
+-  template:
+-    metadata:
+-      labels:
+-        app: mysql
+-    spec:
+-      initContainers:
+-      - name: install
+-        image: registry.k8s.io/galera-install:0.1
+-        imagePullPolicy: Always
+-        args:
+-        - "--work-dir=/work-dir"
+-        volumeMounts:
+-        - name: workdir
+-          mountPath: "/work-dir"
+-        - name: config
+-          mountPath: "/etc/mysql"
+-      - name: bootstrap
+-        image: debian:jessie
+-        command:
+-        - "/work-dir/peer-finder"
+-        args:
+-        - -on-start="/work-dir/on-start.sh"
+-        - "-service=galera"
+-        env:
+-        - name: POD_NAMESPACE
+-          valueFrom:
+-            fieldRef:
+-              apiVersion: v1
+-              fieldPath: metadata.namespace
+-        volumeMounts:
+-        - name: workdir
+-          mountPath: "/work-dir"
+-        - name: config
+-          mountPath: "/etc/mysql"
+-      containers:
+-      - name: mysql
+-        image: registry.k8s.io/mysql-galera:e2e
+-        ports:
+-        - containerPort: 3306
+-          name: mysql
+-        - containerPort: 4444
+-          name: sst
+-        - containerPort: 4567
+-          name: replication
+-        - containerPort: 4568
+-          name: ist
+-        args:
+-        - --defaults-file=/etc/mysql/my-galera.cnf
+-        - --user=root
+-        readinessProbe:
+-          # TODO: If docker exec is buggy just use registry.k8s.io/mysql-healthz:1.0
+-          exec:
+-            command:
+-            - sh
+-            - -c
+-            - "mysql -u root -e 'show databases;'"
+-          initialDelaySeconds: 15
+-          timeoutSeconds: 5
+-          successThreshold: 2
+-        volumeMounts:
+-        - name: datadir
+-          mountPath: /var/lib/
+-        - name: config
+-          mountPath: /etc/mysql
+-      volumes:
+-      - name: config
+-        emptyDir: {}
+-      - name: workdir
+-        emptyDir: {}
+-  volumeClaimTemplates:
+-  - metadata:
+-      name: datadir
+-    spec:
+-      accessModes: [ "ReadWriteOnce" ]
+-      resources:
+-        requests:
+-          storage: 1Gi

@@ -1,0 +1,11 @@
+{
+  "model": "google/gemini-2.5-flash",
+  "pr_url": "https://github.com/etcd-io/etcd/pull/22232",
+  "pr_id": "etcd-io_etcd_PR22232",
+  "diff_lines": 13,
+  "raw_text": "## Code Review Report\n\nThis diff updates the `scorecard-action` version in a GitHub Actions workflow.\n\n### Issues\n\n**1. Hardcoded SHA for Action Version**\n\n*   **Severity:** Medium\n*   **Evidence:** `.github/workflows/scorecards.yml:L28`\n*   **Description:** The `scorecard-action` is pinned to a specific commit SHA (`2d1146689b8cda280b9bc96326124645441f03bc`) instead of a tag (`v2.4.4`). While this provides immutability, it makes it harder to identify the exact version at a glance and requires manual updates for future patch releases. It also doesn't leverage GitHub's built-in dependency graph for actions.\n\n### Non-Claim Risks\n\n*   **Supply Chain Security:** While the hardcoded SHA provides immutability and prevents unexpected changes from a mutable tag, it also means that if a vulnerability is found in `v2.4.4` and a `v2.4.5` is released, this workflow will not automatically pick up the fix. Manual intervention will be required to update the SHA.\n*   **Maintainability:** Future updates to the `scorecard-action` will require manually looking up the new SHA and updating the workflow file, which can be tedious and error-prone. Using a tag like `v2.4.4` or `v2` would allow for easier updates (though `v2` carries its own risks of breaking changes).\n*   **Readability:** The long SHA is less readable than a version tag, making it slightly harder to quickly understand which version of the action is being used.",
+  "latency_ms": 3330,
+  "prompt_tokens": 310,
+  "completion_tokens": 372,
+  "cost": 0.00027
+}

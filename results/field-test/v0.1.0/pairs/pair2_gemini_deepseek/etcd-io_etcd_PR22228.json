@@ -1,0 +1,27 @@
+{
+  "pair": "pair2_gemini_deepseek",
+  "pr_id": "etcd-io_etcd_PR22228",
+  "pr_url": "https://github.com/etcd-io/etcd/pull/22228",
+  "side_a": {
+    "model": "google/gemini-2.5-flash",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22228",
+    "pr_id": "etcd-io_etcd_PR22228",
+    "diff_lines": 34,
+    "raw_text": "## Code Review Report\n\nThis diff primarily updates the version of the `github/codeql-action` used in two GitHub Actions workflows.\n\n### Issues\n\n#### 1. Outdated `actions/checkout` Version\n\n*   **Severity:** Medium\n*   **Evidence:** `.github/workflows/codeql-analysis.yml:40`\n*   **Description:** The `actions/checkout` action is pinned to `v7.0.1`. While this is a specific version, it's generally good practice to use the latest stable version or at least a more recent major version to benefit from bug fixes, security patches, and new features. The current latest stable version is `v4`. Using an older version might expose the workflow to known vulnerabilities or limit functionality.\n\n#### 2. Inconsistent `actions/checkout` Version Pinning\n\n*   **Severity:** Low\n*   **Evidence:** `.github/workflows/codeql-analysis.yml:40`\n*   **Description:** The `actions/checkout` action is pinned using a full commit SHA (`3d3c42e5aac5ba805825da76410c181273ba90b1`) and a comment indicating `v7.0.1`. While pinning to a SHA is good for reproducibility, the comment is misleading as `v7.0.1` is not a standard version for `actions/checkout`. The latest major version is `v4`. This could cause confusion for future maintainers. It's recommended to either pin to `v4` directly (e.g., `uses: actions/checkout@v4`) or ensure the comment accurately reflects the SHA's corresponding version.\n\n### Non-Claim Risks\n\n*   **Supply Chain Security:** The update of `github/codeql-action` from `v4.37.3` to `v4.37.4` is a positive step, as it indicates keeping dependencies up-to-date. However, relying on external actions always introduces a supply chain risk. While pinning to specific SHAs mitigates some risks (like unexpected breaking changes from `latest`), it doesn't eliminate the risk of a compromised action version. Regular review of action updates and their release notes is crucial.\n*   **Workflow Stability:** Updating action versions, even minor ones, can sometimes introduce subtle changes or regressions. While unlikely for a patch release like `v4.37.3` to `v4.37.4`, it's always a good practice to monitor the workflow runs after such updates to ensure continued functionality and expected behavior.\n*   **Performance:** Newer versions of actions might offer performance improvements. While not explicitly a risk, not updating `actions/checkout` could mean missing out on potential speedups in the workflow execution.",
+    "latency_ms": 4611,
+    "prompt_tokens": 963,
+    "completion_tokens": 597,
+    "cost": 0.000503
+  },
+  "side_b": {
+    "model": "deepseek/deepseek-chat",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22228",
+    "pr_id": "etcd-io_etcd_PR22228",
+    "diff_lines": 34,
+    "raw_text": "Here's my review of the git diff:\n\n=== Issues ===\n\n1. **Outdated CodeQL Action Version**\n- Severity: Low\n- Location: \n  - .github/workflows/codeql-analysis.yml (lines 43, 53, 56)\n  - .github/workflows/scorecards.yml (line 53)\n- Description: The diff updates CodeQL actions from v4.37.3 to v4.37.4. While this is a version bump, the latest stable version should be verified. Currently, the latest stable version is v4.37.4 (as shown in the diff), but it's worth checking if there are newer versions available.\n\n2. **Mixed Version References**\n- Severity: Low\n- Location: \n  - .github/workflows/codeql-analysis.yml (line 40)\n- Description: The checkout action is still using an older version (v7.0.1) while other actions are being updated. Consider updating all actions to their latest stable versions for consistency and security.\n\n=== Non-claim Risks ===\n\n1. **Security Scanning Tools Update**\n- The update to newer versions of CodeQL actions improves security scanning capabilities but should be accompanied by verification that the new versions don't introduce any breaking changes to the existing workflow.\n\n2. **Dependency Management**\n- The diff shows good practice of pinning actions to specific commit hashes rather than just version tags, which provides better security through immutable references.\n\n=== Recommendations ===\n1. Consider updating all GitHub Actions in the workflow files to their latest stable versions\n2. Verify that the new CodeQL versions don't introduce any breaking changes to the analysis\n3. Maintain consistency in version updates across all actions in the workflow files\n\nThe changes are generally positive as they represent routine maintenance updates to security scanning tools. No high severity issues were identified in this diff.",
+    "latency_ms": 11961,
+    "prompt_tokens": 812,
+    "completion_tokens": 384,
+    "cost": 0.000642
+  }
+}

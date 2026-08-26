@@ -1,0 +1,159 @@
+diff --git a/web/api/v1/openapi_examples.go b/web/api/v1/openapi_examples.go
+index 71a7faff0ac..e0296eca73d 100644
+--- a/web/api/v1/openapi_examples.go
++++ b/web/api/v1/openapi_examples.go
+@@ -19,6 +19,7 @@ import (
+ 	"github.com/pb33f/libopenapi/datamodel/high/base"
+ 	"github.com/pb33f/libopenapi/orderedmap"
+ 
++	"github.com/prometheus/prometheus/model/histogram"
+ 	"github.com/prometheus/prometheus/model/labels"
+ 	"github.com/prometheus/prometheus/promql"
+ )
+@@ -288,7 +289,26 @@ func queryResponseExamples() *orderedmap.Map[string, *base.Example] {
+ 		Value:   matrixExample(matrixResult),
+ 	})
+ 
+-	// TODO: Add native histogram example.
++	histogramResult := promql.Vector{
++		promql.Sample{
++			Metric: labels.FromStrings("__name__", "http_request_duration_seconds", "job", "prometheus", "instance", "demo.prometheus.io:9090"),
++			T:      1767436620000,
++			H: &histogram.FloatHistogram{
++				Schema:          1,
++				ZeroThreshold:   1e-128,
++				ZeroCount:       0,
++				Count:           12.5,
++				Sum:             42.1,
++				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 2}},
++				PositiveBuckets: []float64{5, 7.5},
++			},
++		},
++	}
++
++	examples.Set("histogramResult", &base.Example{
++		Summary: "Instant vector query with native histograms",
++		Value:   vectorExample(histogramResult),
++	})
+ 
+ 	return examples
+ }
+@@ -313,7 +333,29 @@ func queryRangeResponseExamples() *orderedmap.Map[string, *base.Example] {
+ 		Value:   matrixExample(matrixResult),
+ 	})
+ 
+-	// TODO: Add native histogram example.
++	histogramResult := promql.Matrix{
++		promql.Series{
++			Metric: labels.FromStrings("__name__", "http_request_duration_seconds", "job", "prometheus", "instance", "demo.prometheus.io:9090"),
++			Histograms: []promql.HPoint{
++				{
++					T: 1767433020000,
++					H: &histogram.FloatHistogram{
++						Schema:          1,
++						ZeroThreshold:   1e-128,
++						Count:           12.5,
++						Sum:             42.1,
++						PositiveSpans:   []histogram.Span{{Offset: 0, Length: 2}},
++						PositiveBuckets: []float64{5, 7.5},
++					},
++				},
++			},
++		},
++	}
++
++	examples.Set("histogramResult", &base.Example{
++		Summary: "Range query with native histograms",
++		Value:   matrixExample(histogramResult),
++	})
+ 
+ 	return examples
+ }
+diff --git a/web/api/v1/testdata/openapi_3.1_golden.yaml b/web/api/v1/testdata/openapi_3.1_golden.yaml
+index 71b1379f54c..8b666c4f7ea 100644
+--- a/web/api/v1/testdata/openapi_3.1_golden.yaml
++++ b/web/api/v1/testdata/openapi_3.1_golden.yaml
+@@ -127,6 +127,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range vector query: up[5m]'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767436320, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Instant vector query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "vector", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histogram": [1767436620, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]}]}}
+                 default:
+                     description: Error executing query.
+                     content:
+@@ -191,6 +194,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range vector query: up[5m]'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767436320, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Instant vector query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "vector", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histogram": [1767436620, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]}]}}
+                 default:
+                     description: Error executing instant query.
+                     content:
+@@ -348,6 +354,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range query: rate(prometheus_http_requests_total[5m])'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767433020, "1"], [1767434820, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Range query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histograms": [[1767433020, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]]}]}}
+                 default:
+                     description: Error executing range query.
+                     content:
+@@ -400,6 +409,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range query: rate(prometheus_http_requests_total[5m])'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767433020, "1"], [1767434820, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Range query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histograms": [[1767433020, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]]}]}}
+                 default:
+                     description: Error executing range query.
+                     content:
+diff --git a/web/api/v1/testdata/openapi_3.2_golden.yaml b/web/api/v1/testdata/openapi_3.2_golden.yaml
+index 7df14ae3fb7..32bfa40c55e 100644
+--- a/web/api/v1/testdata/openapi_3.2_golden.yaml
++++ b/web/api/v1/testdata/openapi_3.2_golden.yaml
+@@ -127,6 +127,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range vector query: up[5m]'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767436320, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Instant vector query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "vector", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histogram": [1767436620, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]}]}}
+                 default:
+                     description: Error executing query.
+                     content:
+@@ -191,6 +194,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range vector query: up[5m]'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767436320, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Instant vector query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "vector", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histogram": [1767436620, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]}]}}
+                 default:
+                     description: Error executing instant query.
+                     content:
+@@ -348,6 +354,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range query: rate(prometheus_http_requests_total[5m])'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767433020, "1"], [1767434820, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Range query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histograms": [[1767433020, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]]}]}}
+                 default:
+                     description: Error executing range query.
+                     content:
+@@ -400,6 +409,9 @@ paths:
+                                 matrixResult:
+                                     summary: 'Range query: rate(prometheus_http_requests_total[5m])'
+                                     value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "up", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "values": [[1767433020, "1"], [1767434820, "1"], [1767436620, "1"]]}]}}
++                                histogramResult:
++                                    summary: Range query with native histograms
++                                    value: {"status": "success", "data": {"resultType": "matrix", "result": [{"metric": {"__name__": "http_request_duration_seconds", "instance": "demo.prometheus.io:9090", "job": "prometheus"}, "histograms": [[1767433020, {"count": "12.5", "sum": "42.1", "buckets": [[0, "0.7071067811865475", "1", "5"], [0, "1", "1.414213562373095", "7.5"]]}]]}]}}
+                 default:
+                     description: Error executing range query.
+                     content:

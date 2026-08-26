@@ -1,0 +1,664 @@
+diff --git a/etcd.conf.yml.sample b/etcd.conf.yml.sample
+index 5fc525206772..44f5a3310319 100644
+--- a/etcd.conf.yml.sample
++++ b/etcd.conf.yml.sample
+@@ -28,9 +28,6 @@ listen-peer-urls: http://localhost:2380
+ # List of comma separated URLs to listen on for client traffic.
+ listen-client-urls: http://localhost:2379
+ 
+-# Maximum number of snapshot files to retain (0 is unlimited).
+-max-snapshots: 5
+-
+ # Maximum number of wal files to retain (0 is unlimited).
+ max-wals: 5
+ 
+diff --git a/server/config/config.go b/server/config/config.go
+index 2d5513395d08..365d0f2cb047 100644
+--- a/server/config/config.go
++++ b/server/config/config.go
+@@ -60,8 +60,7 @@ type ServerConfig struct {
+ 	// follower to catch up.
+ 	SnapshotCatchUpEntries uint64
+ 
+-	MaxSnapFiles uint
+-	MaxWALFiles  uint
++	MaxWALFiles uint
+ 
+ 	// BackendBatchInterval is the maximum time before commit the backend transaction.
+ 	BackendBatchInterval time.Duration
+@@ -193,9 +192,6 @@ type ServerConfig struct {
+ 	// MaxLearners sets a limit to the number of learner members that can exist in the cluster membership.
+ 	MaxLearners int `json:"max-learners"`
+ 
+-	// V2Deprecation defines a phase of v2store deprecation process.
+-	V2Deprecation V2DeprecationEnum `json:"v2-deprecation"`
+-
+ 	// LocalAddress is the local IP address to use when communicating with a peer.
+ 	LocalAddress string `json:"local-address"`
+ 
+diff --git a/server/config/v2_deprecation.go b/server/config/v2_deprecation.go
+deleted file mode 100644
+index 4913fd881715..000000000000
+--- a/server/config/v2_deprecation.go
++++ /dev/null
+@@ -1,64 +0,0 @@
+-// Copyright 2021 The etcd Authors
+-//
+-// Licensed under the Apache License, Version 2.0 (the "License");
+-// you may not use this file except in compliance with the License.
+-// You may obtain a copy of the License at
+-//
+-//     http://www.apache.org/licenses/LICENSE-2.0
+-//
+-// Unless required by applicable law or agreed to in writing, software
+-// distributed under the License is distributed on an "AS IS" BASIS,
+-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-// See the License for the specific language governing permissions and
+-// limitations under the License.
+-
+-package config
+-
+-type V2DeprecationEnum string
+-
+-const (
+-	// V2Depr0NotYet means v2store isn't deprecated yet.
+-	// Default in v3.5, and no longer supported in v3.6.
+-	V2Depr0NotYet = V2DeprecationEnum("not-yet")
+-
+-	// V2Depr1WriteOnly means only writing v2store is allowed.
+-	// Default in v3.6.  Meaningful v2 state is not allowed.
+-	// The V2 files are maintained for v3.5 rollback.
+-	V2Depr1WriteOnly = V2DeprecationEnum("write-only")
+-
+-	// V2Depr1WriteOnlySkipCheck is like V2Depr1WriteOnly, but bypasses the v2 content check.
+-	// Use only for 3.5 -> 3.6 upgrades with existing v2 data.
+-	// WARNING: Users should read the 3.5 -> 3.6 upgrade guide and use this option at their own risk
+-	V2Depr1WriteOnlySkipCheck = V2DeprecationEnum("write-only-skip-check")
+-
+-	// V2Depr1WriteOnlyDrop means v2store is WIPED if found !!!
+-	// Will be default in 3.7.
+-	V2Depr1WriteOnlyDrop = V2DeprecationEnum("write-only-drop-data")
+-
+-	// V2Depr2Gone means v2store is completely gone. The v2store is
+-	// neither written nor read. Anything related to v2store will be
+-	// cleaned up in v3.8. Usage of this configuration is blocking
+-	// ability to rollback to etcd v3.5.
+-	V2Depr2Gone = V2DeprecationEnum("gone")
+-
+-	// V2DeprDefault is the default deprecation level.
+-	V2DeprDefault = V2Depr1WriteOnly
+-)
+-
+-func (e V2DeprecationEnum) IsAtLeast(v2d V2DeprecationEnum) bool {
+-	return e.level() >= v2d.level()
+-}
+-
+-func (e V2DeprecationEnum) level() int {
+-	switch e {
+-	case V2Depr0NotYet:
+-		return 0
+-	case V2Depr1WriteOnly, V2Depr1WriteOnlySkipCheck:
+-		return 1
+-	case V2Depr1WriteOnlyDrop:
+-		return 2
+-	case V2Depr2Gone:
+-		return 3
+-	}
+-	panic("Unknown V2DeprecationEnum: " + e)
+-}
+diff --git a/server/config/v2_deprecation_test.go b/server/config/v2_deprecation_test.go
+deleted file mode 100644
+index 76d2fb62c313..000000000000
+--- a/server/config/v2_deprecation_test.go
++++ /dev/null
+@@ -1,41 +0,0 @@
+-// Copyright 2021 The etcd Authors
+-//
+-// Licensed under the Apache License, Version 2.0 (the "License");
+-// you may not use this file except in compliance with the License.
+-// You may obtain a copy of the License at
+-//
+-//     http://www.apache.org/licenses/LICENSE-2.0
+-//
+-// Unless required by applicable law or agreed to in writing, software
+-// distributed under the License is distributed on an "AS IS" BASIS,
+-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-// See the License for the specific language governing permissions and
+-// limitations under the License.
+-
+-package config
+-
+-import "testing"
+-
+-func TestV2DeprecationEnum_IsAtLeast(t *testing.T) {
+-	tests := []struct {
+-		e    V2DeprecationEnum
+-		v2d  V2DeprecationEnum
+-		want bool
+-	}{
+-		{V2Depr0NotYet, V2Depr0NotYet, true},
+-		{V2Depr0NotYet, V2Depr1WriteOnlyDrop, false},
+-		{V2Depr0NotYet, V2Depr2Gone, false},
+-		{V2Depr2Gone, V2Depr1WriteOnlyDrop, true},
+-		{V2Depr2Gone, V2Depr0NotYet, true},
+-		{V2Depr2Gone, V2Depr2Gone, true},
+-		{V2Depr1WriteOnly, V2Depr1WriteOnlyDrop, false},
+-		{V2Depr1WriteOnlyDrop, V2Depr1WriteOnly, true},
+-	}
+-	for _, tt := range tests {
+-		t.Run(string(tt.e)+" >= "+string(tt.v2d), func(t *testing.T) {
+-			if got := tt.e.IsAtLeast(tt.v2d); got != tt.want {
+-				t.Errorf("IsAtLeast() = %v, want %v", got, tt.want)
+-			}
+-		})
+-	}
+-}
+diff --git a/server/embed/config.go b/server/embed/config.go
+index d2517f4a54d7..34fe9a427ebf 100644
+--- a/server/embed/config.go
++++ b/server/embed/config.go
+@@ -45,7 +45,6 @@ import (
+ 	"go.etcd.io/etcd/pkg/v3/featuregate"
+ 	"go.etcd.io/etcd/pkg/v3/flags"
+ 	"go.etcd.io/etcd/pkg/v3/netutil"
+-	"go.etcd.io/etcd/server/v3/config"
+ 	"go.etcd.io/etcd/server/v3/etcdserver"
+ 	"go.etcd.io/etcd/server/v3/etcdserver/api/membership"
+ 	"go.etcd.io/etcd/server/v3/etcdserver/api/rafthttp"
+@@ -59,7 +58,6 @@ const (
+ 	ClusterStateFlagExisting = "existing"
+ 
+ 	DefaultName                        = "default"
+-	DefaultMaxSnapshots                = 5
+ 	DefaultMaxWALs                     = 5
+ 	DefaultMaxTxnOps                   = uint(128)
+ 	DefaultWarningApplyDuration        = 100 * time.Millisecond
+@@ -180,10 +178,6 @@ type Config struct {
+ 	// follower to catch up.
+ 	SnapshotCatchUpEntries uint64 `json:"snapshot-catchup-entries"`
+ 
+-	// MaxSnapFiles is the maximum number of snapshot files.
+-	// TODO: remove it in 3.8.
+-	// Deprecated: Will be removed in v3.8.
+-	MaxSnapFiles uint `json:"max-snapshots"`
+ 	//revive:disable-next-line:var-naming
+ 	MaxWalFiles uint `json:"max-wals"`
+ 
+@@ -452,12 +446,6 @@ type Config struct {
+ 	// be refined to mlock in-use area of bbolt only.
+ 	MemoryMlock bool `json:"memory-mlock"`
+ 
+-	// V2Deprecation describes phase of API & Storage V2 support.
+-	// Do not set this field for embedded use cases, as it has no effect. However, setting it will not cause any harm.
+-	// TODO: Delete in v3.8
+-	// Deprecated: The default value is enforced, to be removed in v3.8.
+-	V2Deprecation config.V2DeprecationEnum `json:"v2-deprecation"`
+-
+ 	// ServerFeatureGate is a server level feature gate
+ 	ServerFeatureGate featuregate.FeatureGate
+ 	// FlagsExplicitlySet stores if a flag is explicitly set from the cmd line or config file.
+@@ -507,8 +495,7 @@ func NewConfig() *Config {
+ 	lcurl, _ := url.Parse(DefaultListenClientURLs)
+ 	acurl, _ := url.Parse(DefaultAdvertiseClientURLs)
+ 	cfg := &Config{
+-		MaxSnapFiles: DefaultMaxSnapshots,
+-		MaxWalFiles:  DefaultMaxWALs,
++		MaxWalFiles: DefaultMaxWALs,
+ 
+ 		Name: DefaultName,
+ 
+@@ -575,8 +562,6 @@ func NewConfig() *Config {
+ 
+ 		CompactHashCheckTime: DefaultCompactHashCheckTime,
+ 
+-		V2Deprecation: config.V2DeprDefault,
+-
+ 		DiscoveryCfg: v3discovery.DiscoveryConfig{
+ 			ConfigSpec: clientv3.ConfigSpec{
+ 				DialTimeout:      DefaultDiscoveryDialTimeout,
+@@ -622,7 +607,6 @@ func (cfg *Config) AddFlags(fs *flag.FlagSet) {
+ 		"listen-metrics-urls",
+ 		"List of URLs to listen on for the metrics and health endpoints.",
+ 	)
+-	fs.UintVar(&cfg.MaxSnapFiles, "max-snapshots", cfg.MaxSnapFiles, "Maximum number of snapshot files to retain (0 is unlimited). Deprecated in v3.6 and will be decommissioned in v3.8.")
+ 	fs.UintVar(&cfg.MaxWalFiles, "max-wals", cfg.MaxWalFiles, "Maximum number of wal files to retain (0 is unlimited).")
+ 	fs.StringVar(&cfg.Name, "name", cfg.Name, "Human-readable name for this member.")
+ 	fs.Uint64Var(&cfg.SnapshotCount, "snapshot-count", cfg.SnapshotCount, "Number of committed transactions to trigger a snapshot.")
+@@ -1219,13 +1203,6 @@ func (cfg *Config) InferLocalAddr() string {
+ func (cfg *Config) IsNewCluster() bool { return cfg.ClusterState == ClusterStateFlagNew }
+ func (cfg *Config) ElectionTicks() int { return int(cfg.ElectionMs / cfg.TickMs) }
+ 
+-func (cfg *Config) V2DeprecationEffective() config.V2DeprecationEnum {
+-	if cfg.V2Deprecation == "" {
+-		return config.V2DeprDefault
+-	}
+-	return cfg.V2Deprecation
+-}
+-
+ func (cfg *Config) defaultPeerHost() bool {
+ 	return len(cfg.AdvertisePeerUrls) == 1 && cfg.AdvertisePeerUrls[0].String() == DefaultInitialAdvertisePeerURLs
+ }
+diff --git a/server/embed/etcd.go b/server/embed/etcd.go
+index 9cdb8d9bdb81..e32161e162cf 100644
+--- a/server/embed/etcd.go
++++ b/server/embed/etcd.go
+@@ -191,7 +191,6 @@ func StartEtcd(inCfg *Config) (e *Etcd, err error) {
+ 		DedicatedWALDir:                   cfg.WalDir,
+ 		SnapshotCount:                     cfg.SnapshotCount,
+ 		SnapshotCatchUpEntries:            cfg.SnapshotCatchUpEntries,
+-		MaxSnapFiles:                      cfg.MaxSnapFiles,
+ 		MaxWALFiles:                       cfg.MaxWalFiles,
+ 		InitialPeerURLsMap:                urlsmap,
+ 		InitialClusterToken:               token,
+@@ -235,7 +234,6 @@ func StartEtcd(inCfg *Config) (e *Etcd, err error) {
+ 		MemoryMlock:                       cfg.MemoryMlock,
+ 		BootstrapDefragThresholdMegabytes: cfg.BootstrapDefragThresholdMegabytes,
+ 		MaxLearners:                       cfg.MaxLearners,
+-		V2Deprecation:                     cfg.V2DeprecationEffective(),
+ 		LocalAddress:                      cfg.InferLocalAddr(),
+ 		ServerFeatureGate:                 cfg.ServerFeatureGate,
+ 		Metrics:                           cfg.Metrics,
+@@ -343,7 +341,6 @@ func print(lg *zap.Logger, ec Config, sc config.ServerConfig, memberInitialized
+ 		zap.Bool("initial-election-tick-advance", sc.InitialElectionTickAdvance),
+ 		zap.Uint64("snapshot-count", sc.SnapshotCount),
+ 		zap.Uint("max-wals", sc.MaxWALFiles),
+-		zap.Uint("max-snapshots", sc.MaxSnapFiles),
+ 		zap.Uint64("snapshot-catchup-entries", sc.SnapshotCatchUpEntries),
+ 		zap.Strings("initial-advertise-peer-urls", ec.getAdvertisePeerURLs()),
+ 		zap.Strings("listen-peer-urls", ec.getListenPeerURLs()),
+@@ -384,8 +381,6 @@ func print(lg *zap.Logger, ec Config, sc config.ServerConfig, memberInitialized
+ 
+ 		zap.String("downgrade-check-interval", sc.DowngradeCheckTime.String()),
+ 		zap.Int("max-learners", sc.MaxLearners),
+-
+-		zap.String("v2-deprecation", string(ec.V2Deprecation)),
+ 	)
+ }
+ 
+diff --git a/server/etcdmain/config.go b/server/etcdmain/config.go
+index e4e3d24c684b..1eab946cb475 100644
+--- a/server/etcdmain/config.go
++++ b/server/etcdmain/config.go
+@@ -29,7 +29,6 @@ import (
+ 	"go.etcd.io/etcd/api/v3/version"
+ 	"go.etcd.io/etcd/client/pkg/v3/logutil"
+ 	"go.etcd.io/etcd/pkg/v3/flags"
+-	cconfig "go.etcd.io/etcd/server/v3/config"
+ 	"go.etcd.io/etcd/server/v3/embed"
+ 	"go.etcd.io/etcd/server/v3/etcdserver/api/rafthttp"
+ )
+@@ -56,11 +55,6 @@ var (
+ 		"test.coverprofile",
+ 		"test.outputdir",
+ 	}
+-
+-	deprecatedFlags = map[string]string{
+-		"max-snapshots":  "--max-snapshots is deprecated in 3.6 and will be decommissioned in 3.8.",
+-		"v2-deprecation": "--v2-deprecation is deprecated and scheduled for removal in v3.8. The default value is enforced, ignoring user input.",
+-	}
+ )
+ 
+ // config holds the config for a command line invocation of etcd
+@@ -77,9 +71,6 @@ type configFlags struct {
+ 	flagSet      *flag.FlagSet
+ 	clusterState *flags.SelectiveStringValue
+ 	fallback     *flags.SelectiveStringValue
+-	// Deprecated and scheduled for removal in v3.8. The default value is enforced, ignoring user input.
+-	// TODO: remove in v3.8.
+-	v2deprecation *flags.SelectiveStringsValue
+ }
+ 
+ func newConfig() *config {
+@@ -97,11 +88,6 @@ func newConfig() *config {
+ 			fallbackFlagExit,
+ 			fallbackFlagProxy,
+ 		),
+-		v2deprecation: flags.NewSelectiveStringsValue(
+-			string(cconfig.V2Depr1WriteOnly),
+-			string(cconfig.V2Depr1WriteOnlySkipCheck),
+-			string(cconfig.V2Depr1WriteOnlyDrop),
+-			string(cconfig.V2Depr2Gone)),
+ 	}
+ 	fs := cfg.cf.flagSet
+ 	fs.Usage = func() {
+@@ -111,7 +97,6 @@ func newConfig() *config {
+ 	fs.StringVar(&cfg.configFile, "config-file", "", "Path to the server configuration file. Note that if a configuration file is provided, other command line flags and environment variables will be ignored.")
+ 	fs.Var(cfg.cf.fallback, "discovery-fallback", fmt.Sprintf("Valid values include %q", cfg.cf.fallback.Valids()))
+ 	fs.Var(cfg.cf.clusterState, "initial-cluster-state", "Initial cluster state ('new' when bootstrapping a new cluster or 'existing' when adding new members to an existing cluster). After successful initialization (bootstrapping or adding), flag is ignored on restarts.")
+-	fs.Var(cfg.cf.v2deprecation, "v2-deprecation", fmt.Sprintf("v2store deprecation stage: %q. Deprecated and scheduled for removal in v3.8. The default value is enforced, ignoring user input.", cfg.cf.v2deprecation.Valids()))
+ 
+ 	fs.BoolVar(&cfg.printVersion, "version", false, "Print the version and exit.")
+ 	// ignored
+@@ -164,28 +149,8 @@ func (cfg *config) parse(arguments []string) error {
+ 		err = cfg.configFromCmdLine()
+ 	}
+ 
+-	// `V2Deprecation` (--v2-deprecation) is deprecated and scheduled for removal in v3.8. The default value is enforced, ignoring user input.
+-	cfg.ec.V2Deprecation = cconfig.V2DeprDefault
+-
+ 	cfg.ec.WarningUnaryRequestDuration = cfg.parseWarningUnaryRequestDuration()
+ 
+-	// Check for deprecated options from both command line and config file
+-	var warningsForDeprecatedOpts []string
+-	for flagName := range cfg.ec.FlagsExplicitlySet {
+-		if msg, ok := deprecatedFlags[flagName]; ok {
+-			warningsForDeprecatedOpts = append(warningsForDeprecatedOpts, msg)
+-		}
+-	}
+-
+-	// Log warnings if any deprecated options were found
+-	if len(warningsForDeprecatedOpts) > 0 {
+-		if lg := cfg.ec.GetLogger(); lg != nil {
+-			for _, msg := range warningsForDeprecatedOpts {
+-				lg.Warn(msg)
+-			}
+-		}
+-	}
+-
+ 	return err
+ }
+ 
+@@ -245,8 +210,6 @@ func (cfg *config) configFromCmdLine() error {
+ 
+ 	cfg.ec.ClusterState = cfg.cf.clusterState.String()
+ 
+-	cfg.ec.V2Deprecation = cconfig.V2DeprecationEnum(cfg.cf.v2deprecation.String())
+-
+ 	// disable default advertise-client-urls if lcurls is set
+ 	missingAC := flags.IsSet(cfg.cf.flagSet, "listen-client-urls") && !flags.IsSet(cfg.cf.flagSet, "advertise-client-urls")
+ 	if missingAC {
+diff --git a/server/etcdmain/config_test.go b/server/etcdmain/config_test.go
+index b12e25c4867c..0c54b4da9c0a 100644
+--- a/server/etcdmain/config_test.go
++++ b/server/etcdmain/config_test.go
+@@ -24,7 +24,6 @@ import (
+ 	"strings"
+ 	"testing"
+ 
+-	"github.com/stretchr/testify/assert"
+ 	"github.com/stretchr/testify/require"
+ 	"sigs.k8s.io/yaml"
+ 
+@@ -41,7 +40,6 @@ func TestConfigParsingMemberFlags(t *testing.T) {
+ 		"-data-dir=testdir",
+ 		"-name=testname",
+ 		"-max-wals=10",
+-		"-max-snapshots=10",
+ 		"-snapshot-count=10",
+ 		"-snapshot-catchup-entries=1000",
+ 		"-listen-peer-urls=http://localhost:8000,https://localhost:8001",
+@@ -63,7 +61,6 @@ func TestConfigParsingMemberFlags(t *testing.T) {
+ func TestConfigFileMemberFields(t *testing.T) {
+ 	yc := struct {
+ 		Dir                    string `json:"data-dir"`
+-		MaxSnapFiles           uint   `json:"max-snapshots"`
+ 		MaxWALFiles            uint   `json:"max-wals"`
+ 		Name                   string `json:"name"`
+ 		SnapshotCount          uint64 `json:"snapshot-count"`
+@@ -75,7 +72,6 @@ func TestConfigFileMemberFields(t *testing.T) {
+ 	}{
+ 		"testdir",
+ 		10,
+-		10,
+ 		"testname",
+ 		10,
+ 		1000,
+@@ -475,7 +471,6 @@ func validateMemberFlags(t *testing.T, cfg *config) {
+ 		ListenPeerUrls:         []url.URL{{Scheme: "http", Host: "localhost:8000"}, {Scheme: "https", Host: "localhost:8001"}},
+ 		ListenClientUrls:       []url.URL{{Scheme: "http", Host: "localhost:7000"}, {Scheme: "https", Host: "localhost:7001"}},
+ 		ListenClientHttpUrls:   []url.URL{{Scheme: "http", Host: "localhost:7002"}, {Scheme: "https", Host: "localhost:7003"}},
+-		MaxSnapFiles:           10,
+ 		MaxWalFiles:            10,
+ 		Name:                   "testname",
+ 		SnapshotCount:          10,
+@@ -485,9 +480,6 @@ func validateMemberFlags(t *testing.T, cfg *config) {
+ 	if cfg.ec.Dir != wcfg.Dir {
+ 		t.Errorf("dir = %v, want %v", cfg.ec.Dir, wcfg.Dir)
+ 	}
+-	if cfg.ec.MaxSnapFiles != wcfg.MaxSnapFiles {
+-		t.Errorf("maxsnap = %v, want %v", cfg.ec.MaxSnapFiles, wcfg.MaxSnapFiles)
+-	}
+ 	if cfg.ec.MaxWalFiles != wcfg.MaxWalFiles {
+ 		t.Errorf("maxwal = %v, want %v", cfg.ec.MaxWalFiles, wcfg.MaxWalFiles)
+ 	}
+@@ -535,65 +527,3 @@ func validateClusteringFlags(t *testing.T, cfg *config) {
+ 		t.Errorf("advertise-client-urls = %v, want %v", cfg.ec.AdvertiseClientUrls, wcfg.ec.AdvertiseClientUrls)
+ 	}
+ }
+-
+-func TestConfigFileDeprecatedOptions(t *testing.T) {
+-	// Define a minimal config struct with only the fields we need
+-	type configFileYAML struct {
+-		SnapshotCount uint64 `json:"snapshot-count,omitempty"`
+-		MaxSnapFiles  uint   `json:"max-snapshots,omitempty"`
+-	}
+-
+-	testCases := []struct {
+-		name           string
+-		configFileYAML configFileYAML
+-		expectedFlags  map[string]struct{}
+-	}{
+-		{
+-			name:           "no deprecated options",
+-			configFileYAML: configFileYAML{},
+-			expectedFlags:  map[string]struct{}{},
+-		},
+-		{
+-			name: "deprecated snapshot options",
+-			configFileYAML: configFileYAML{
+-				SnapshotCount: 10000,
+-				MaxSnapFiles:  5,
+-			},
+-			expectedFlags: map[string]struct{}{
+-				"max-snapshots": {},
+-			},
+-		},
+-	}
+-
+-	for _, tc := range testCases {
+-		t.Run(tc.name, func(t *testing.T) {
+-			// Create config file
+-			b, err := yaml.Marshal(&tc.configFileYAML)
+-			if err != nil {
+-				t.Fatal(err)
+-			}
+-
+-			tmpfile := mustCreateCfgFile(t, b)
+-			defer os.Remove(tmpfile.Name())
+-
+-			// Parse config
+-			cfg := newConfig()
+-			err = cfg.parse([]string{fmt.Sprintf("--config-file=%s", tmpfile.Name())})
+-			if err != nil {
+-				t.Fatal(err)
+-			}
+-
+-			// Check which flags were set and marked as deprecated
+-			foundFlags := make(map[string]struct{})
+-			for flagName := range cfg.ec.FlagsExplicitlySet {
+-				if _, ok := deprecatedFlags[flagName]; ok {
+-					foundFlags[flagName] = struct{}{}
+-				}
+-			}
+-
+-			// Compare sets of flags
+-			assert.Equalf(t, tc.expectedFlags, foundFlags, "deprecated flags mismatch - expected: %v, got: %v",
+-				tc.expectedFlags, foundFlags)
+-		})
+-	}
+-}
+diff --git a/server/etcdmain/help.go b/server/etcdmain/help.go
+index f72dbeecf3b4..c31c5caac13f 100644
+--- a/server/etcdmain/help.go
++++ b/server/etcdmain/help.go
+@@ -21,7 +21,6 @@ import (
+ 
+ 	"golang.org/x/crypto/bcrypt"
+ 
+-	cconfig "go.etcd.io/etcd/server/v3/config"
+ 	"go.etcd.io/etcd/server/v3/embed"
+ 	"go.etcd.io/etcd/server/v3/etcdserver/api/rafthttp"
+ 	"go.etcd.io/etcd/server/v3/features"
+@@ -74,8 +73,6 @@ Member:
+     List of URLs to listen on for client grpc traffic and http as long as --listen-client-http-urls is not specified.
+   --listen-client-http-urls ''
+     List of URLs to listen on for http only client traffic. Enabling this flag removes http services from --listen-client-urls.
+-  --max-snapshots '` + strconv.Itoa(embed.DefaultMaxSnapshots) + `'
+-    Maximum number of snapshot files to retain (0 is unlimited). Deprecated in v3.6 and will be decommissioned in v3.8.
+   --max-wals '` + strconv.Itoa(embed.DefaultMaxWALs) + `'
+     Maximum number of wal files to retain (0 is unlimited).
+   --memory-mlock
+@@ -171,14 +168,6 @@ Clustering:
+     Auto compaction retention length. 0 means disable auto compaction.
+   --auto-compaction-mode 'periodic'
+     Interpret 'auto-compaction-retention' one of: periodic|revision. 'periodic' for duration based retention, defaulting to hours if no time unit is provided (e.g. '5m'). 'revision' for revision number based retention.
+-  --v2-deprecation '` + string(cconfig.V2DeprDefault) + `'
+-    Phase of v2store deprecation. Deprecated and scheduled for removal in v3.8. The default value is enforced, ignoring user input.
+-    Supported values:
+-      'not-yet'                // Issues a warning if v2store have meaningful content (default in v3.5)
+-      'write-only'             // Custom v2 state is not allowed (default in v3.6)
+-      'write-only-skip-check'  // Custom v2 state is not allowed similar to 'write-only', but bypass the v2 content check.
+-      'write-only-drop-data'   // Custom v2 state will get DELETED ! (planned default in v3.7)
+-      'gone'                   // v2store is not maintained any longer. (planned to cleanup anything related to v2store in v3.8)
+ 
+ Security:
+   --cert-file ''
+diff --git a/server/etcdserver/server.go b/server/etcdserver/server.go
+index c75dd74e6f57..ac782a8a4b36 100644
+--- a/server/etcdserver/server.go
++++ b/server/etcdserver/server.go
+@@ -93,6 +93,10 @@ const (
+ 
+ 	purgeFileInterval = 30 * time.Second
+ 
++	// maxSnapDBFiles is the maximum number of snap db files to retain.
++	// It's no longer configurable now that --max-snapshots is removed.
++	maxSnapDBFiles = 5
++
+ 	// max number of in-flight snapshot messages etcdserver allows to have
+ 	// This number is more than enough for most clusters with 5 machines.
+ 	maxInFlightMsgSnap = 16
+@@ -598,9 +602,7 @@ func (s *EtcdServer) purgeFile() {
+ 	lg := s.Logger()
+ 	var dberrc, werrc <-chan error
+ 	var dbdonec, wdonec <-chan struct{}
+-	if s.Cfg.MaxSnapFiles > 0 {
+-		dbdonec, dberrc = fileutil.PurgeFileWithoutFlock(lg, s.Cfg.SnapDir(), "snap.db", s.Cfg.MaxSnapFiles, purgeFileInterval, s.stopping)
+-	}
++	dbdonec, dberrc = fileutil.PurgeFileWithoutFlock(lg, s.Cfg.SnapDir(), "snap.db", maxSnapDBFiles, purgeFileInterval, s.stopping)
+ 	if s.Cfg.MaxWALFiles > 0 {
+ 		wdonec, werrc = fileutil.PurgeFileWithDoneNotify(lg, s.Cfg.WALDir(), "wal", s.Cfg.MaxWALFiles, purgeFileInterval, s.stopping)
+ 	}
+diff --git a/tests/e2e/etcd_config_test.go b/tests/e2e/etcd_config_test.go
+index 1a699bed9dd1..bf3bd6926b97 100644
+--- a/tests/e2e/etcd_config_test.go
++++ b/tests/e2e/etcd_config_test.go
+@@ -662,75 +662,6 @@ func TestEtcdTLSVersion(t *testing.T) {
+ 	proc.Close()
+ }
+ 
+-// TestEtcdDeprecatedFlags checks that etcd will print warning messages if deprecated flags are set.
+-func TestEtcdDeprecatedFlags(t *testing.T) {
+-	e2e.SkipInShortMode(t)
+-
+-	commonArgs := []string{
+-		e2e.BinPath.Etcd,
+-		"--name", "e1",
+-	}
+-
+-	testCases := []struct {
+-		name        string
+-		args        []string
+-		expectedMsg string
+-	}{
+-		{
+-			name:        "max-snapshots",
+-			args:        append(commonArgs, "--max-snapshots=10"),
+-			expectedMsg: "--max-snapshots is deprecated in 3.6 and will be decommissioned in 3.8",
+-		},
+-		{
+-			name:        "v2-deprecation",
+-			args:        append(commonArgs, "--v2-deprecation", "write-only-drop-data"),
+-			expectedMsg: "--v2-deprecation is deprecated and scheduled for removal in v3.8. The default value is enforced, ignoring user input",
+-		},
+-	}
+-
+-	for _, tc := range testCases {
+-		t.Run(tc.name, func(t *testing.T) {
+-			proc, err := e2e.SpawnCmd(
+-				tc.args, nil,
+-			)
+-			require.NoError(t, err)
+-			require.NoError(t, e2e.WaitReadyExpectProc(t.Context(), proc, []string{tc.expectedMsg}))
+-			require.NoError(t, proc.Stop())
+-
+-			proc.Wait() // ensure the port has been released
+-			proc.Close()
+-		})
+-	}
+-}
+-
+-// TestV2DeprecationEnforceDefaultValue verifies that etcd enforces the default V2Deprecation level
+-// and ignores users input.
+-func TestV2DeprecationEnforceDefaultValue(t *testing.T) {
+-	e2e.SkipInShortMode(t)
+-
+-	commonArgs := []string{
+-		e2e.BinPath.Etcd,
+-		"--name", "e1",
+-	}
+-
+-	validV2DeprecationLevels := []string{"write-only", "write-only-drop-data", "gone"}
+-	expectedDeprecationLevelMsg := `"v2-deprecation":"write-only"`
+-
+-	for _, optionLevel := range validV2DeprecationLevels {
+-		t.Run(optionLevel, func(t *testing.T) {
+-			proc, err := e2e.SpawnCmd(
+-				append(commonArgs, "--v2-deprecation", optionLevel), nil,
+-			)
+-			require.NoError(t, err)
+-			require.NoError(t, e2e.WaitReadyExpectProc(t.Context(), proc, []string{expectedDeprecationLevelMsg}))
+-			require.NoError(t, proc.Stop())
+-
+-			proc.Wait() // ensure the port has been released
+-			proc.Close()
+-		})
+-	}
+-}
+-
+ func TestEtcdAdvertiseClientUnix(t *testing.T) {
+ 	e2e.SkipInShortMode(t)
+ 
+diff --git a/tests/e2e/v2store_deprecation_test.go b/tests/e2e/v2store_deprecation_test.go
+index 20be19557c4d..5d45ae13650b 100644
+--- a/tests/e2e/v2store_deprecation_test.go
++++ b/tests/e2e/v2store_deprecation_test.go
+@@ -26,16 +26,6 @@ import (
+ 	"go.etcd.io/etcd/tests/v3/framework/e2e"
+ )
+ 
+-func TestV2DeprecationNotYet(t *testing.T) {
+-	e2e.BeforeTest(t)
+-	t.Log("Verify its infeasible to start etcd with --v2-deprecation=not-yet mode")
+-	proc, err := e2e.SpawnCmd([]string{e2e.BinPath.Etcd, "--v2-deprecation=not-yet"}, nil)
+-	require.NoError(t, err)
+-
+-	_, err = proc.Expect(`invalid value "not-yet" for flag -v2-deprecation: invalid value "not-yet"`)
+-	assert.NoError(t, err)
+-}
+-
+ func TestV2DeprecationSnapshotRecover(t *testing.T) {
+ 	e2e.BeforeTest(t)
+ 	dataDir := t.TempDir()
+diff --git a/tests/framework/integration/cluster.go b/tests/framework/integration/cluster.go
+index ccd72b140b91..bac23d0ca776 100644
+--- a/tests/framework/integration/cluster.go
++++ b/tests/framework/integration/cluster.go
+@@ -730,7 +730,6 @@ func MustNewMember(t testutil.TB, mcfg MemberConfig) *Member {
+ 		m.MaxLearners = mcfg.MaxLearners
+ 	}
+ 	m.Metrics = mcfg.Metrics
+-	m.V2Deprecation = config.V2DeprDefault
+ 	m.GRPCServerRecorder = &grpctesting.GRPCRecorder{}
+ 
+ 	m.Logger, m.LogObserver = memberLogger(t, mcfg.Name)

@@ -1,0 +1,31 @@
+diff --git a/tsdb/chunks/chunks.go b/tsdb/chunks/chunks.go
+index b15b93d3162..d2d63812d59 100644
+--- a/tsdb/chunks/chunks.go
++++ b/tsdb/chunks/chunks.go
+@@ -76,7 +76,10 @@ func (p HeadChunkRef) Unpack() (HeadSeriesRef, HeadChunkID) {
+ }
+ 
+ // HeadChunkID refers to a specific chunk in a series (memSeries) in the Head.
+-// Each memSeries has its own monotonically increasing number to refer to its chunks.
++// Each memSeries has its own number to refer to its chunks: it is monotonically
++// increasing for in-order chunks, while out-of-order chunk IDs wrap around modulo
++// 2^23 (see oooHeadChunkID in tsdb/head_read.go), so they only increase between
++// wrap-arounds.
+ // If the HeadChunkID value is...
+ //   - memSeries.firstChunkID+len(memSeries.mmappedChunks), it's the head chunk.
+ //   - less than the above, but >= memSeries.firstID, then it's
+diff --git a/tsdb/head_read.go b/tsdb/head_read.go
+index 34f1b970ad3..20cdf6ee156 100644
+--- a/tsdb/head_read.go
++++ b/tsdb/head_read.go
+@@ -420,8 +420,8 @@ const oooChunkIDMask = 1 << 23
+ //
+ // The position is wrapped modulo oooChunkIDMask so that firstOOOChunkID can
+ // grow indefinitely without overflowing the 23-bit ID space. Correctness
+-// requires len(oooMmappedChunks) << oooChunkIDMask, which is enforced by the
+-// guard in mmapCurrentOOOHeadChunk.
++// requires len(oooMmappedChunks) to stay below oooChunkIDMask, which is
++// enforced by the guard in mmapCurrentOOOHeadChunk.
+ func (s *memSeries) oooHeadChunkID(pos int) chunks.HeadChunkID {
+ 	return ((chunks.HeadChunkID(pos) + s.ooo.firstOOOChunkID) & (oooChunkIDMask - 1)) | oooChunkIDMask
+ }

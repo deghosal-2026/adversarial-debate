@@ -1,0 +1,33 @@
+{
+  "additions": 6,
+  "author": {
+    "id": "MDQ6VXNlcjI5MTc1MA==",
+    "is_bot": false,
+    "login": "roidelapluie",
+    "name": "Julien"
+  },
+  "body": "Follow-up to #19216: the HeadChunkID doc still promised a monotonically increasing per-series number, which no longer holds for out-of-order chunk IDs now that they wrap modulo 2^23. Also spell out the \"much less than\" relation in the oooHeadChunkID comment, where << is easy to misread as a bit-shift.\r\n\r\n<!--\r\n    - Please give your PR a title in the form \"area: short description\".  For example \"tsdb: reduce disk usage by 95%\"\r\n\r\n    - Please sign CNCF's Developer Certificate of Origin and sign-off your commits by adding the -s / --signoff flag to `git commit`. See https://github.com/apps/dco for more information.\r\n\r\n    - If the PR adds or changes a behaviour or fixes a bug of an exported API it would need a unit/e2e test.\r\n\r\n    - Where possible use only exported APIs for tests to simplify the review and make it as close as possible to an actual library usage.\r\n\r\n    - Performance improvements would need a benchmark test to prove it.\r\n\r\n    - All exposed objects should have a comment.\r\n\r\n    - All comments should start with a capital letter and end with a full stop.\r\n -->\r\n\r\n#### Which issue(s) does the PR fix:\r\n<!--\r\nIf it applies.\r\nAutomatically closes linked issue when PR is merged.\r\nUsage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.\r\nMore at https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword\r\n-->\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n*Reviewers should verify clarity and quality.*\r\n\r\n<!--\r\nWrite NONE only if there is no user-facing change.\r\n\r\nOtherwise use one of: [FEATURE] [ENHANCEMENT] [PERF] [BUGFIX] [SECURITY] [CHANGE]\r\nFollowing the pattern `[TYPE] Component: description.`\r\n\r\nExample: [FEATURE] API: Add `/api/v1/features` endpoint.\r\n\r\nRefer to the existing CHANGELOG for inspiration:  https://github.com/prometheus/\r\nprometheus/blob/main/CHANGELOG.md\r\n-->\r\n```release-notes\r\nNONE\r\n```\r\n",
+  "changedFiles": 2,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABOnFg-Q",
+      "author": {
+        "login": "aamoghS"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "**Validate.**\r\n\r\nThis matches #19216: OOO chunk IDs wrap modulo 2^23, so the old \"monotonically increasing per series\" `HeadChunkID` comment is wrong. Spelling out that `<<` in the `oooHeadChunkID` comment is \"much less than\" (not a shift) is also worth doing. `NONE` release notes are correct for a comment-only change.\r\n",
+      "createdAt": "2026-08-13T03:10:00Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19401#issuecomment-5275476217",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 3,
+  "labels": [],
+  "mergedAt": "2026-08-13T12:04:40Z",
+  "state": "MERGED",
+  "title": "tsdb: document that OOO chunk IDs are no longer monotonically increasing"
+}

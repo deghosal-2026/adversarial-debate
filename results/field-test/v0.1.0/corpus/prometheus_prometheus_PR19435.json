@@ -1,0 +1,17 @@
+{
+  "additions": 285,
+  "author": {
+    "id": "MDQ6VXNlcjIzNDg5MQ==",
+    "is_bot": false,
+    "login": "ekalinin",
+    "name": "Eugene Kalinin"
+  },
+  "body": "None of the members of the SDK's `ServerlessCache` and `CacheCluster` types are marked required - `elasticache v1.56.4` carries zero `This member is required` annotations on either - but the ElastiCache discovery dereferences nine of them with no nil check, all inside the `model.LabelSet` literals:\r\n\r\n```go\r\nlabels := model.LabelSet{\r\n\telasticacheLabelDeploymentOption:      model.LabelValue(\"serverless\"),\r\n\telasticacheLabelServerlessCacheARN:    model.LabelValue(*cache.ARN),\r\n\telasticacheLabelServerlessCacheName:   model.LabelValue(*cache.ServerlessCacheName),\r\n\t...\r\n}\r\n```\r\n\r\nA cache returned without one of them panics, and since nothing under `discovery/` recovers, that takes down the whole Prometheus process. The fields further down in the same two functions are already guarded, so this reads as an oversight in the literals rather than a deliberate assumption.\r\n\r\nGuarded here, following the pattern the surrounding code already uses:\r\n\r\n- `ServerlessCache`: `ARN`, `ServerlessCacheName`, `Status`, `Engine`, `FullEngineVersion`, `MajorEngineVersion`\r\n- `CacheCluster`: `ARN`, `CacheClusterId`, `CacheClusterStatus`\r\n\r\n`ARN` additionally keys the tag lookup. Resources without one are skipped when collecting the ARNs to describe tags for, and the lookup goes through `aws.ToString`, so a missing ARN yields no tags instead of a panic.\r\n\r\n**On the first commit.** Writing a test that drives `refresh()` with both deployment options populated exposed a data race: the two errgroup goroutines each append to the same `targetgroup.Group` with no synchronisation. No existing test covered that combination, which is why it went unnoticed. CI runs the suite with `-race`, so this had to be fixed before the test could land, and it is separated into its own commit.\r\n\r\nThe second commit adds the test and fails; the third adds the guards.\r\n\r\n```release-notes\r\n[BUGFIX] AWS SD: Do not panic when the ElastiCache API omits optional fields of a serverless cache or cache cluster.\r\n```\r\n",
+  "changedFiles": 2,
+  "comments": [],
+  "deletions": 14,
+  "labels": [],
+  "mergedAt": "2026-08-17T06:50:55Z",
+  "state": "MERGED",
+  "title": "discovery/aws: don't panic on ElastiCache resources with absent optional fields"
+}

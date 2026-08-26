@@ -1,0 +1,130 @@
+diff --git a/discovery/kubernetes/service.go b/discovery/kubernetes/service.go
+index ac2d42fc7c8..8d94a495795 100644
+--- a/discovery/kubernetes/service.go
++++ b/discovery/kubernetes/service.go
+@@ -20,6 +20,7 @@ import (
+ 	"log/slog"
+ 	"net"
+ 	"strconv"
++	"strings"
+ 
+ 	"github.com/prometheus/client_golang/prometheus"
+ 	"github.com/prometheus/common/model"
+@@ -234,7 +235,7 @@ func (s *Service) buildService(svc *apiv1.Service) *targetgroup.Group {
+ 		}
+ 
+ 		if svc.Spec.Type == apiv1.ServiceTypeLoadBalancer {
+-			labelSet[serviceLoadBalancerIP] = lv(svc.Spec.LoadBalancerIP)
++			labelSet[serviceLoadBalancerIP] = lv(loadBalancerIPs(svc))
+ 		}
+ 
+ 		tg.Targets = append(tg.Targets, labelSet)
+@@ -242,3 +243,19 @@ func (s *Service) buildService(svc *apiv1.Service) *targetgroup.Group {
+ 
+ 	return tg
+ }
++
++// loadBalancerIPs returns the LoadBalancer addresses from status.ingress,
++// falling back to the deprecated spec.loadBalancerIP. Multiple ingress IPs
++// are joined with commas so relabeling can extract them.
++func loadBalancerIPs(svc *apiv1.Service) string {
++	var ips []string
++	for _, ing := range svc.Status.LoadBalancer.Ingress {
++		if ing.IP != "" {
++			ips = append(ips, ing.IP)
++		}
++	}
++	if len(ips) > 0 {
++		return strings.Join(ips, ",")
++	}
++	return svc.Spec.LoadBalancerIP
++}
+diff --git a/discovery/kubernetes/service_test.go b/discovery/kubernetes/service_test.go
+index 56a785d9c22..67a4abb45a7 100644
+--- a/discovery/kubernetes/service_test.go
++++ b/discovery/kubernetes/service_test.go
+@@ -113,6 +113,34 @@ func makeLoadBalancerService() *v1.Service {
+ 	}
+ }
+ 
++func makeLoadBalancerServiceFromIngress() *v1.Service {
++	return &v1.Service{
++		ObjectMeta: metav1.ObjectMeta{
++			Name:      "testservice-lb-ingress",
++			Namespace: "default",
++		},
++		Spec: v1.ServiceSpec{
++			Ports: []v1.ServicePort{
++				{
++					Name:     "testport",
++					Protocol: v1.ProtocolTCP,
++					Port:     int32(31900),
++				},
++			},
++			Type:      v1.ServiceTypeLoadBalancer,
++			ClusterIP: "10.0.0.1",
++		},
++		Status: v1.ServiceStatus{
++			LoadBalancer: v1.LoadBalancerStatus{
++				Ingress: []v1.LoadBalancerIngress{
++					{IP: "192.168.1.15"},
++					{IP: "2001:db8::1"},
++				},
++			},
++		},
++	}
++}
++
+ func TestServiceDiscoveryAdd(t *testing.T) {
+ 	t.Parallel()
+ 	n, c := makeDiscovery(RoleService, NamespaceDiscovery{})
+@@ -126,8 +154,10 @@ func TestServiceDiscoveryAdd(t *testing.T) {
+ 			c.CoreV1().Services(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+ 			obj = makeLoadBalancerService()
+ 			c.CoreV1().Services(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
++			obj = makeLoadBalancerServiceFromIngress()
++			c.CoreV1().Services(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+ 		},
+-		expectedMaxItems: 3,
++		expectedMaxItems: 4,
+ 		expectedRes: map[string]*targetgroup.Group{
+ 			"svc/default/testservice": {
+ 				Targets: []model.LabelSet{
+@@ -181,6 +211,24 @@ func TestServiceDiscoveryAdd(t *testing.T) {
+ 				},
+ 				Source: "svc/default/testservice-loadbalancer",
+ 			},
++			"svc/default/testservice-lb-ingress": {
++				Targets: []model.LabelSet{
++					{
++						"__meta_kubernetes_service_port_protocol": "TCP",
++						"__address__":                               "testservice-lb-ingress.default.svc:31900",
++						"__meta_kubernetes_service_type":            "LoadBalancer",
++						"__meta_kubernetes_service_port_name":       "testport",
++						"__meta_kubernetes_service_port_number":     "31900",
++						"__meta_kubernetes_service_cluster_ip":      "10.0.0.1",
++						"__meta_kubernetes_service_loadbalancer_ip": "192.168.1.15,2001:db8::1",
++					},
++				},
++				Labels: model.LabelSet{
++					"__meta_kubernetes_service_name": "testservice-lb-ingress",
++					"__meta_kubernetes_namespace":    "default",
++				},
++				Source: "svc/default/testservice-lb-ingress",
++			},
+ 		},
+ 	}.Run(t)
+ }
+diff --git a/docs/configuration/configuration.md b/docs/configuration/configuration.md
+index 93fc74a68c9..e281bd19a8b 100644
+--- a/docs/configuration/configuration.md
++++ b/docs/configuration/configuration.md
+@@ -2469,7 +2469,7 @@ Available meta labels:
+ * `__meta_kubernetes_service_annotation_<annotationname>`: Each annotation from the service object.
+ * `__meta_kubernetes_service_annotationpresent_<annotationname>`: "true" for each annotation of the service object.
+ * `__meta_kubernetes_service_cluster_ip`: The cluster IP address of the service. (Does not apply to services of type ExternalName)
+-* `__meta_kubernetes_service_loadbalancer_ip`: The IP address of the loadbalancer. (Applies to services of type LoadBalancer)
++* `__meta_kubernetes_service_loadbalancer_ip`: The IP address of the load balancer, taken from `status.loadBalancer.ingress` (comma-separated when there are multiple). Falls back to the deprecated `spec.loadBalancerIP`. (Applies to services of type LoadBalancer)
+ * `__meta_kubernetes_service_external_name`: The DNS name of the service. (Applies to services of type ExternalName)
+ * `__meta_kubernetes_service_label_<labelname>`: Each label from the service object, with any unsupported characters converted to an underscore.
+ * `__meta_kubernetes_service_labelpresent_<labelname>`: `true` for each label of the service object, with any unsupported characters converted to an underscore.

@@ -1,0 +1,102 @@
+diff --git a/tests/common/member_test.go b/tests/common/member_test.go
+index 10037a42e157..ea90775e4dd7 100644
+--- a/tests/common/member_test.go
++++ b/tests/common/member_test.go
+@@ -230,6 +230,59 @@ func TestMemberRemove(t *testing.T) {
+ 	}
+ }
+ 
++func TestMemberListSerializable(t *testing.T) {
++	testRunner.BeforeTest(t)
++	tcs := []struct {
++		name         string
++		serializable bool
++		timeout      time.Duration
++
++		expectedError string
++	}{
++		{
++			name:         "Serializable",
++			serializable: true,
++		},
++		{
++			name:          "Linearizable",
++			timeout:       time.Second,
++			expectedError: "context deadline exceeded",
++		},
++	}
++	for _, tc := range tcs {
++		t.Run(tc.name, func(t *testing.T) {
++			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
++			defer cancel()
++			clus := testRunner.NewCluster(ctx, t, config.WithClusterSize(1))
++			defer clus.Close()
++			cc := testutils.MustClient(clus.Client())
++
++			testutils.ExecuteUntil(ctx, t, func() {
++				resp, err := cc.MemberList(ctx, false)
++				require.NoError(t, err)
++				require.Len(t, resp.Members, 1)
++
++				_, err = cc.MemberAdd(ctx, "newmember", []string{"http://localhost:123"})
++				require.NoError(t, err)
++
++				callCtx := ctx
++				if tc.timeout != 0 {
++					var cancelCall context.CancelFunc
++					callCtx, cancelCall = context.WithTimeout(ctx, tc.timeout)
++					defer cancelCall()
++				}
++				resp, err = cc.MemberList(callCtx, tc.serializable)
++				if tc.expectedError != "" {
++					require.ErrorContains(t, err, tc.expectedError)
++					return
++				}
++				require.NoError(t, err)
++				require.Len(t, resp.Members, 2)
++			})
++		})
++	}
++}
++
+ // memberToRemove chooses a member to remove.
+ // If clusterSize == 1, return the only member.
+ // Otherwise, return a member that client has not connected to.
+diff --git a/tests/e2e/ctl_v3_member_test.go b/tests/e2e/ctl_v3_member_test.go
+index 234adbc28158..7925b63ae147 100644
+--- a/tests/e2e/ctl_v3_member_test.go
++++ b/tests/e2e/ctl_v3_member_test.go
+@@ -37,12 +37,6 @@ import (
+ 
+ func TestCtlV3MemberList(t *testing.T)        { testCtl(t, memberListTest) }
+ func TestCtlV3MemberListWithHex(t *testing.T) { testCtl(t, memberListWithHexTest) }
+-func TestCtlV3MemberListSerializable(t *testing.T) {
+-	cfg := e2e.NewConfig(
+-		e2e.WithClusterSize(1),
+-	)
+-	testCtl(t, memberListSerializableTest, withCfg(*cfg))
+-}
+ 
+ func TestCtlV3MemberAdd(t *testing.T)          { testCtl(t, memberAddTest) }
+ func TestCtlV3MemberAddAsLearner(t *testing.T) { testCtl(t, memberAddAsLearnerTest) }
+@@ -165,20 +159,6 @@ func memberListTest(cx ctlCtx) {
+ 	}
+ }
+ 
+-func memberListSerializableTest(cx ctlCtx) {
+-	resp, err := getMemberList(cx, false)
+-	require.NoError(cx.t, err)
+-	require.Len(cx.t, resp.Members, 1)
+-
+-	peerURL := fmt.Sprintf("http://localhost:%d", e2e.EtcdProcessBasePort+11)
+-	err = ctlV3MemberAdd(cx, peerURL, false)
+-	require.NoError(cx.t, err)
+-
+-	resp, err = getMemberList(cx, true)
+-	require.NoError(cx.t, err)
+-	require.Len(cx.t, resp.Members, 2)
+-}
+-
+ func ctlV3MemberList(cx ctlCtx) error {
+ 	cmdArgs := append(cx.PrefixArgs(), "member", "list")
+ 	lines := make([]expect.ExpectedResponse, cx.cfg.ClusterSize)

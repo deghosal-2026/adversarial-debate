@@ -1,0 +1,27 @@
+{
+  "pair": "pair2_gemini_deepseek",
+  "pr_id": "etcd-io_etcd_PR22232",
+  "pr_url": "https://github.com/etcd-io/etcd/pull/22232",
+  "side_a": {
+    "model": "google/gemini-2.5-flash",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22232",
+    "pr_id": "etcd-io_etcd_PR22232",
+    "diff_lines": 13,
+    "raw_text": "## Code Review Report\n\nThis diff updates the `scorecard-action` version in a GitHub Actions workflow.\n\n### Issues\n\n**1. Hardcoded SHA for Action Version**\n\n*   **Severity:** Medium\n*   **Evidence:** `.github/workflows/scorecards.yml:L28`\n*   **Description:** The `scorecard-action` is pinned to a specific commit SHA (`2d1146689b8cda280b9bc96326124645441f03bc`) instead of a tag (`v2.4.4`). While this provides immutability, it makes it harder to identify the exact version at a glance and requires manual updates for future patch releases. It also doesn't leverage GitHub's built-in dependency graph for actions.\n\n### Non-Claim Risks\n\n*   **Supply Chain Security:** While the hardcoded SHA provides immutability and prevents unexpected changes from a mutable tag, it also means that if a vulnerability is found in `v2.4.4` and a `v2.4.5` is released, this workflow will not automatically pick up the fix. Manual intervention will be required to update the SHA.\n*   **Maintainability:** Future updates to the `scorecard-action` will require manually looking up the new SHA and updating the workflow file, which can be tedious and error-prone. Using a tag like `v2.4.4` or `v2` would allow for easier updates (though `v2` carries its own risks of breaking changes).\n*   **Readability:** The long SHA is less readable than a version tag, making it slightly harder to quickly understand which version of the action is being used.",
+    "latency_ms": 3330,
+    "prompt_tokens": 310,
+    "completion_tokens": 372,
+    "cost": 0.00027
+  },
+  "side_b": {
+    "model": "deepseek/deepseek-chat",
+    "pr_url": "https://github.com/etcd-io/etcd/pull/22232",
+    "pr_id": "etcd-io_etcd_PR22232",
+    "diff_lines": 13,
+    "raw_text": "Here's my code review of the git diff:\n\n=== Security Issues ===\n\n1. **Pinned Dependency Update Without Review**\n- Severity: Medium\n- Location: .github/workflows/scorecards.yml line 31\n- Description: The diff updates the pinned version of ossf/scorecard-action from a specific SHA (v2.4.3) to another specific SHA (v2.4.4). While this is a minor version update, there's no evidence of review for:\n  - Security implications of the new version\n  - Breaking changes in the action\n  - New permissions required\n- Recommendation: Verify the changelog/release notes for v2.4.4 before merging. Ensure no new security risks are introduced.\n\n=== Maintenance Issues ===\n\n1. **Lack of Version Tag Usage**\n- Severity: Low\n- Location: .github/workflows/scorecards.yml line 31\n- Description: The action is pinned by SHA hash rather than version tag. While SHA pinning is more secure, it makes it harder to track updates and understand what version is being used at a glance.\n- Recommendation: Consider using version tags (like v2.4.4) with SHA verification for better readability while maintaining security.\n\n=== Non-Critical Observations ===\n\n1. **Scorecard Action Update**\n- Note: This appears to be a routine update of the OSSF Scorecard action, which is generally a positive maintenance activity. The update from v2.4.3 to v2.4.4 is a patch version change, suggesting it contains bug fixes or minor improvements.\n\n=== General Recommendation ===\n- Before merging, verify:\n  1. The changelog for ossf/scorecard-action v2.4.4\n  2. That the new version doesn't require additional permissions\n  3. That no breaking changes are introduced that might affect your workflow",
+    "latency_ms": 9381,
+    "prompt_tokens": 261,
+    "completion_tokens": 391,
+    "cost": 0.000501
+  }
+}

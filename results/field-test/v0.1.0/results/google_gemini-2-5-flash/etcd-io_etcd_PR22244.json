@@ -1,0 +1,11 @@
+{
+  "model": "google/gemini-2.5-flash",
+  "pr_url": "https://github.com/etcd-io/etcd/pull/22244",
+  "pr_id": "etcd-io_etcd_PR22244",
+  "diff_lines": 29,
+  "raw_text": "## Code Review Report\n\n### Issues:\n\n#### 1. Unnecessary Removal of Proxy Configuration (Medium)\n\n*   **Evidence:** `etcd.conf.yml.sample` (lines 76-93 removed)\n*   **Description:** The diff removes several proxy-related configuration options (`proxy`, `proxy-failure-wait`, `proxy-refresh-interval`, `proxy-dial-timeout`, `proxy-write-timeout`, `proxy-read-timeout`) from the `etcd.conf.yml.sample` file. While these options might be deprecated or no longer relevant in newer etcd versions, their removal from a *sample* configuration file without any explanation or replacement could be confusing for users. Users might look for these options if they are following older documentation or migrating from older etcd setups. If these options are truly obsolete, it would be better to explicitly state that or provide a link to updated documentation.\n\n### Non-Claim Risks:\n\n*   **Documentation Drift:** If these proxy configurations are still relevant for some etcd versions or use cases, their removal from the sample file could lead to a discrepancy between the sample configuration and actual etcd capabilities or documentation. Users might struggle to find how to configure proxy settings if they are still needed.\n*   **Backward Compatibility Concerns:** If this sample file is used as a template for existing deployments, removing these options could break configurations for users who rely on them, especially if they are upgrading etcd versions and expect the sample to reflect all possible (even if deprecated) options.\n*   **Lack of Context:** The diff itself doesn't provide any context for why these lines were removed. A commit message explaining the rationale (e.g., \"Removed deprecated proxy configurations as etcd no longer supports them directly\" or \"Updated sample to reflect current etcd best practices\") would be beneficial.",
+  "latency_ms": 3931,
+  "prompt_tokens": 374,
+  "completion_tokens": 385,
+  "cost": 0.000287
+}

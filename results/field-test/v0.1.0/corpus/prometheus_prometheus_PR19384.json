@@ -1,0 +1,130 @@
+{
+  "additions": 551,
+  "author": {
+    "id": "U_kgDOBf2jzA",
+    "is_bot": false,
+    "login": "fzlzjerry",
+    "name": "Morax"
+  },
+  "body": "Fixes #12591\n\n## Summary\n\n- expose the effective configuration for one scrape pool through an on-demand, experimental API endpoint\n- add a compact, link-like configuration toggle to each parent pool header on the Targets and Service Discovery pages\n- render the configuration in the pool content pane, fetch it only when expanded, and retain YAML secret redaction\n- document the endpoint and add it to the OpenAPI specification\n\n## Validation\n\n- `go test ./web/api/v1 -count=1`\n- `go vet ./web/api/v1`\n- `go build ./cmd/prometheus`\n- `golangci-lint run --timeout 4m ./...`\n- `pnpm --filter @prometheus-io/mantine-ui test --run`\n- `pnpm --filter @prometheus-io/mantine-ui run lint`\n- `pnpm --filter @prometheus-io/mantine-ui run build`\n- ran the built server with an imported `scrape_config_files` job and verified that the pool is returned while its authorization credentials remain redacted\n\n```release-notes\n[ENHANCEMENT] UI: Show the effective configuration for each scrape pool on the Targets and Service Discovery pages.\n```\n",
+  "changedFiles": 16,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABONzFOA",
+      "author": {
+        "login": "fzlzjerry"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "CI note: the only failing check is `Go tests on Windows`. The failure is in the unchanged `util/logging.TestDedupe` timing assertion: the first ten rapid writes crossed its 100 ms window and produced two log lines instead of one. All other Go, UI, lint, compliance, fuzz, and build jobs passed.\n\nI attempted to rerun only the failed job, but GitHub requires upstream repository admin rights. Could a maintainer please rerun the Windows job?\n",
+      "createdAt": "2026-08-11T04:23:24Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19384#issuecomment-5248959800",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABOTNJxw",
+      "author": {
+        "login": "fzlzjerry"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "CI note: the Windows job failed in the unrelated `util/logging.TestDedupe` test. It expected one log entry but saw two emitted 113 ms apart, just beyond the test's deduplication window. This PR does not touch `util/logging`; all other Go, UI, lint, and DCO checks passed. The upstream workflow run is not rerunnable from this fork.\n",
+      "createdAt": "2026-08-11T14:38:00Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19384#issuecomment-5254629831",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABPYmvIw",
+      "author": {
+        "login": "bboreham"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "@fzlzjerry please take a look at the merge conflict.\r\n@wbh1 since you filed the issue, could you take a look at this PR please?",
+      "createdAt": "2026-08-18T11:17:27Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "EYES",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/prometheus/prometheus/pull/19384#issuecomment-5327400739",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABPZvi3Q",
+      "author": {
+        "login": "fzlzjerry"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Rebased onto current `main` (`3d36e183c`) and resolved the conflict in `web/api/v1/api.go` by retaining both the upstream OpenTelemetry imports and the YAML serializer used by this PR. The new head is `3e315cba0`.\n\nRevalidated after the rebase:\n\n- `go test ./web/api/v1 -count=1`\n- `go vet ./web/api/v1`\n- `go build ./cmd/prometheus`\n- `golangci-lint run --timeout 4m ./...`\n- `pnpm --filter @prometheus-io/mantine-ui test --run` (129 tests passed)\n- `pnpm --filter @prometheus-io/mantine-ui run lint`\n- `pnpm --filter @prometheus-io/mantine-ui run build`\n\nCI follow-up: the jobs covering the changed Go and UI paths passed. The remaining failures are in unchanged paths:\n\n- the Windows job explicitly excludes `config` and `web`; it failed `cmd/prometheus.TestRemoteWrite_PerQueueMetricsAfterRelabeling` after its 10-second condition timeout, then `tsdb.TestDelayedCompaction` after a 7.15-second operation exceeded the 5-second bound, and the `tsdb` package hit its 10-minute timeout;\n- `FuzzParseOpenMetric` completed its four-minute fuzz interval and then ended with `context deadline exceeded`; the two other jobs marked cancelled had successful `Run Fuzzing` steps before fail-fast cancellation.\n\nThis PR does not modify `cmd/prometheus`, `tsdb`, or `util/fuzzing`. The upstream workflow run is not rerunnable from this PR account.\n",
+      "createdAt": "2026-08-18T13:07:02Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19384#issuecomment-5328593629",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABPdKvpQ",
+      "author": {
+        "login": "juliusv"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Thanks @fzlzjerry! I think I love everything about it, except for the fact that the Accordion is visually a bit too large and \"in your face\" for a feature that should be a very occasionally needed new addition. I'm experimenting with how to make it less intrusive. What do you think about an alternative where the toggle is a smaller, link-like text in the parent Accordion header, but the content is still displayed below in the content pane? Like this:\r\n\r\n\r\nhttps://github.com/user-attachments/assets/5a032977-10c0-4bc7-8ef0-f6276f72e271\r\n\r\nI just quickly vibe coded that, but here's the resulting patch (not really reviewed) in case it's interesting for inspiration:\r\n\r\nhttps://gist.github.com/juliusv/fc490bced2dcf05d178f90cdc087554f",
+      "createdAt": "2026-08-18T18:09:47Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19384#issuecomment-5332184997",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABPp_c8Q",
+      "author": {
+        "login": "fzlzjerry"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "I agree that the nested Accordion was too visually prominent for an occasional action. I implemented the compact layout from your patch in e3d37797c: each parent pool header now has a small `Show config` / `Hide config` link, while the configuration still expands in the content pane and remains lazily fetched.\n\nThe final UI head passes all 129 Mantine UI tests, ESLint, and the production TypeScript/Vite build.",
+      "createdAt": "2026-08-19T17:22:56Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19384#issuecomment-5345631473",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABPr9Ycg",
+      "author": {
+        "login": "wbh1"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> @wbh1 since you filed the issue, could you take a look at this PR please?\r\n\r\n\u2705 Confirmed that this matches what I had in mind, especially with the integration of Julius's recommended UI tweaks.",
+      "createdAt": "2026-08-19T20:35:57Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19384#issuecomment-5347694706",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 6,
+  "labels": [],
+  "mergedAt": "2026-08-20T15:33:17Z",
+  "state": "MERGED",
+  "title": "ui: show effective scrape pool configuration"
+}

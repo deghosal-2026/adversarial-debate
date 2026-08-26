@@ -1,0 +1,125 @@
+diff --git a/pkg/kubelet/kuberuntime/kuberuntime_manager_test.go b/pkg/kubelet/kuberuntime/kuberuntime_manager_test.go
+index 7dfdbc1f5c594..96819d81dbda8 100644
+--- a/pkg/kubelet/kuberuntime/kuberuntime_manager_test.go
++++ b/pkg/kubelet/kuberuntime/kuberuntime_manager_test.go
+@@ -6713,42 +6713,37 @@ func TestSysctlFiltering(t *testing.T) {
+ 		{
+ 			name: "default",
+ 			expectedSysctls: map[string]string{
+-				"net.somaxconn":            "1024",
+-				"net.ipv4.ip_forward":      "1",
+-				"kernel.msgmax":            "true",
+-				"fs.mqueue.msg_max":        "1024",
+-				"kernel.sem":               "250 32000 32 128",
+-				"kernel.domainname":        "my-name",
+-				"user.max_user_namespaces": "1000",
++				"net.somaxconn":       "1024",
++				"net.ipv4.ip_forward": "1",
++				"kernel.msgmax":       "true",
++				"fs.mqueue.msg_max":   "1024",
++				"kernel.sem":          "250 32000 32 128",
++				"kernel.domainname":   "my-name",
+ 			},
+ 		},
+ 		{
+ 			name:        "hostNetwork",
+ 			hostNetwork: true,
+ 			expectedSysctls: map[string]string{
+-				"kernel.msgmax":            "true",
+-				"fs.mqueue.msg_max":        "1024",
+-				"kernel.sem":               "250 32000 32 128",
+-				"user.max_user_namespaces": "1000",
++				"kernel.msgmax":     "true",
++				"fs.mqueue.msg_max": "1024",
++				"kernel.sem":        "250 32000 32 128",
+ 			},
+ 		},
+ 		{
+ 			name:    "hostIPC",
+ 			hostIPC: true,
+ 			expectedSysctls: map[string]string{
+-				"net.somaxconn":            "1024",
+-				"net.ipv4.ip_forward":      "1",
+-				"kernel.domainname":        "my-name",
+-				"user.max_user_namespaces": "1000",
++				"net.somaxconn":       "1024",
++				"net.ipv4.ip_forward": "1",
++				"kernel.domainname":   "my-name",
+ 			},
+ 		},
+ 		{
+-			name:        "hostNetwork and hostIPC",
+-			hostNetwork: true,
+-			hostIPC:     true,
+-			expectedSysctls: map[string]string{
+-				"user.max_user_namespaces": "1000",
+-			},
++			name:            "hostNetwork and hostIPC",
++			hostNetwork:     true,
++			hostIPC:         true,
++			expectedSysctls: map[string]string{},
+ 		},
+ 		{
+ 			name:      "pod uses userNS",
+diff --git a/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go b/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go
+index 6c2eb778210e0..8f4e67f937952 100644
+--- a/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go
++++ b/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go
+@@ -394,7 +394,9 @@ func applyPodSysctls(sysctls, podSysctls map[string]string, pod *v1.Pod) {
+ 			continue
+ 		}
+ 		if strings.HasPrefix(normalizedKey, "user.") {
+-			if pod.Spec.HostUsers == nil || !*pod.Spec.HostUsers {
++			// The default for HostUsers is true, so a nil HostUsers means the
++			// pod runs in the host user namespace.
++			if pod.Spec.HostUsers != nil && !*pod.Spec.HostUsers {
+ 				// Set the user parameters unless the pod runs in the host user
+ 				// namespace.
+ 				sysctls[normalizedKey] = v
+diff --git a/pkg/kubelet/sysctl/allowlist.go b/pkg/kubelet/sysctl/allowlist.go
+index c9225203c1786..d1bf1101a6cd4 100644
+--- a/pkg/kubelet/sysctl/allowlist.go
++++ b/pkg/kubelet/sysctl/allowlist.go
+@@ -118,7 +118,9 @@ func (w *patternAllowlist) Admit(_ context.Context, attrs *lifecycle.PodAdmitAtt
+ 		}
+ 	}
+ 
+-	hostUsers := pod.Spec.HostUsers != nil && *pod.Spec.HostUsers
++	// The default for hostUsers is true, so a nil HostUsers means the pod
++	// shares the host user namespace.
++	hostUsers := pod.Spec.HostUsers == nil || *pod.Spec.HostUsers
+ 	for _, s := range pod.Spec.SecurityContext.Sysctls {
+ 		if err := w.validateSysctl(s.Name, pod.Spec.HostNetwork, pod.Spec.HostIPC, hostUsers); err != nil {
+ 			return lifecycle.PodAdmitResult{
+diff --git a/pkg/kubelet/sysctl/allowlist_test.go b/pkg/kubelet/sysctl/allowlist_test.go
+index 9f51c2fa5ec24..4d10b1950471b 100644
+--- a/pkg/kubelet/sysctl/allowlist_test.go
++++ b/pkg/kubelet/sysctl/allowlist_test.go
+@@ -92,10 +92,10 @@ func TestAllowlist(t *testing.T) {
+ 			t.Errorf("expected to be allowlisted: %+v, got: %v", test, err)
+ 		}
+ 		if test.hostUsers {
+-			pod.Spec.HostUsers = new(bool)
+-			*pod.Spec.HostUsers = true
++			pod.Spec.HostUsers = new(true)
+ 		} else {
+-			pod.Spec.HostUsers = nil
++			pod.Spec.HostUsers = new(bool)
++			*pod.Spec.HostUsers = false
+ 		}
+ 		pod.Spec.SecurityContext.Sysctls = []v1.Sysctl{{Name: test.sysctl, Value: test.sysctl}}
+ 		status := w.Admit(tCtx, attrs)
+@@ -111,10 +111,10 @@ func TestAllowlist(t *testing.T) {
+ 		pod.Spec.HostNetwork = test.hostNet
+ 		pod.Spec.HostIPC = test.hostIPC
+ 		if test.hostUsers {
+-			pod.Spec.HostUsers = new(bool)
+-			*pod.Spec.HostUsers = true
++			pod.Spec.HostUsers = new(true)
+ 		} else {
+-			pod.Spec.HostUsers = nil
++			pod.Spec.HostUsers = new(bool)
++			*pod.Spec.HostUsers = false
+ 		}
+ 		pod.Spec.SecurityContext.Sysctls = []v1.Sysctl{{Name: test.sysctl, Value: test.sysctl}}
+ 		status := w.Admit(tCtx, attrs)

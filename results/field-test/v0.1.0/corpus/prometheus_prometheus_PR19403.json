@@ -1,0 +1,33 @@
+{
+  "additions": 116,
+  "author": {
+    "id": "U_kgDOByr-pA",
+    "is_bot": false,
+    "login": "aamoghS",
+    "name": "Aamogh"
+  },
+  "body": "#### Which issue(s) does the PR fix:\r\nFixes #18770\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n*Reviewers should verify clarity and quality.*\r\n\r\n```release-notes\r\n[BUGFIX] PromQL: Preserve parentheses around duration literals on Expr.String() round-trip.\r\n```\r\n\r\n`paren_duration_expr` only set `Wrapped` on `*DurationExpr`, so a parenthesised `*NumberLiteral` (`foo offset (5)`, `foo[(5s)]`) was flattened by `Expr.String()`.\r\n\r\nThis wraps a parenthesised number in a unary-plus `*DurationExpr` with `Wrapped: true`, matching how `+(5*2)` already survives. Unary `+(5)` / `-(5)` go through the same path.\r\n\r\n@krajorama @roidelapluie @vpranckaitis\r\n",
+  "changedFiles": 6,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABOtBxSw",
+      "author": {
+        "login": "aamoghS"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Pushed a follow-up addressing the inline comments:\r\n\r\n- Dropped the unrelated STEP/RANGE/min_of/max_of pretty-printer cases\r\n- Reused `wrapParenDurationExpr` from `applyUnaryOpToDurationExpr`\r\n- Added `foo[(5m):(1m)]` to `TestExprString`\r\n\r\nHappy to close this in favor of #18779 if that one is still the preferred landing path.\r\n",
+      "createdAt": "2026-08-13T14:23:41Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19403#issuecomment-5281706315",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 30,
+  "labels": [],
+  "mergedAt": "2026-08-14T07:52:13Z",
+  "state": "MERGED",
+  "title": "promql/parser: preserve parentheses around duration literals"
+}

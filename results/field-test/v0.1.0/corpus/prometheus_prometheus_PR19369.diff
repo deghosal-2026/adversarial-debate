@@ -1,0 +1,37 @@
+diff --git a/web/api/v1/openapi_golden_test.go b/web/api/v1/openapi_golden_test.go
+index 5a9f762b91c..3f196aeba52 100644
+--- a/web/api/v1/openapi_golden_test.go
++++ b/web/api/v1/openapi_golden_test.go
+@@ -17,6 +17,8 @@ import (
+ 	"flag"
+ 	"os"
+ 	"path/filepath"
++	"runtime"
++	"strings"
+ 	"testing"
+ 
+ 	"github.com/stretchr/testify/require"
+@@ -59,6 +61,11 @@ func TestOpenAPIGolden_3_1(t *testing.T) {
+ 	goldenData, err := os.ReadFile(goldenPath)
+ 	require.NoError(t, err, "failed to read golden file (run with -update-openapi-spec to generate it)")
+ 
++	// Normalize line endings for Windows - otherwise, the comparison will fail due to CRLF vs LF differences.
++	if runtime.GOOS == "windows" {
++		goldenData = []byte(strings.ReplaceAll(string(goldenData), "\r\n", "\n"))
++	}
++
+ 	require.Equal(t, string(goldenData), resp.Body,
+ 		"OpenAPI 3.1 spec does not match golden file. Run 'go test -update-openapi-spec' to update.")
+ 
+@@ -106,6 +113,11 @@ func TestOpenAPIGolden_3_2(t *testing.T) {
+ 	goldenData, err := os.ReadFile(goldenPath)
+ 	require.NoError(t, err, "failed to read golden file (run with -update-openapi-spec to generate it)")
+ 
++	// Normalize line endings for Windows - otherwise, the comparison will fail due to CRLF vs LF differences.
++	if runtime.GOOS == "windows" {
++		goldenData = []byte(strings.ReplaceAll(string(goldenData), "\r\n", "\n"))
++	}
++
+ 	require.Equal(t, string(goldenData), resp.Body,
+ 		"OpenAPI 3.2 spec does not match golden file. Run 'go test -update-openapi-spec' to update.")
+ 

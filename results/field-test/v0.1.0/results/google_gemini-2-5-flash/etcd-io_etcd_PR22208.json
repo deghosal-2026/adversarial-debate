@@ -1,0 +1,11 @@
+{
+  "model": "google/gemini-2.5-flash",
+  "pr_url": "https://github.com/etcd-io/etcd/pull/22208",
+  "pr_id": "etcd-io_etcd_PR22208",
+  "diff_lines": 12,
+  "raw_text": "## Code Review Report\n\nThis review focuses on the provided `git diff`.\n\n### Issues Identified:\n\n#### 1. Removed `RaftTerm` field from EndpointStatus output\n\n*   **Severity:** Medium\n*   **Evidence:** `etcdctl/ctlv3/command/printer_fields.go:213`\n*   **Description:** The line `fmt.Println(`\"RaftTerm\" :`, resp.GetRaftTerm())` has been removed. This means that the `RaftTerm` information will no longer be displayed when `etcdctl` prints endpoint status. While `RaftTerm` might not be critical for all users, it can be valuable for debugging and understanding the state of the Raft consensus algorithm within the cluster. Removing it without clear justification could hinder troubleshooting efforts.\n\n### Non-Claim Risks:\n\n*   **Lack of Context for Removal:** Without further context (e.g., a linked issue, design document, or commit message explanation), it's unclear *why* the `RaftTerm` field was removed. Was it deemed redundant? Was it causing issues? Is there a new, better way to get this information? This lack of context makes it difficult to assess the full impact of the change.\n*   **Impact on Automation/Scripting:** If any scripts or automation tools rely on parsing the `etcdctl endpoint status` output and specifically look for the \"RaftTerm\" field, this change will break them.\n*   **User Expectation:** Users who are accustomed to seeing `RaftTerm` in the output might be confused or frustrated by its absence, especially if they use it for diagnostic purposes.",
+  "latency_ms": 2782,
+  "prompt_tokens": 341,
+  "completion_tokens": 350,
+  "cost": 0.000261
+}

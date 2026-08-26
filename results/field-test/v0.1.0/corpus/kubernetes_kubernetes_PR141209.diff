@@ -1,0 +1,39 @@
+diff --git a/pkg/features/kube_features.go b/pkg/features/kube_features.go
+index f96e882299f20..fbe3c4187ea25 100644
+--- a/pkg/features/kube_features.go
++++ b/pkg/features/kube_features.go
+@@ -1959,7 +1959,7 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
+ 
+ 	PodLevelResourceManagers: {
+ 		{Version: version.MustParse("1.36"), Default: false, PreRelease: featuregate.Alpha},
+-		{Version: version.MustParse("1.37"), Default: true, PreRelease: featuregate.Beta},
++		{Version: version.MustParse("1.37"), Default: false, PreRelease: featuregate.Beta},
+ 	},
+ 
+ 	PodLevelResources: {
+diff --git a/test/compatibility_lifecycle/reference/feature_list.md b/test/compatibility_lifecycle/reference/feature_list.md
+index 0ab699111be7c..71f44630e5fd1 100644
+--- a/test/compatibility_lifecycle/reference/feature_list.md
++++ b/test/compatibility_lifecycle/reference/feature_list.md
+@@ -165,7 +165,7 @@
+ | PodCertificateRequest | :ballot_box_with_check:&nbsp;1.37+ |  | 1.34 | 1.35–1.36 | 1.37– |  |  | [code](https://cs.k8s.io/?q=%5CbPodCertificateRequest%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodCertificateRequest%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
+ | PodDeletionCost | :ballot_box_with_check:&nbsp;1.22+ |  | 1.21 | 1.22– |  |  |  | [code](https://cs.k8s.io/?q=%5CbPodDeletionCost%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodDeletionCost%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
+ | PodGroupPreemptionPolicy |  |  | 1.37– |  |  |  | GenericWorkload | [code](https://cs.k8s.io/?q=%5CbPodGroupPreemptionPolicy%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodGroupPreemptionPolicy%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
+-| PodLevelResourceManagers | :ballot_box_with_check:&nbsp;1.37+ |  | 1.36 | 1.37– |  |  | PodLevelResources | [code](https://cs.k8s.io/?q=%5CbPodLevelResourceManagers%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodLevelResourceManagers%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
++| PodLevelResourceManagers |  |  | 1.36 | 1.37– |  |  | PodLevelResources | [code](https://cs.k8s.io/?q=%5CbPodLevelResourceManagers%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodLevelResourceManagers%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
+ | PodLevelResources | :ballot_box_with_check:&nbsp;1.34+ |  | 1.32–1.33 | 1.34– |  |  |  | [code](https://cs.k8s.io/?q=%5CbPodLevelResources%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodLevelResources%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
+ | PodLevelResourcesFixDefaulting | :ballot_box_with_check:&nbsp;1.37+ |  |  | 1.37– |  |  | PodLevelResources | [code](https://cs.k8s.io/?q=%5CbPodLevelResourcesFixDefaulting%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodLevelResourcesFixDefaulting%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
+ | PodLevelResourcesFixKubeletQOSClass | :ballot_box_with_check:&nbsp;1.37+ |  |  | 1.37– |  |  | PodLevelResources | [code](https://cs.k8s.io/?q=%5CbPodLevelResourcesFixKubeletQOSClass%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/kubernetes) [KEPs](https://cs.k8s.io/?q=%5CbPodLevelResourcesFixKubeletQOSClass%5Cb&i=nope&files=&excludeFiles=CHANGELOG&repos=kubernetes/enhancements) |
+diff --git a/test/compatibility_lifecycle/reference/versioned_feature_list.yaml b/test/compatibility_lifecycle/reference/versioned_feature_list.yaml
+index 82d7fe91334fe..55aea39c53f4a 100644
+--- a/test/compatibility_lifecycle/reference/versioned_feature_list.yaml
++++ b/test/compatibility_lifecycle/reference/versioned_feature_list.yaml
+@@ -1553,7 +1553,7 @@
+     lockToDefault: false
+     preRelease: Alpha
+     version: "1.36"
+-  - default: true
++  - default: false
+     lockToDefault: false
+     preRelease: Beta
+     version: "1.37"

@@ -1,0 +1,76 @@
+diff --git a/promql/parser/generated_parser.y b/promql/parser/generated_parser.y
+index c33f3a693aa..da9bc930b2c 100644
+--- a/promql/parser/generated_parser.y
++++ b/promql/parser/generated_parser.y
+@@ -650,9 +650,9 @@ matrix_selector : expr LEFT_BRACKET positive_duration_expr RIGHT_BRACKET
+                         vs, ok := $1.(*VectorSelector)
+                         if !ok{
+                                 errMsg = "ranges only allowed for vector selectors"
+-                        } else if vs.OriginalOffset != 0{
++                        } else if vs.OriginalOffset != 0 || vs.OriginalOffsetExpr != nil {
+                                 errMsg = "no offset modifiers allowed before range"
+-                        } else if vs.Timestamp != nil {
++                        } else if vs.Timestamp != nil || vs.StartOrEnd != 0 {
+                                 errMsg = "no @ modifiers allowed before range"
+                         }
+ 
+diff --git a/promql/parser/generated_parser.y.go b/promql/parser/generated_parser.y.go
+index 17c4833a45d..846d830bdd2 100644
+--- a/promql/parser/generated_parser.y.go
++++ b/promql/parser/generated_parser.y.go
+@@ -1711,9 +1711,9 @@ yydefault:
+ 			vs, ok := yyDollar[1].node.(*VectorSelector)
+ 			if !ok {
+ 				errMsg = "ranges only allowed for vector selectors"
+-			} else if vs.OriginalOffset != 0 {
++			} else if vs.OriginalOffset != 0 || vs.OriginalOffsetExpr != nil {
+ 				errMsg = "no offset modifiers allowed before range"
+-			} else if vs.Timestamp != nil {
++			} else if vs.Timestamp != nil || vs.StartOrEnd != 0 {
+ 				errMsg = "no @ modifiers allowed before range"
+ 			}
+ 
+diff --git a/promql/parser/parse_test.go b/promql/parser/parse_test.go
+index 2ea3b7bf5a7..b1912e14de0 100644
+--- a/promql/parser/parse_test.go
++++ b/promql/parser/parse_test.go
+@@ -2803,6 +2803,39 @@ var testExpr = []struct {
+ 			},
+ 		},
+ 	},
++	{
++		input: `some_metric @ start() [5m]`,
++		fail:  true,
++		errors: ParseErrors{
++			ParseErr{
++				PositionRange: posrange.PositionRange{Start: 22, End: 26},
++				Err:           errors.New("no @ modifiers allowed before range"),
++				Query:         `some_metric @ start() [5m]`,
++			},
++		},
++	},
++	{
++		input: `some_metric @ end()[5m]`,
++		fail:  true,
++		errors: ParseErrors{
++			ParseErr{
++				PositionRange: posrange.PositionRange{Start: 19, End: 23},
++				Err:           errors.New("no @ modifiers allowed before range"),
++				Query:         `some_metric @ end()[5m]`,
++			},
++		},
++	},
++	{
++		input: `some_metric offset step()[5m]`,
++		fail:  true,
++		errors: ParseErrors{
++			ParseErr{
++				PositionRange: posrange.PositionRange{Start: 25, End: 29},
++				Err:           errors.New("no offset modifiers allowed before range"),
++				Query:         `some_metric offset step()[5m]`,
++			},
++		},
++	},
+ 	{
+ 		input: `(foo + bar)[5m]`,
+ 		fail:  true,

@@ -1,0 +1,72 @@
+diff --git a/rules/fixtures/rules_multi_doc.yaml b/rules/fixtures/rules_multi_doc.yaml
+new file mode 100644
+index 00000000000..621fdfaf2fd
+--- /dev/null
++++ b/rules/fixtures/rules_multi_doc.yaml
+@@ -0,0 +1,9 @@
++# A rule file with a second YAML document, which makes the group loader log a
++# warning that only the first document is processed.
++groups:
++  - name: multi_doc
++    rules:
++      - record: job:http_requests:rate1m
++        expr: sum by (job)(rate(http_requests_total[1m]))
++---
++groups: []
+diff --git a/rules/manager.go b/rules/manager.go
+index 3fba38b4bb3..16dbc1deacd 100644
+--- a/rules/manager.go
++++ b/rules/manager.go
+@@ -159,6 +159,12 @@ func NewManager(o *ManagerOptions) *Manager {
+ 		o.Context = context.Background()
+ 	}
+ 
++	// Default the logger first: the components built below capture it by value,
++	// so substituting it afterwards would leave them holding a nil logger.
++	if o.Logger == nil {
++		o.Logger = promslog.NewNopLogger()
++	}
++
+ 	if o.Metrics == nil {
+ 		o.Metrics = NewGroupMetrics(o.Registerer)
+ 	}
+@@ -183,10 +189,6 @@ func NewManager(o *ManagerOptions) *Manager {
+ 		o.RuleDependencyController = ruleDependencyController{}
+ 	}
+ 
+-	if o.Logger == nil {
+-		o.Logger = promslog.NewNopLogger()
+-	}
+-
+ 	// Register rule manager features if a registry is provided.
+ 	if o.FeatureRegistry != nil {
+ 		o.FeatureRegistry.Set(features.Rules, "concurrent_rule_eval", o.ConcurrentEvalsEnabled)
+diff --git a/rules/manager_test.go b/rules/manager_test.go
+index 2e3ccf781c6..f96b0880485 100644
+--- a/rules/manager_test.go
++++ b/rules/manager_test.go
+@@ -1521,6 +1521,24 @@ func TestNativeHistogramsInRecordingRules(t *testing.T) {
+ 	require.Equal(t, chunkenc.ValNone, it.Next())
+ }
+ 
++// TestManager_LoadGroups_WithoutLogger covers the nil pointer dereference in the
++// default GroupLoader. ManagerOptions.Logger is optional, but NewManager used to
++// build FileLoader before substituting a no-op logger for a nil one, so the loader
++// kept the nil and panicked on the first rule file it had to warn about.
++func TestManager_LoadGroups_WithoutLogger(t *testing.T) {
++	ruleManager := NewManager(&ManagerOptions{})
++
++	var (
++		groups map[string]*Group
++		errs   []error
++	)
++	require.NotPanics(t, func() {
++		groups, errs = ruleManager.LoadGroups(time.Second, labels.EmptyLabels(), "", nil, false, "fixtures/rules_multi_doc.yaml")
++	})
++	require.Empty(t, errs)
++	require.Len(t, groups, 1)
++}
++
+ func TestManager_LoadGroups_ShouldCheckWhetherEachRuleHasDependentsAndDependencies(t *testing.T) {
+ 	storage := teststorage.New(t)
+ 

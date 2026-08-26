@@ -1,0 +1,62 @@
+diff --git a/actionpack/CHANGELOG.md b/actionpack/CHANGELOG.md
+index ef8585d3c123b..d5ee6b8a12c06 100644
+--- a/actionpack/CHANGELOG.md
++++ b/actionpack/CHANGELOG.md
+@@ -1,3 +1,7 @@
++*   Allow bots to ignore `allow_browser`.
++
++    *Matthew Nguyen*
++
+ *   Deprecate drawing routes with hash key paths to make routing faster.
+ 
+     ```ruby
+diff --git a/actionpack/lib/action_controller/metal/allow_browser.rb b/actionpack/lib/action_controller/metal/allow_browser.rb
+index db588b8cf78bf..5c2c4a7d59c83 100644
+--- a/actionpack/lib/action_controller/metal/allow_browser.rb
++++ b/actionpack/lib/action_controller/metal/allow_browser.rb
+@@ -85,13 +85,17 @@ def user_agent_version_reported?
+           end
+ 
+           def unsupported_browser?
+-            version_guarded_browser? && version_below_minimum_required?
++            version_guarded_browser? && version_below_minimum_required? && !bot?
+           end
+ 
+           def version_guarded_browser?
+             minimum_browser_version_for_browser != nil
+           end
+ 
++          def bot?
++            parsed_user_agent.bot?
++          end
++
+           def version_below_minimum_required?
+             if minimum_browser_version_for_browser
+               parsed_user_agent.version < UserAgent::Version.new(minimum_browser_version_for_browser.to_s)
+diff --git a/actionpack/test/controller/allow_browser_test.rb b/actionpack/test/controller/allow_browser_test.rb
+index d2c1d539d9e26..61d0814fc5557 100644
+--- a/actionpack/test/controller/allow_browser_test.rb
++++ b/actionpack/test/controller/allow_browser_test.rb
+@@ -23,6 +23,7 @@ class AllowBrowserTest < ActionController::TestCase
+   FIREFOX_114   = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0"
+   IE_11         = "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko"
+   OPERA_106     = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0"
++  GOOGLE_BOT    = "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/W.X.Y.Z Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+ 
+   test "blocked browser below version limit" do
+     get_with_agent :hello, FIREFOX_114
+@@ -59,6 +60,14 @@ class AllowBrowserTest < ActionController::TestCase
+     assert_response :ok
+   end
+ 
++  test "bots" do
++    get_with_agent :hello, GOOGLE_BOT
++    assert_response :ok
++
++    get_with_agent :modern, GOOGLE_BOT
++    assert_response :ok
++  end
++
+   private
+     def get_with_agent(action, agent)
+       @request.headers["User-Agent"] = agent

@@ -1,0 +1,92 @@
+diff --git a/test/compatibility_lifecycle/cmd/feature_gates.go b/test/compatibility_lifecycle/cmd/feature_gates.go
+index 09a8f64f3f422..e5b706b4c4e20 100644
+--- a/test/compatibility_lifecycle/cmd/feature_gates.go
++++ b/test/compatibility_lifecycle/cmd/feature_gates.go
+@@ -31,6 +31,7 @@ import (
+ 	"github.com/spf13/cobra"
+ 
+ 	yaml "go.yaml.in/yaml/v2"
++
+ 	"k8s.io/apimachinery/pkg/util/version"
+ 	baseversion "k8s.io/component-base/version"
+ )
+@@ -50,10 +51,11 @@ const (
+ )
+ 
+ type featureSpec struct {
+-	Default       bool   `yaml:"default" json:"default"`
+-	LockToDefault bool   `yaml:"lockToDefault" json:"lockToDefault"`
+-	PreRelease    string `yaml:"preRelease" json:"preRelease"`
+-	Version       string `yaml:"version" json:"version"`
++	Default                 bool   `yaml:"default" json:"default"`
++	LockToDefault           bool   `yaml:"lockToDefault" json:"lockToDefault"`
++	PreRelease              string `yaml:"preRelease" json:"preRelease"`
++	Version                 string `yaml:"version" json:"version"`
++	MinCompatibilityVersion string `yaml:"minCompatibilityVersion,omitempty" json:"minCompatibilityVersion,omitempty"`
+ }
+ 
+ type featureInfo struct {
+@@ -503,6 +505,13 @@ func parseFeatureSpec(variables map[string]ast.Expr, v ast.Expr) (featureSpec, e
+ 					return spec, err
+ 				}
+ 				spec.Version = ver
++
++			case "MinCompatibilityVersion":
++				ver, err := parseVersion(eltType.Value)
++				if err != nil {
++					return spec, err
++				}
++				spec.MinCompatibilityVersion = ver
+ 			}
+ 
+ 		default:
+diff --git a/test/compatibility_lifecycle/cmd/feature_gates_test.go b/test/compatibility_lifecycle/cmd/feature_gates_test.go
+index 38dd9e85fce46..21d5e048dc1c6 100644
+--- a/test/compatibility_lifecycle/cmd/feature_gates_test.go
++++ b/test/compatibility_lifecycle/cmd/feature_gates_test.go
+@@ -27,6 +27,7 @@ import (
+ 	"testing"
+ 
+ 	"github.com/google/go-cmp/cmp"
++
+ 	"k8s.io/apimachinery/pkg/util/version"
+ )
+ 
+@@ -484,6 +485,10 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
+ 	CPUCFSQuotaPeriod: {
+ 		{Version: version.MustParse("1.29"), Default: false, PreRelease: featuregate.Alpha},
+ 	},
++	DRAFractionalCapacityRange: {
++		{Version: version.MustParse("1.37"), Default: false, PreRelease: featuregate.Beta},
++		{Version: version.MustParse("1.37"), Default: true, PreRelease: featuregate.Beta, MinCompatibilityVersion: version.MustParse("1.37")},
++	},
+ 	genericfeatures.AggregatedDiscoveryEndpoint: {
+ 		{Version: version.MustParse("1.30"), Default: false, PreRelease: featuregate.Alpha},
+ 	},
+@@ -504,6 +509,14 @@ var defaultVersionedKubernetesFeatureGates = map[featuregate.Feature]featuregate
+ 						{Default: false, PreRelease: "Alpha", Version: "1.29"},
+ 					},
+ 				},
++				{
++					Name:     "DRAFractionalCapacityRange",
++					FullName: "DRAFractionalCapacityRange",
++					VersionedSpecs: []featureSpec{
++						{Default: false, PreRelease: "Beta", Version: "1.37"},
++						{Default: true, PreRelease: "Beta", Version: "1.37", MinCompatibilityVersion: "1.37"},
++					},
++				},
+ 				{
+ 					Name:     "AggregatedDiscoveryEndpoint",
+ 					FullName: "genericfeatures.AggregatedDiscoveryEndpoint",
+diff --git a/test/compatibility_lifecycle/reference/versioned_feature_list.yaml b/test/compatibility_lifecycle/reference/versioned_feature_list.yaml
+index 55aea39c53f4a..9ffddbda02e18 100644
+--- a/test/compatibility_lifecycle/reference/versioned_feature_list.yaml
++++ b/test/compatibility_lifecycle/reference/versioned_feature_list.yaml
+@@ -587,6 +587,7 @@
+     lockToDefault: false
+     preRelease: Beta
+     version: "1.37"
++    minCompatibilityVersion: "1.37"
+ - name: DRAListTypeAttributes
+   versionedSpecs:
+   - default: false

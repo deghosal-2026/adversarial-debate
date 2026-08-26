@@ -1,0 +1,155 @@
+{
+  "additions": 53,
+  "author": {
+    "id": "MDQ6VXNlcjE5NjgwNTg1",
+    "is_bot": false,
+    "login": "biradarganesh25",
+    "name": "Ganesh Biradar"
+  },
+  "body": "Move `TestCtlV3MemberListSerializable` from `tests/e2e` into `tests/common`, so that one test covers both the e2e and the integration mode.\n\nThe new test also adds a linearizable subtest. It shows what the option changes: after the single member cluster loses quorum, the serializable member list is still served from the local member, while the linearizable one blocks until the context deadline.\n\nThe helper `getMemberList` stays in `tests/e2e/ctl_v3_member_test.go`, because other tests still use it.\n\nPart of #13637\n",
+  "changedFiles": 2,
+  "comments": [
+    {
+      "id": "IC_kwDOAKtHts8AAAABNdruqQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "NONE",
+      "body": "Hi @biradarganesh25. Thanks for your PR.\n\nI'm waiting for a [etcd-io](https://github.com/orgs/etcd-io/people) member to verify that this patch is reasonable to test. If it is, they should reply with `/ok-to-test` on its own line. Until that is done, I will not automatically test new commits in this PR, but the usual testing commands by org members will still work.\n\nRegular contributors should [join the org](https://github.com/etcd-io/etcd/blob/main/CONTRIBUTING.md) to skip this step.\n\nOnce the patch is verified, the new status will be reflected by the `ok-to-test` label.\n\nI understand the commands that are listed [here](https://go.k8s.io/bot-commands?repo=etcd-io%2Fetcd).\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>\n",
+      "createdAt": "2026-08-05T23:21:51Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22250#issuecomment-5198507689",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABNmzH2A",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/ok-to-test",
+      "createdAt": "2026-08-06T18:06:03Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22250#issuecomment-5208066008",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABNm-WEA",
+      "author": {
+        "login": "codecov"
+      },
+      "authorAssociation": "NONE",
+      "body": "## [Codecov](https://app.codecov.io/gh/etcd-io/etcd/pull/22250?dropdown=coverage&src=pr&el=h1&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io) Report\n:white_check_mark: All modified and coverable lines are covered by tests.\n:white_check_mark: Project coverage is 69.70%. Comparing base ([`6c5082e`](https://app.codecov.io/gh/etcd-io/etcd/commit/6c5082e81cb6a82c8fca7ca814eb7a1dd51b5b22?dropdown=coverage&el=desc&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)) to head ([`845cd38`](https://app.codecov.io/gh/etcd-io/etcd/commit/845cd3885842635f9c365964cc0464cb87297a10?dropdown=coverage&el=desc&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)).\n:warning: Report is 27 commits behind head on main.\n\n<details><summary>Additional details and impacted files</summary>\n\n\n[see 21 files with indirect coverage changes](https://app.codecov.io/gh/etcd-io/etcd/pull/22250/indirect-changes?src=pr&el=tree-more&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)\n\n```diff\n@@            Coverage Diff             @@\n##             main   #22250      +/-   ##\n==========================================\n- Coverage   69.73%   69.70%   -0.04%     \n==========================================\n  Files         449      449              \n  Lines       38207    38212       +5     \n==========================================\n- Hits        26643    26635       -8     \n- Misses      10134    10149      +15     \n+ Partials     1430     1428       -2     \n```\n\n------\n\n[Continue to review full report in Codecov by Harness](https://app.codecov.io/gh/etcd-io/etcd/pull/22250?dropdown=coverage&src=pr&el=continue&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io).\n> **Legend** - [Click here to learn more](https://docs.codecov.io/docs/codecov-delta?utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)\n> `\u0394 = absolute <relative> (impact)`, `\u00f8 = not affected`, `? = missing data`\n> Powered by [Codecov](https://app.codecov.io/gh/etcd-io/etcd/pull/22250?dropdown=coverage&src=pr&el=footer&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io). Last update [a279d15...845cd38](https://app.codecov.io/gh/etcd-io/etcd/pull/22250?dropdown=coverage&src=pr&el=lastupdated&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io). Read the [comment docs](https://docs.codecov.io/docs/pull-request-comments?utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io).\n</details>\n<details><summary> :rocket: New features to boost your workflow: </summary>\n\n- :snowflake: [Test Analytics](https://docs.codecov.com/docs/test-analytics): Detect flaky tests, report on failures, and find test suite problems.\n</details>",
+      "createdAt": "2026-08-06T18:35:52Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22250#issuecomment-5208249872",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABNnA4Dw",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-08-06T18:42:47Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22250#issuecomment-5208291343",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABNnDK5Q",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Thanks for your first contribution!",
+      "createdAt": "2026-08-06T18:49:30Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "LAUGH",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/etcd-io/etcd/pull/22250#issuecomment-5208328933",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABNnY6Pw",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @fuweid ",
+      "createdAt": "2026-08-06T19:48:47Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22250#issuecomment-5208685119",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABNnopUw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "NONE",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/etcd-io/etcd/pull/22250#pullrequestreview-4877502325\" title=\"Approved\">ahrtr</a>*, *<a href=\"https://github.com/etcd-io/etcd/pull/22250#\" title=\"Author self-approved\">biradarganesh25</a>*, *<a href=\"https://github.com/etcd-io/etcd/pull/22250#pullrequestreview-4878041711\" title=\"Approved\">fuweid</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=etcd-io%2Fetcd).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[OWNERS](https://github.com/etcd-io/etcd/blob/main/OWNERS)~~ [ahrtr,fuweid]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-06T20:33:46Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22250#issuecomment-5208942931",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 20,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMjUxMDQ5NDc=",
+      "name": "area/testing",
+      "description": "",
+      "color": "f9ea9a"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABclmLxA",
+      "name": "ok-to-test",
+      "description": "",
+      "color": "ededed"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABpPzhbA",
+      "name": "size/M",
+      "description": "",
+      "color": "ededed"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABqyqBaw",
+      "name": "approved",
+      "description": "",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-08-06T20:33:47Z",
+  "state": "MERGED",
+  "title": "tests: migrate member list serializable test to common test framework"
+}

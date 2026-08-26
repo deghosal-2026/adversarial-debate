@@ -1,0 +1,33 @@
+{
+  "additions": 21,
+  "author": {
+    "id": "U_kgDOByr-pA",
+    "is_bot": false,
+    "login": "aamoghS",
+    "name": "Aamogh"
+  },
+  "body": "#18259 stopped tests from truncating SD files to zero bytes, but `requireUpdate` still treated the first snapshot with the expected *number* of groups as the result. File SD can emit empty groups (`[{\"targets\":[]},{\"targets\":[]}]`) before the file contents are visible, so `TestInvalidFileUpdate` and `TestUpdateFileWithPartialWrites` still flake.\r\n\r\nWait until the groups match the expected snapshot (or time out). #18259 can stay; this is the remaining race in the test helper.\r\n\r\ncc @machine424 @bwplotka @krajorama\r\n\r\nFixes #18269\r\n\r\n#### Which issue(s) does the PR fix:\r\n\r\nFixes #18269\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n\r\n```release-notes\r\nNONE\r\n```\r\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABOtBjkA",
+      "author": {
+        "login": "aamoghS"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Fixed the gocritic `stringXbytes` finding (`!bytes.Equal(want, got)`). The Windows job timeout is in `tsdb` (`TestCanceledCompactionDoesNotMarkBlocksFailed` and similar), not `discovery/file`.\r\n",
+      "createdAt": "2026-08-13T14:23:23Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19407#issuecomment-5281702800",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 6,
+  "labels": [],
+  "mergedAt": "2026-08-15T08:04:45Z",
+  "state": "MERGED",
+  "title": "discovery/file: wait for a matching snapshot instead of failing on empty updates"
+}

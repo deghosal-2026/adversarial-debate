@@ -1,0 +1,17 @@
+{
+  "additions": 214,
+  "author": {
+    "id": "MDQ6VXNlcjIzNDg5MQ==",
+    "is_bot": false,
+    "login": "ekalinin",
+    "name": "Eugene Kalinin"
+  },
+  "body": "[PR 19418](https://redirect.github.com/prometheus/prometheus/pull/19418) guarded the leaf fields of the IONOS server discovery, but the pointers holding those leaves were left unchecked. `Items`, `properties` and `ips` are all pointers carrying `omitempty` in `ionos-cloud/sdk-go/v6`, so a response can legitimately omit any of them:\n\n```go\nfor _, server := range *servers.Items {           // omitted when the datacenter has no servers\n    ...\n    if server.Properties.AvailabilityZone != nil  // Properties itself may be absent\n```\n\nNothing under `discovery/` recovers, so each of these takes down the whole Prometheus process rather than degrading the target.\n\nGuarded here, each covered by a subtest that panics without the fix:\n\n- `servers.Items` \u2014 a datacenter holding no servers. This is the cheapest one to hit: an empty datacenter returns a collection with no `items` member at all.\n- `server.Entities.Nics.Items` \u2014 a server whose NIC collection carries no items.\n- `nic.Properties` and `nic.Properties.Ips` \u2014 a NIC with no properties, or with properties but no addresses.\n- `server.Properties` \u2014 now read through a local that falls back to the zero value, which keeps the existing per-field checks as the single place where a label is omitted, rather than wrapping two separate blocks in a nil check.\n- `BootCdrom.Id` and `BootVolume.Id` \u2014 the reference is present but carries no id. `ResourceReference.Id` is a pointer.\n- `server.Entities.Volumes.Items` and `volumes[0].Properties`.\n\nAn absent `ips` is treated as an empty one, so a NIC without addresses behaves exactly as it already did for `\"ips\": []`.\n\nThe cases run through the real SDK decoder rather than constructing structs, so the nil pointers are the ones a live API would produce. They are separate responses instead of extra entries in `testdata/servers.json` because the first panic would otherwise mask the other seven.\n\nI have no IONOS account to confirm this end to end, so the change rests on the field types and their `omitempty` tags in `ionos-cloud/sdk-go/v6 v6.3.11`.\n\n```release-notes\n[BUGFIX] IONOS SD: Do not panic when the API response omits the server, NIC or volume collections, or a server's properties.\n```\n",
+  "changedFiles": 2,
+  "comments": [],
+  "deletions": 19,
+  "labels": [],
+  "mergedAt": "2026-08-18T08:15:02Z",
+  "state": "MERGED",
+  "title": "discovery/ionos: don't panic on absent response containers"
+}

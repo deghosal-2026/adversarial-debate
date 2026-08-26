@@ -1,0 +1,18 @@
+diff --git a/model/histogram/float_histogram_test.go b/model/histogram/float_histogram_test.go
+index 73b1496044d..d33f296095a 100644
+--- a/model/histogram/float_histogram_test.go
++++ b/model/histogram/float_histogram_test.go
+@@ -1776,9 +1776,13 @@ func TestFloatHistogramCompact(t *testing.T) {
+ 
+ 	for _, c := range cases {
+ 		t.Run(c.name, func(t *testing.T) {
++			wasValid := c.in.Validate() == nil
+ 			require.Equal(t, c.expected, c.in.Compact(c.maxEmptyBuckets))
+ 			// Compact has happened in-place, too.
+ 			require.Equal(t, c.expected, c.in)
++			if wasValid {
++				require.NoError(t, c.in.Validate(), "Compact turned a valid histogram into an invalid one")
++			}
+ 		})
+ 	}
+ }

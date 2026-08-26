@@ -1,0 +1,48 @@
+{
+  "additions": 96,
+  "author": {
+    "id": "MDQ6VXNlcjEzMzg3MTY4",
+    "is_bot": false,
+    "login": "Nexxurs",
+    "name": "Paul Uebermasser"
+  },
+  "body": "<!--\r\n    - Please give your PR a title in the form \"area: short description\".  For example \"tsdb: reduce disk usage by 95%\"\r\n\r\n    - Please sign CNCF's Developer Certificate of Origin and sign-off your commits by adding the -s / --signoff flag to `git commit`. See https://github.com/apps/dco for more information.\r\n\r\n    - If the PR adds or changes a behaviour or fixes a bug of an exported API it would need a unit/e2e test.\r\n\r\n    - Where possible use only exported APIs for tests to simplify the review and make it as close as possible to an actual library usage.\r\n\r\n    - Performance improvements would need a benchmark test to prove it.\r\n\r\n    - All exposed objects should have a comment.\r\n\r\n    - All comments should start with a capital letter and end with a full stop.\r\n -->\r\n\r\n#### Which issue(s) does the PR fix:\r\nFixes https://github.com/prometheus/prometheus/issues/19385\r\n<!--\r\nIf it applies.\r\nAutomatically closes linked issue when PR is merged.\r\nUsage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.\r\nMore at https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword\r\n-->\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n*Reviewers should verify clarity and quality.*\r\n\r\n<!--\r\nWrite NONE only if there is no user-facing change.\r\n\r\nOtherwise use one of: [FEATURE] [ENHANCEMENT] [PERF] [BUGFIX] [SECURITY] [CHANGE]\r\nFollowing the pattern `[TYPE] Component: description.`\r\n\r\nExample: [FEATURE] API: Add `/api/v1/features` endpoint.\r\n\r\nRefer to the existing CHANGELOG for inspiration:  https://github.com/prometheus/\r\nprometheus/blob/main/CHANGELOG.md\r\n-->\r\n```release-notes\r\n[ENHANCEMENT] Docker SD: Add labels `__meta_docker_container_image` and `__meta_docker_container_image_id`\r\n```\r\n",
+  "changedFiles": 3,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABOnFgsQ",
+      "author": {
+        "login": "aamoghS"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "**Validate**, with two nits.\r\n\r\nThe new `__meta_docker_container_image` / `__meta_docker_container_image_id` labels match how other Docker SD meta labels are built, tests cover the fixtures, and @bboreham already approved.\r\n\r\n1. `docs/configuration/configuration.md` does not list these labels yet (the Docker SD meta-label list around `__meta_docker_container_id` / `_name`). Other SD label additions in this repo update that list in the same PR.\r\n2. The IPv6 fixture ends up with empty `image` / `image_id` labels. Optional meta labels elsewhere omit the key when the value is empty, rather than publishing `\"\"`. Worth skipping empty image fields so relabel rules do not have to special-case them.\r\n\r\nNeither blocks the feature; I would still merge after the docs line.\r\n",
+      "createdAt": "2026-08-13T03:09:59Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19386#issuecomment-5275476145",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABOsC4Ww",
+      "author": {
+        "login": "Nexxurs"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Thanks for the notes @aamoghS.\r\nI included both changes to this MR",
+      "createdAt": "2026-08-13T12:53:43Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19386#issuecomment-5280675931",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 42,
+  "labels": [],
+  "mergedAt": "2026-08-18T11:18:44Z",
+  "state": "MERGED",
+  "title": "docker SD: add Image + ImageID to labels"
+}

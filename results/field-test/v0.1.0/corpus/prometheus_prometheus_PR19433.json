@@ -1,0 +1,17 @@
+{
+  "additions": 33,
+  "author": {
+    "id": "MDQ6VXNlcjg0MDQ1OTc1",
+    "is_bot": false,
+    "login": "thc1006",
+    "name": "\u79c0\u5409"
+  },
+  "body": "`ManagerOptions.Logger` is optional and `NewManager` substitutes a no-op logger when it is nil, but it only did so after building the default `FileLoader`, which captures the logger by value. A manager constructed without a logger therefore ends up with a perfectly valid `opts.Logger` and a nil one inside its group loader, which is why this stayed hidden for a while.\n\nNothing dereferenced it until #18114 added the multi-document warning to `rulefmt.Parse`, so today loading a rule file with a second YAML document panics. `promtool tsdb create-blocks-from rules` walks into it because its importer builds the manager without a logger, and so does any other caller that leaves the field unset. Details and a reproduction are in #19432.\n\nThe change moves the defaulting up, ahead of everything that captures the logger:\n\n```go\n\tif o.Context == nil {\n\t\to.Context = context.Background()\n\t}\n\n\t// Default the logger first: the components built below capture it by value,\n\t// so substituting it afterwards would leave them holding a nil logger.\n\tif o.Logger == nil {\n\t\to.Logger = promslog.NewNopLogger()\n\t}\n```\n\nNothing between the old and the new position reads `o.Logger`, so this is a reordering rather than a behaviour change: `FileLoader` is the only construction site that touches it.\n\n## About the test\n\nThe regression test goes through exported API only, since that is the shortest path to the nil: a manager built from an empty `ManagerOptions` loading a fixture with a second YAML document.\n\n```go\nruleManager := NewManager(&ManagerOptions{})\n\nvar (\n\tgroups map[string]*Group\n\terrs   []error\n)\nrequire.NotPanics(t, func() {\n\tgroups, errs = ruleManager.LoadGroups(time.Second, labels.EmptyLabels(), \"\", nil, false, \"fixtures/rules_multi_doc.yaml\")\n})\n```\n\nOn `main` it fails with the panic:\n\n```text\n--- FAIL: TestManager_LoadGroups_WithoutLogger (0.00s)\n        Error:  func (assert.PanicTestFunc)(0x1145080) should not panic\n                Panic value: runtime error: invalid memory address or nil pointer dereference\n                log/slog.(*Logger).log(0x0, ...)\n                github.com/prometheus/prometheus/model/rulefmt.Parse(...)\n                github.com/prometheus/prometheus/rules.FileLoader.Load(...)\n```\n\nand passes with the change. `go test ./rules/...` is otherwise unaffected, and I also ran `./cmd/...` and `./web/...` since they build managers of their own.\n\n## Why not guard the call in rulefmt\n\n`rulefmt.Parse` could nil-check before `logger.Warn` instead, but then every future consumer of a `FileLoader` logger needs the same guard, and `NewManager` already promises a non-nil logger to everything it constructs. Repairing that promise seemed better than defending against it at each call site. I am happy to swap it round if you would rather have the check in `rulefmt`, or to add both.\n\n#### Which issue(s) does the PR fix:\n\nFixes #19432\n\n#### Release notes for end users (**ALL** commits must be considered).\n\n```release-notes\n[BUGFIX] Rules: Fix a panic when a rule manager created without a logger loads a rule file containing multiple YAML documents.\n```\n",
+  "changedFiles": 3,
+  "comments": [],
+  "deletions": 4,
+  "labels": [],
+  "mergedAt": "2026-08-18T09:19:18Z",
+  "state": "MERGED",
+  "title": "rules: fix nil logger panic in the default group loader"
+}

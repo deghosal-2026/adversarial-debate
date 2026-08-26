@@ -1,0 +1,175 @@
+diff --git a/CHANGELOG/CHANGELOG-3.8.md b/CHANGELOG/CHANGELOG-3.8.md
+index e802c6effb8a..12bbae3842a7 100644
+--- a/CHANGELOG/CHANGELOG-3.8.md
++++ b/CHANGELOG/CHANGELOG-3.8.md
+@@ -11,3 +11,9 @@ Previous change logs can be found at [CHANGELOG-3.7](https://github.com/etcd-io/
+ ### etcdutl
+ 
+ - [Add bbolt subcommand](https://github.com/etcd-io/etcd/pull/20162) to etcdutl
++
++### Metrics, Monitoring
++
++See [List of metrics](https://etcd.io/docs/latest/metrics/) for all metrics per release.
++
++- Expose the full set of Go `runtime/metrics` on `/metrics` when `--metrics extensive` is set.
+diff --git a/server/embed/config.go b/server/embed/config.go
+index 80b4cf5c8f68..d2517f4a54d7 100644
+--- a/server/embed/config.go
++++ b/server/embed/config.go
+@@ -734,7 +734,7 @@ func (cfg *Config) AddFlags(fs *flag.FlagSet) {
+ 	fs.BoolVar(&cfg.EnablePprof, "enable-pprof", false, "Enable runtime profiling data via HTTP server. Address is at client URL + \"/debug/pprof/\"")
+ 
+ 	// additional metrics
+-	fs.StringVar(&cfg.Metrics, "metrics", cfg.Metrics, "Set level of detail for exported metrics, specify 'extensive' to include server side grpc histogram metrics")
++	fs.StringVar(&cfg.Metrics, "metrics", cfg.Metrics, "Set level of detail for exported metrics, specify 'extensive' to include server side grpc histogram metrics and the full Go runtime metrics set")
+ 
+ 	fs.BoolVar(&cfg.EnableDistributedTracing, "enable-distributed-tracing", false, "Enable distributed tracing using OpenTelemetry Tracing.")
+ 	fs.StringVar(&cfg.DistributedTracingAddress, "distributed-tracing-address", cfg.DistributedTracingAddress, "Address for distributed tracing used for OpenTelemetry Tracing (if enabled with enable-distributed-tracing flag).")
+diff --git a/server/embed/etcd.go b/server/embed/etcd.go
+index a9be763f881e..9cdb8d9bdb81 100644
+--- a/server/embed/etcd.go
++++ b/server/embed/etcd.go
+@@ -128,6 +128,10 @@ func StartEtcd(inCfg *Config) (e *Etcd, err error) {
+ 		e = nil
+ 	}()
+ 
++	if cfg.Metrics == "extensive" {
++		etcdserver.EnableAllRuntimeMetrics(cfg.logger)
++	}
++
+ 	if !cfg.SocketOpts.Empty() {
+ 		cfg.logger.Info(
+ 			"configuring socket options",
+diff --git a/server/etcdmain/help.go b/server/etcdmain/help.go
+index 90fdf18dac2b..f72dbeecf3b4 100644
+--- a/server/etcdmain/help.go
++++ b/server/etcdmain/help.go
+@@ -244,7 +244,7 @@ Profiling and Monitoring:
+   --enable-pprof 'false'
+     Enable runtime profiling data via HTTP server. Address is at client URL + "/debug/pprof/"
+   --metrics 'basic'
+-    Set level of detail for exported metrics, specify 'extensive' to include server side grpc histogram metrics.
++    Set level of detail for exported metrics, specify 'extensive' to include server side grpc histogram metrics and the full Go runtime metrics set.
+   --listen-metrics-urls ''
+     List of URLs to listen on for the /metrics and /health endpoints. For https, the client URL TLS info is used.
+ 
+diff --git a/server/etcdserver/metrics.go b/server/etcdserver/metrics.go
+index 06edaab5c2bf..be0d7cd89656 100644
+--- a/server/etcdserver/metrics.go
++++ b/server/etcdserver/metrics.go
+@@ -16,9 +16,11 @@ package etcdserver
+ 
+ import (
+ 	goruntime "runtime"
++	"sync"
+ 	"time"
+ 
+ 	"github.com/prometheus/client_golang/prometheus"
++	"github.com/prometheus/client_golang/prometheus/collectors"
+ 	"go.uber.org/zap"
+ 
+ 	"go.etcd.io/etcd/api/v3/version"
+@@ -191,6 +193,25 @@ func init() {
+ 	}).Set(1)
+ }
+ 
++var enableAllRuntimeMetricsOnce sync.Once
++
++// EnableAllRuntimeMetrics swaps client_golang's default Go collector for one
++// exposing the full runtime/metrics set (scheduler latency, mutex contention,
++// GC CPU share).
++func EnableAllRuntimeMetrics(lg *zap.Logger) {
++	enableAllRuntimeMetricsOnce.Do(func() {
++		if !prometheus.Unregister(collectors.NewGoCollector()) {
++			lg.Warn("failed to unregister the default Go collector, all runtime metrics will not be exposed")
++			return
++		}
++		if err := prometheus.Register(collectors.NewGoCollector(
++			collectors.WithGoCollectorRuntimeMetrics(collectors.MetricsAll),
++		)); err != nil {
++			lg.Warn("failed to register the Go collector with all runtime metrics", zap.Error(err))
++		}
++	})
++}
++
+ func monitorFileDescriptor(lg *zap.Logger, done <-chan struct{}) {
+ 	// This ticker will check File Descriptor Requirements ,and count all fds in used.
+ 	// And recorded some logs when in used >= limit/5*4. Just recorded message.
+diff --git a/tests/e2e/metrics_test.go b/tests/e2e/metrics_test.go
+index 2b1cbdab7a2e..c9f4e3828b66 100644
+--- a/tests/e2e/metrics_test.go
++++ b/tests/e2e/metrics_test.go
+@@ -263,7 +263,72 @@ func TestNoMetricsMissing(t *testing.T) {
+ 			"etcd_network_peer_received_bytes_total",
+ 			"etcd_network_peer_sent_bytes_total",
+ 		}
+-		extraExtensiveMetrics = []string{"grpc_server_handling_seconds"}
++		extraExtensiveMetrics = []string{
++			"grpc_server_handling_seconds",
++			"go_cgo_go_to_c_calls_calls_total",
++			"go_cpu_classes_gc_mark_assist_cpu_seconds_total",
++			"go_cpu_classes_gc_mark_dedicated_cpu_seconds_total",
++			"go_cpu_classes_gc_mark_idle_cpu_seconds_total",
++			"go_cpu_classes_gc_pause_cpu_seconds_total",
++			"go_cpu_classes_gc_total_cpu_seconds_total",
++			"go_cpu_classes_idle_cpu_seconds_total",
++			"go_cpu_classes_scavenge_assist_cpu_seconds_total",
++			"go_cpu_classes_scavenge_background_cpu_seconds_total",
++			"go_cpu_classes_scavenge_total_cpu_seconds_total",
++			"go_cpu_classes_total_cpu_seconds_total",
++			"go_cpu_classes_user_cpu_seconds_total",
++			"go_gc_cleanups_executed_cleanups_total",
++			"go_gc_cleanups_queued_cleanups_total",
++			"go_gc_cycles_automatic_gc_cycles_total",
++			"go_gc_cycles_forced_gc_cycles_total",
++			"go_gc_cycles_total_gc_cycles_total",
++			"go_gc_finalizers_executed_finalizers_total",
++			"go_gc_finalizers_queued_finalizers_total",
++			"go_gc_heap_allocs_by_size_bytes",
++			"go_gc_heap_allocs_bytes_total",
++			"go_gc_heap_allocs_objects_total",
++			"go_gc_heap_frees_by_size_bytes",
++			"go_gc_heap_frees_bytes_total",
++			"go_gc_heap_frees_objects_total",
++			"go_gc_heap_goal_bytes",
++			"go_gc_heap_live_bytes",
++			"go_gc_heap_objects_objects",
++			"go_gc_heap_tiny_allocs_objects_total",
++			"go_gc_limiter_last_enabled_gc_cycle",
++			"go_gc_pauses_seconds",
++			"go_gc_scan_globals_bytes",
++			"go_gc_scan_heap_bytes",
++			"go_gc_scan_stack_bytes",
++			"go_gc_scan_total_bytes",
++			"go_gc_stack_starting_size_bytes",
++			"go_memory_classes_heap_free_bytes",
++			"go_memory_classes_heap_objects_bytes",
++			"go_memory_classes_heap_released_bytes",
++			"go_memory_classes_heap_stacks_bytes",
++			"go_memory_classes_heap_unused_bytes",
++			"go_memory_classes_metadata_mcache_free_bytes",
++			"go_memory_classes_metadata_mcache_inuse_bytes",
++			"go_memory_classes_metadata_mspan_free_bytes",
++			"go_memory_classes_metadata_mspan_inuse_bytes",
++			"go_memory_classes_metadata_other_bytes",
++			"go_memory_classes_os_stacks_bytes",
++			"go_memory_classes_other_bytes",
++			"go_memory_classes_profiling_buckets_bytes",
++			"go_memory_classes_total_bytes",
++			"go_sched_goroutines_created_goroutines_total",
++			"go_sched_goroutines_goroutines",
++			"go_sched_goroutines_not_in_go_goroutines",
++			"go_sched_goroutines_runnable_goroutines",
++			"go_sched_goroutines_running_goroutines",
++			"go_sched_goroutines_waiting_goroutines",
++			"go_sched_latencies_seconds",
++			"go_sched_pauses_stopping_gc_seconds",
++			"go_sched_pauses_stopping_other_seconds",
++			"go_sched_pauses_total_gc_seconds",
++			"go_sched_pauses_total_other_seconds",
++			"go_sched_threads_total_threads",
++			"go_sync_mutex_wait_total_seconds_total",
++		}
+ 	)
+ 
+ 	testCases := []struct {

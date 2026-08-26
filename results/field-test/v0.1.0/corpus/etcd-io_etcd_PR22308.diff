@@ -1,0 +1,91 @@
+diff --git a/.github/ISSUE_TEMPLATE/bug-report.yml b/.github/ISSUE_TEMPLATE/bug-report.yml
+index a7cfc14dc566..928daab2e55c 100644
+--- a/.github/ISSUE_TEMPLATE/bug-report.yml
++++ b/.github/ISSUE_TEMPLATE/bug-report.yml
+@@ -10,7 +10,7 @@ body:
+       label: Bug report criteria
+       description: Please confirm this bug report meets the following criteria.
+       options:
+-        - label: This bug report is not security related, security issues should be disclosed privately via security@etcd.io.
++        - label: This bug report is not security related, security issues should be disclosed privately via [the report form](https://github.com/etcd-io/etcd/security/advisories/new).
+         - label: This is not a support request or question, support requests or questions should be raised in the etcd [discussion forums](https://github.com/etcd-io/etcd/discussions).
+         - label: You have read the etcd [bug reporting guidelines](https://github.com/etcd-io/etcd/blob/main/Documentation/contributor-guide/reporting_bugs.md).
+         - label: Existing open issues along with etcd [frequently asked questions](https://etcd.io/docs/latest/faq) have been checked and this is not a duplicate.
+diff --git a/security/README.md b/security/README.md
+index e8b031689007..9e105c2f140a 100644
+--- a/security/README.md
++++ b/security/README.md
+@@ -6,23 +6,23 @@ Join the [etcd-dev](https://groups.google.com/g/etcd-dev) group for emails about
+ 
+ We’re extremely grateful for security researchers and users that report vulnerabilities to the etcd Open Source Community. All reports are thoroughly investigated by a dedicated committee of community volunteers called [Product Security Committee](security-release-process.md#product-security-committee).
+ 
+-To make a report, please email the private [security@etcd.io](mailto:security@etcd.io) list with the security details and the details expected for [all etcd bug reports](https://github.com/etcd-io/etcd/blob/main/Documentation/contributor-guide/reporting_bugs.md).
++To make a report, please fill out the [Security Vulnerability Reporting Form](https://github.com/etcd-io/etcd/security/advisories/new) on GitHub.
+ 
+ ### When Should I Report a Vulnerability?
+ 
+-- When discovered a potential security vulnerability in etcd
+-- When unsure how a vulnerability affects etcd
+-- When discovered a vulnerability in another project that etcd depends on
++- You have found a vulnerability in an current supported version and patch release of etcd
++- You have found a vulnerability in a library that etcd depends on, that may affect etcd
++- The vulnerability is a security issue according to our [Threat Model](../THREAT_MODEL.md)
+ 
+ ### When Should I NOT Report a Vulnerability?
+ 
+-- Need help tuning etcd for security
+-- Need help applying security related updates
+-- When an issue is not security related
++- If you need help tuning etcd for security, or applying security related updates
++- If you find a vulnerability in an EOL or unpatched version of etcd and have not checked it against an updated one
++- If the vulnerability is clearly outside our [Threat Model](../THREAT_MODEL.md)
+ 
+ ## Security Vulnerability Response
+ 
+-Each report is acknowledged and analyzed by Product Security Committee members within 3 working days. This will set off the [Security Release Process](security-release-process.md).
++Each report is acknowledged and analyzed by Product Security Committee members within 5 working days. This will set off the [Security Release Process](security-release-process.md).
+ 
+ Any vulnerability information shared with Product Security Committee stays within etcd project and will not be disseminated to other projects unless it is necessary to get the issue fixed.
+ 
+@@ -30,7 +30,7 @@ As the security issue moves from triage, to identified fix, to release planning
+ 
+ ## Public Disclosure Timing
+ 
+-A public disclosure date is negotiated by the etcd Product Security Committee and the bug reporter. We prefer to fully disclose the bug as soon as possible once user mitigation is available. It is reasonable to delay disclosure when the bug or the fix is not yet fully understood, the solution is not well-tested, or for vendor coordination. The timeframe for disclosure is from immediate (especially if it's already publicly known) to a few weeks. As a basic default, we expect report date to disclosure date to be on the order of 7 days. The etcd Product Security Committee holds the final say when setting a disclosure date.
++A public disclosure date is negotiated by the etcd Product Security Committee and the bug reporter. We prefer to fully disclose the bug as soon as possible once user mitigation is available. It is reasonable to delay disclosure when the bug or the fix is not yet fully understood, the solution is not well-tested, or for vendor coordination. The timeframe for disclosure is from immediate (especially if it's already publicly known) to a few weeks. As a basic default, we expect report date to disclosure date to be on the order of 1-3 weeks depending on the nature of the vulnerability and concurrent project timing. The etcd Product Security Committee holds the final say when setting a disclosure date.
+ 
+ ## Security Audit
+ 
+diff --git a/security/security-release-process.md b/security/security-release-process.md
+index 3dcb606a43b9..74260e797a6d 100644
+--- a/security/security-release-process.md
++++ b/security/security-release-process.md
+@@ -22,7 +22,9 @@ The PSC members will share various tasks as listed below:
+ 
+ ### Contacting the Product Security Committee
+ 
+-Contact the team by sending email to [security@etcd.io](mailto:security@etcd.io).
++Report vulnerabilities using the [security reporting form](https://github.com/etcd-io/etcd/security/advisories/new).
++
++You can contact the team about other matters by sending email to [security@etcd.io](mailto:security@etcd.io).
+ 
+ ### Product Security Committee Membership
+ 
+@@ -55,7 +57,7 @@ The etcd Community asks that all suspected vulnerabilities be privately and resp
+ 
+ ### Public Disclosure Processes
+ 
+-If anyone knows of a publicly disclosed security vulnerability please IMMEDIATELY email [security@etcd.io](mailto:security@etcd.io) to inform the PSC about the vulnerability so they may start the patch, release, and communication process.
++If anyone knows of a publicly disclosed security vulnerability please IMMEDIATELY [file a report](https://github.com/etcd-io/etcd/security/advisories/new) to inform the PSC about the vulnerability so they may start the patch, release, and communication process.
+ 
+ If possible the PSC will ask the person making the public report if the issue can be handled via a private disclosure process. If the reporter denies the PSC will move swiftly with the fix and release process. In extreme cases GitHub can be asked to delete the issue but this generally isn't necessary and is unlikely to make a public disclosure less damaging.
+ 
+@@ -90,7 +92,7 @@ If the CVSS score is under ~4.0
+ 
+ Note: CVSS is convenient but imperfect. Ultimately, the PSC has discretion on classifying the severity of a vulnerability.
+ 
+-The severity of the bug and related handling decisions must be discussed on the [security@etcd.io](mailto:security@etcd.io) mailing list.
++The severity of the bug and related handling decisions must be discussed in the #etcd-src private Slack channel.
+ 
+ ### Fix Disclosure Process
+ 

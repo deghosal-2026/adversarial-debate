@@ -1,0 +1,212 @@
+diff --git a/build/dependencies.yaml b/build/dependencies.yaml
+index b8b313e618a4c..7eb7b27b4b942 100644
+--- a/build/dependencies.yaml
++++ b/build/dependencies.yaml
+@@ -83,7 +83,7 @@ dependencies:
+ 
+   # agnhost - E2E test image
+   - name: "agnhost"
+-    version: 2.66.0
++    version: 2.66.1
+     refPaths:
+     - path: test/utils/image/manifest.go
+       match: configs\[Agnhost\] = Config{list\.PromoterE2eRegistry, "agnhost", "\d+\.\d+\.\d+"}
+diff --git a/hack/testdata/pod-with-large-name.yaml b/hack/testdata/pod-with-large-name.yaml
+index f3f9e60d82521..2aad6a14c6f40 100644
+--- a/hack/testdata/pod-with-large-name.yaml
++++ b/hack/testdata/pod-with-large-name.yaml
+@@ -8,5 +8,5 @@ metadata:
+ spec:
+   containers:
+   - name: kubernetes-serve-hostname
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["/agnhost", "serve-hostname"]
+diff --git a/test/e2e/dra/test-driver/deploy/example/pod-external-toleration.yaml b/test/e2e/dra/test-driver/deploy/example/pod-external-toleration.yaml
+index 3578d06acfa92..f39f1b52cae50 100644
+--- a/test/e2e/dra/test-driver/deploy/example/pod-external-toleration.yaml
++++ b/test/e2e/dra/test-driver/deploy/example/pod-external-toleration.yaml
+@@ -28,13 +28,13 @@ spec:
+   restartPolicy: Never
+   containers:
+   - name: with-resource
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["sh", "-c", "set && mount && ls -la /dev/ && /agnhost pause"]
+     resources:
+       claims:
+       - name: resource
+   - name: without-resource
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["sh", "-c", "set && mount && ls -la /dev/ && /agnhost pause"]
+   resourceClaims:
+   - name: resource
+diff --git a/test/e2e/dra/test-driver/deploy/example/pod-external.yaml b/test/e2e/dra/test-driver/deploy/example/pod-external.yaml
+index 24387dc6f8665..8cbb4e6c4dbb1 100644
+--- a/test/e2e/dra/test-driver/deploy/example/pod-external.yaml
++++ b/test/e2e/dra/test-driver/deploy/example/pod-external.yaml
+@@ -24,13 +24,13 @@ spec:
+   restartPolicy: Never
+   containers:
+   - name: with-resource
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["sh", "-c", "set && mount && ls -la /dev/ && /agnhost pause"]
+     resources:
+       claims:
+       - name: resource
+   - name: without-resource
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["sh", "-c", "set && mount && ls -la /dev/ && /agnhost pause"]
+   resourceClaims:
+   - name: resource
+diff --git a/test/e2e/dra/test-driver/deploy/example/pod-inline.yaml b/test/e2e/dra/test-driver/deploy/example/pod-inline.yaml
+index 4d6b7434c92b6..741ffcdb36b15 100644
+--- a/test/e2e/dra/test-driver/deploy/example/pod-inline.yaml
++++ b/test/e2e/dra/test-driver/deploy/example/pod-inline.yaml
+@@ -29,13 +29,13 @@ spec:
+   restartPolicy: Never
+   containers:
+   - name: with-resource
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["sh", "-c", "set && mount && ls -la /dev/ && /agnhost pause"]
+     resources:
+       claims:
+       - name: resource
+   - name: without-resource
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["sh", "-c", "set && mount && ls -la /dev/ && /agnhost pause"]
+   terminationGracePeriodSeconds: 0 # Shut down immediately.
+   resourceClaims:
+diff --git a/test/e2e/testing-manifests/kubectl/agnhost-primary-pod.yaml b/test/e2e/testing-manifests/kubectl/agnhost-primary-pod.yaml
+index 0f3c88e746a68..054e1233f9375 100644
+--- a/test/e2e/testing-manifests/kubectl/agnhost-primary-pod.yaml
++++ b/test/e2e/testing-manifests/kubectl/agnhost-primary-pod.yaml
+@@ -8,7 +8,7 @@ metadata:
+ spec:
+   containers:
+     - name: primary
+-      image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++      image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+       env:
+         - name: PRIMARY
+           value: "true"
+@@ -21,7 +21,7 @@ spec:
+         - mountPath: /agnhost-primary-data
+           name: data
+     - name: sentinel
+-      image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++      image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+       env:
+         - name: SENTINEL
+           value: "true"
+diff --git a/test/e2e/testing-manifests/serviceloadbalancer/netexecrc.yaml b/test/e2e/testing-manifests/serviceloadbalancer/netexecrc.yaml
+index ef513741ece03..7dfdf30c1b5df 100644
+--- a/test/e2e/testing-manifests/serviceloadbalancer/netexecrc.yaml
++++ b/test/e2e/testing-manifests/serviceloadbalancer/netexecrc.yaml
+@@ -12,7 +12,7 @@ spec:
+     spec:
+       containers:
+       - name: netexec
+-        image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++        image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+         command: ["/agnhost", "netexec"]
+         ports:
+         - containerPort: 8080
+diff --git a/test/fixtures/doc-yaml/user-guide/multi-pod.yaml b/test/fixtures/doc-yaml/user-guide/multi-pod.yaml
+index 1bc0068ee61f1..fb1fd2112dcf0 100644
+--- a/test/fixtures/doc-yaml/user-guide/multi-pod.yaml
++++ b/test/fixtures/doc-yaml/user-guide/multi-pod.yaml
+@@ -42,7 +42,7 @@ metadata:
+ spec:
+   containers:
+   - name: kubernetes-serve-hostname
+-    image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++    image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+     command: ["/agnhost", "serve-hostname"]
+     resources:
+       limits:
+diff --git a/test/fixtures/pkg/kubectl/cmd/auth/rbac-resource-plus.yaml b/test/fixtures/pkg/kubectl/cmd/auth/rbac-resource-plus.yaml
+index 044ab64f2a0f4..746d2991bdc23 100644
+--- a/test/fixtures/pkg/kubectl/cmd/auth/rbac-resource-plus.yaml
++++ b/test/fixtures/pkg/kubectl/cmd/auth/rbac-resource-plus.yaml
+@@ -30,7 +30,7 @@ items:
+   spec:
+     containers:
+     - name: kubernetes-serve-hostname
+-      image: registry.k8s.io/e2e-test-images/agnhost:2.66.0
++      image: registry.k8s.io/e2e-test-images/agnhost:2.66.1
+       command: ["/agnhost", "serve-hostname"]
+       resources:
+         limits:
+diff --git a/test/images/kitten/BASEIMAGE b/test/images/kitten/BASEIMAGE
+index 402c85d1d7a26..80e9b3e1d1142 100644
+--- a/test/images/kitten/BASEIMAGE
++++ b/test/images/kitten/BASEIMAGE
+@@ -1,7 +1,7 @@
+-linux/amd64=REGISTRY/agnhost:2.66.0-linux-amd64
+-linux/arm64=REGISTRY/agnhost:2.66.0-linux-arm64
+-linux/ppc64le=REGISTRY/agnhost:2.66.0-linux-ppc64le
+-linux/s390x=REGISTRY/agnhost:2.66.0-linux-s390x
+-windows/amd64/1809=REGISTRY/agnhost:2.66.0-windows-amd64-1809
+-windows/amd64/ltsc2022=REGISTRY/agnhost:2.66.0-windows-amd64-ltsc2022
+-windows/amd64/ltsc2025=REGISTRY/agnhost:2.66.0-windows-amd64-ltsc2025
++linux/amd64=REGISTRY/agnhost:2.66.1-linux-amd64
++linux/arm64=REGISTRY/agnhost:2.66.1-linux-arm64
++linux/ppc64le=REGISTRY/agnhost:2.66.1-linux-ppc64le
++linux/s390x=REGISTRY/agnhost:2.66.1-linux-s390x
++windows/amd64/1809=REGISTRY/agnhost:2.66.1-windows-amd64-1809
++windows/amd64/ltsc2022=REGISTRY/agnhost:2.66.1-windows-amd64-ltsc2022
++windows/amd64/ltsc2025=REGISTRY/agnhost:2.66.1-windows-amd64-ltsc2025
+diff --git a/test/images/nautilus/BASEIMAGE b/test/images/nautilus/BASEIMAGE
+index 402c85d1d7a26..80e9b3e1d1142 100644
+--- a/test/images/nautilus/BASEIMAGE
++++ b/test/images/nautilus/BASEIMAGE
+@@ -1,7 +1,7 @@
+-linux/amd64=REGISTRY/agnhost:2.66.0-linux-amd64
+-linux/arm64=REGISTRY/agnhost:2.66.0-linux-arm64
+-linux/ppc64le=REGISTRY/agnhost:2.66.0-linux-ppc64le
+-linux/s390x=REGISTRY/agnhost:2.66.0-linux-s390x
+-windows/amd64/1809=REGISTRY/agnhost:2.66.0-windows-amd64-1809
+-windows/amd64/ltsc2022=REGISTRY/agnhost:2.66.0-windows-amd64-ltsc2022
+-windows/amd64/ltsc2025=REGISTRY/agnhost:2.66.0-windows-amd64-ltsc2025
++linux/amd64=REGISTRY/agnhost:2.66.1-linux-amd64
++linux/arm64=REGISTRY/agnhost:2.66.1-linux-arm64
++linux/ppc64le=REGISTRY/agnhost:2.66.1-linux-ppc64le
++linux/s390x=REGISTRY/agnhost:2.66.1-linux-s390x
++windows/amd64/1809=REGISTRY/agnhost:2.66.1-windows-amd64-1809
++windows/amd64/ltsc2022=REGISTRY/agnhost:2.66.1-windows-amd64-ltsc2022
++windows/amd64/ltsc2025=REGISTRY/agnhost:2.66.1-windows-amd64-ltsc2025
+diff --git a/test/utils/image/manifest.go b/test/utils/image/manifest.go
+index 3c9d72718ee4d..f1b948eaa91cf 100644
+--- a/test/utils/image/manifest.go
++++ b/test/utils/image/manifest.go
+@@ -211,7 +211,7 @@ const (
+ func initImageConfigs(list RegistryList) (map[ImageID]Config, map[ImageID]Config) {
+ 	configs := map[ImageID]Config{}
+ 	configs[AgnhostPrev] = Config{list.PromoterE2eRegistry, "agnhost", "2.55"}
+-	configs[Agnhost] = Config{list.PromoterE2eRegistry, "agnhost", "2.66.0"}
++	configs[Agnhost] = Config{list.PromoterE2eRegistry, "agnhost", "2.66.1"}
+ 	configs[AgnhostPrivate] = Config{list.PrivateRegistry, "agnhost", "2.6"}
+ 	configs[APIServer] = Config{list.PromoterE2eRegistry, "sample-apiserver", "1.29.2"}
+ 	configs[AppArmorLoader] = Config{list.PromoterE2eRegistry, "apparmor-loader", "1.4"}
+@@ -220,12 +220,12 @@ func initImageConfigs(list RegistryList) (map[ImageID]Config, map[ImageID]Config
+ 	configs[Etcd] = Config{list.GcEtcdRegistry, "etcd", "3.7.0-0"}
+ 	configs[InvalidRegistryImage] = Config{list.InvalidRegistry, "alpine", "3.1"}
+ 	configs[IpcUtils] = Config{list.PromoterE2eRegistry, "ipc-utils", "1.4"}
+-	configs[GlibcDnsTesting] = Config{list.PromoterE2eRegistry, "glibc-dns-testing", "2.0.0"}
++	configs[GlibcDnsTesting] = Config{list.PromoterE2eRegistry, "glibc-dns-testing", "2.1.1"}
+ 	configs[Kitten] = Config{list.PromoterE2eRegistry, "kitten", "1.8"}
+ 	configs[Nautilus] = Config{list.PromoterE2eRegistry, "nautilus", "1.8"}
+ 	configs[NFSProvisioner] = Config{list.SigStorageRegistry, "nfs-provisioner", "v4.0.8"}
+-	configs[Nginx] = Config{list.PromoterE2eRegistry, "nginx", "1.27.0-1"}
+-	configs[NginxNew] = Config{list.PromoterE2eRegistry, "nginx", "1.28.0-1"}
++	configs[Nginx] = Config{list.PromoterE2eRegistry, "nginx", "1.27.0-2"}
++	configs[NginxNew] = Config{list.PromoterE2eRegistry, "nginx", "1.28.0-2"}
+ 	configs[NodePerfNpbEp] = Config{list.PromoterE2eRegistry, "node-perf/npb-ep", "1.6.0"}
+ 	configs[NodePerfNpbIs] = Config{list.PromoterE2eRegistry, "node-perf/npb-is", "1.7.0"}
+ 	configs[NodePerfPytorchWideDeep] = Config{list.PromoterE2eRegistry, "node-perf/pytorch-wide-deep", "1.0.0"}

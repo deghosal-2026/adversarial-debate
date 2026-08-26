@@ -1,0 +1,17 @@
+{
+  "additions": 153,
+  "author": {
+    "id": "MDQ6VXNlcjUxOTI5ODk2",
+    "is_bot": false,
+    "login": "loglapa",
+    "name": ""
+  },
+  "body": "#### Which issue(s) does the PR fix:\r\n\r\nFixes #10352.\r\n\r\nAdds reloadable `runtime.log_level` configuration with `info` as the default. The existing `--log.level` flag still controls startup logging and becomes the default when the configuration omits `runtime.log_level`, but is now deprecated with both help text and a runtime warning.\r\n\r\nThe live `promslog.Level` is updated only after every component reloader succeeds, so parse or apply failures preserve the previous filtering level.\r\n\r\nValidation:\r\n- `go test ./config ./cmd/prometheus -count=1`\r\n- `make lint`\r\n- `make cli-documentation`\r\n- Built and ran a Prometheus binary, observed the deprecation warning, successfully reloaded `debug` to `error`, and confirmed an invalid subsequent reload returned HTTP 500 while the previous `error` filtering remained active.\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n*Reviewers should verify clarity and quality.*\r\n\r\n```release-notes\r\n[FEATURE] Configuration: Allow changing the process log level through `runtime.log_level` on configuration reload.\r\n[CHANGE] Logging: Deprecate `--log.level`; it now supplies the startup and configuration-default level.\r\n```\r\n",
+  "changedFiles": 6,
+  "comments": [],
+  "deletions": 9,
+  "labels": [],
+  "mergedAt": "2026-08-24T14:46:30Z",
+  "state": "MERGED",
+  "title": "config: make log level reloadable"
+}
