@@ -4,22 +4,35 @@
 Takes paired reviews from 03_combine_results.py and runs them through
 the M5 DebateController → M6 EvidenceTracker → M7 SynthesisReport pipeline.
 
+During debate rounds, calls the LLM API live via OpenRouter using the same
+model that did the initial review. The stored review is round 0 only.
+
 Usage:
-    python3 05_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv
+    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv
+
+    # Run a specific pair only
+    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pair pair1_gpt_gemini
+
+    # Run a single PR (debugging)
+    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pr kubernetes_kubernetes_PR141554
+
+    # Limit PRs (testing)
+    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --limit 5
+
+Requires: OPENROUTER_API_KEY env var
 
 Input:  results/field-test/v0.1.0/pairs/<pair_name>/<pr_id>.json
-Output: results/field-test/v0.1.0/debates/<pair_name>/<pr_id>/
-          ├── transcript.jsonl
-          ├── report.json
-          └── metadata.json
+Output: results/field-test/v0.1.0/debates/<pair_name>/<pr_id>/report.json
 """
 
 from __future__ import annotations
 
 import csv
 import json
+import os
 import sys
 import time
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -27,6 +40,22 @@ BASE = Path(__file__).resolve().parent.parent
 CORPUS_CSV = BASE / "results" / "field-test" / "v0.1.0" / "corpus.csv"
 PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
 DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+MAX_RETRIES = 3
+RETRY_DELAY = 5
+
+DEBATE_SYSTEM_PROMPT = (
+    "You are a code reviewer in a structured debate. You are given your own "
+    "committed review, the other reviewer's claims, and outstanding objections "
+    "that target your claims. For each objection, you MUST respond with one of:\n"
+    "  CONCEDED: you accept the objection and withdraw your claim\n"
+    "  REBUTTED: you provide evidence or argument against the objection\n"
+    "  CARRIED: you explicitly decline to change your position\n"
+    "Reference the objection ID or target claim ID in each response. "
+    "Be specific and reference file paths and line numbers as evidence."
+)
 
 
 def load_corpus_ids(corpus_csv: Path) -> list[str]:
@@ -49,14 +78,138 @@ def load_pair(pair_name: str, pr_id: str) -> dict | None:
     return json.loads(path.read_text())
 
 
-def run_debate_for_pr(pair_data: dict) -> dict:
-    """Run the debate engine on a single PR's paired reviews.
+def call_openrouter(model: str, prompt: str, api_key: str) -> dict:
+    """Call OpenRouter API and return raw_text + usage stats."""
+    body = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": DEBATE_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.0,
+        "max_tokens": 2000,
+    }).encode()
 
-    This wires M5 (DebateController) → M6 (EvidenceTracker) → M7 (SynthesisReport).
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/deghosal-2026/adversarial-debate",
+    }
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            start = time.time()
+            req = urllib.request.Request(OPENROUTER_URL, data=body, headers=headers)
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read())
+            elapsed = int((time.time() - start) * 1000)
+
+            raw_text = data["choices"][0]["message"]["content"]
+            usage = data.get("usage", {})
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            completion_tokens = usage.get("completion_tokens", 0)
+
+            return {
+                "raw_text": raw_text,
+                "latency_ms": elapsed,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+            }
+        except Exception as e:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY * (attempt + 1))
+            else:
+                raise
+    return {}  # unreachable
+
+
+class LiveProvider:
+    """Provider that calls the LLM API live during debate rounds.
+
+    Implements the DebateProvider protocol: takes a ReviewRequest,
+    extracts the debate prompt from the content blocks, calls the LLM,
+    and returns a ReviewResult.
     """
+
+    def __init__(self, model: str, api_key: str) -> None:
+        self._model = model
+        self._api_key = api_key
+        self.total_cost = 0.0
+        self.total_tokens = 0
+        self.call_count = 0
+
+    def review(self, request):  # type: ignore[no-untyped-def]
+        from adversarial_debate.providers.contract import (
+            ReviewResult as _RR,
+            ReviewResultMetadata,
+        )
+
+        # Extract the debate prompt from the content blocks
+        prompt = ""
+        if request.artifact.content_blocks:
+            prompt = request.artifact.content_blocks[0].content
+
+        result = call_openrouter(self._model, prompt, self._api_key)
+        self.total_tokens += result["prompt_tokens"] + result["completion_tokens"]
+        self.call_count += 1
+
+        time.sleep(1)  # rate limit politeness
+
+        return _RR(
+            raw_text=result["raw_text"],
+            confidence=0.7,
+            metadata=ReviewResultMetadata(
+                seed=42,
+                prompt_version="debate_round_v1",
+                model=self._model,
+            ),
+        )
+
+
+def parse_claims_from_review(raw_text: str, side: str, review_id: str) -> list:
+    """Parse claims from raw LLM review text."""
+    from adversarial_debate.schemas import Claim
+
+    claims = []
+    for i, line in enumerate(raw_text.split("\n")):
+        line = line.strip()
+        if not line:
+            continue
+        # Bullet points, numbered items, or severity-marked lines
+        is_bullet = line.startswith(("-", "*", "•"))
+        is_numbered = len(line) > 0 and line[0].isdigit() and "." in line[:4]
+        if not (is_bullet or is_numbered):
+            continue
+
+        # Clean the line
+        text = line.lstrip("-*•0123456789. )").strip()
+        if len(text) < 5:
+            continue
+
+        # Infer severity
+        lower = text.lower()
+        if any(w in lower for w in ["high", "critical", "security", "vulnerability", "injection"]):
+            severity = "high"
+        elif any(w in lower for w in ["low", "minor", "style", "nit", "cosmetic"]):
+            severity = "low"
+        else:
+            severity = "medium"
+
+        claims.append(Claim(
+            id=f"cl_{side}_{i}",
+            review_id=review_id,
+            text=text[:300],
+            severity=severity,
+            evidence_refs=[],
+            status="open",
+        ))
+    return claims
+
+
+def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
+    """Run the full debate pipeline on a single PR's paired reviews."""
     from adversarial_debate.engine.debate_controller import (
         DebateController,
-        DebateEvent,
         TokenBudget,
     )
     from adversarial_debate.engine.evidence import EvidenceTracker
@@ -64,86 +217,60 @@ def run_debate_for_pr(pair_data: dict) -> dict:
         HeaderBlock,
         synthesize_verdict,
     )
-    from adversarial_debate.providers.contract import (
-        ReviewRequest,
-        ReviewResult,
-        ReviewResultMetadata,
-    )
-    from adversarial_debate.schemas import Claim, Review, ReviewerSession
+    from adversarial_debate.schemas import Review, ReviewerSession
 
     side_a = pair_data["side_a"]
     side_b = pair_data["side_b"]
-
-    # Build Review objects from stored LLM output
     now = datetime.now(UTC)
 
-    def make_review(side_data: dict, side: str) -> Review:
-        review_id = f"rev_{side}_{side_data['pr_id']}"
-        session_id = f"sess_{side_data['pr_id']}"
+    # Build Review objects from stored LLM output (round 0)
+    review_id_a = f"rev_A_{side_a['pr_id']}"
+    review_id_b = f"rev_B_{side_b['pr_id']}"
 
-        # Parse claims from raw text (lightweight)
-        claims = []
-        for i, line in enumerate(side_data["raw_text"].split("\n")):
-            line = line.strip()
-            if line and (line.startswith(("-", "*", "•")) or line[0].isdigit()):
-                severity = "medium"
-                lower = line.lower()
-                if "high" in lower or "critical" in lower or "security" in lower:
-                    severity = "high"
-                elif "low" in lower or "minor" in lower or "style" in lower:
-                    severity = "low"
-                claims.append(Claim(
-                    id=f"cl_{side}_{i}",
-                    review_id=review_id,
-                    text=line[:200],
-                    severity=severity,
-                    evidence_refs=[],
-                    status="open",
-                ))
+    claims_a = parse_claims_from_review(side_a["raw_text"], "A", review_id_a)
+    claims_b = parse_claims_from_review(side_b["raw_text"], "B", review_id_b)
 
-        return Review(
-            id=review_id,
-            session_id=session_id,
-            claims=claims,
-            risks=[],
-            confidence=0.7,
-            committed_at=now,
-        )
+    review_a = Review(
+        id=review_id_a,
+        session_id=f"sess_{side_a['pr_id']}_A",
+        claims=claims_a,
+        risks=[],
+        confidence=0.7,
+        committed_at=now,
+    )
+    review_b = Review(
+        id=review_id_b,
+        session_id=f"sess_{side_b['pr_id']}_B",
+        claims=claims_b,
+        risks=[],
+        confidence=0.7,
+        committed_at=now,
+    )
 
-    def make_session(side_data: dict, side: str) -> ReviewerSession:
-        return ReviewerSession(
-            id=f"sess_{side_data['pr_id']}_{side}",
-            artifact_id=side_data["pr_id"],
-            side=side,  # type: ignore[arg-type]
-            provider=side_data.get("provider", "unknown"),
-            model=side_data.get("model", "unknown"),
-            created_at=now,
-            status="revealed",
-        )
+    session_a = ReviewerSession(
+        id=f"sess_{side_a['pr_id']}_A",
+        artifact_id=side_a["pr_id"],
+        side="A",
+        provider="openrouter",
+        model=side_a.get("model", "unknown"),
+        created_at=now,
+        status="revealed",
+    )
+    session_b = ReviewerSession(
+        id=f"sess_{side_b['pr_id']}_B",
+        artifact_id=side_b["pr_id"],
+        side="B",
+        provider="openrouter",
+        model=side_b.get("model", "unknown"),
+        created_at=now,
+        status="revealed",
+    )
 
-    review_a = make_review(side_a, "A")
-    review_b = make_review(side_b, "B")
-    session_a = make_session(side_a, "A")
-    session_b = make_session(side_b, "B")
-
-    # Create a simple provider that returns the stored review text
-    class StoredProvider:
-        def __init__(self, review_text: str) -> None:
-            self._text = review_text
-
-        def review(self, request: ReviewRequest) -> ReviewResult:
-            return ReviewResult(
-                raw_text=self._text,
-                confidence=0.7,
-                metadata=ReviewResultMetadata(
-                    seed=42,
-                    prompt_version="v1",
-                    model="stored",
-                ),
-            )
-
-    provider_a = StoredProvider(side_a["raw_text"])
-    provider_b = StoredProvider(side_b["raw_text"])
+    # Create live providers — each side calls its own model
+    model_a = side_a.get("model", "openai/gpt-4o-mini")
+    model_b = side_b.get("model", "google/gemini-2.5-flash")
+    provider_a = LiveProvider(model_a, api_key)
+    provider_b = LiveProvider(model_b, api_key)
 
     # Run DebateController (M5)
     controller = DebateController(
@@ -163,7 +290,7 @@ def run_debate_for_pr(pair_data: dict) -> dict:
     elapsed = int((time.time() - start) * 1000)
 
     # Run EvidenceTracker (M6)
-    all_claims = list(review_a.claims) + list(review_b.claims)
+    all_claims = list(claims_a) + list(claims_b)
     tracker = EvidenceTracker(
         claims=all_claims,
         concessions=termination.concessions,
@@ -175,7 +302,7 @@ def run_debate_for_pr(pair_data: dict) -> dict:
     report = synthesize_verdict(
         artifact_id=side_a["pr_id"],
         evidence=evidence,
-        claims_by_side={"A": review_a.claims, "B": review_b.claims},
+        claims_by_side={"A": claims_a, "B": claims_b},
         concessions=termination.concessions,
         header=HeaderBlock(engine_version="0.1.0"),
     )
@@ -184,6 +311,8 @@ def run_debate_for_pr(pair_data: dict) -> dict:
     return {
         "pr_id": side_a["pr_id"],
         "pair": pair_data["pair"],
+        "model_a": model_a,
+        "model_b": model_b,
         "termination_reason": termination.reason,
         "rounds_completed": termination.rounds_completed,
         "convergence_score": evidence.convergence_score,
@@ -195,6 +324,9 @@ def run_debate_for_pr(pair_data: dict) -> dict:
         "concessions_count": len(termination.concessions),
         "events_count": len(termination.events),
         "latency_ms": elapsed,
+        "api_calls_a": provider_a.call_count,
+        "api_calls_b": provider_b.call_count,
+        "total_tokens": provider_a.total_tokens + provider_b.total_tokens,
         "report": {
             "kind": report.kind,
             "verdict": report.verdict,
@@ -249,9 +381,20 @@ def main() -> None:
                         help="Only run this PR ID")
     parser.add_argument("--limit", type=int, default=None,
                         help="Max PRs to process")
+    parser.add_argument("--force", action="store_true",
+                        help="Re-run debates even if output exists")
     args = parser.parse_args()
 
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not api_key:
+        print("ERROR: OPENROUTER_API_KEY env var not set")
+        sys.exit(1)
+
     corpus_path = Path(args.corpus)
+    if not corpus_path.is_file():
+        print(f"ERROR: corpus file not found: {corpus_path}")
+        sys.exit(1)
+
     pr_ids = load_corpus_ids(corpus_path)
     if args.pr:
         pr_ids = [p for p in pr_ids if p == args.pr]
@@ -267,7 +410,7 @@ def main() -> None:
 
     for pair_name in sorted(pair_dirs):
         if pair_name == "baseline_gpt":
-            continue  # baseline has no debate
+            continue
 
         pair_out = DEBATES_DIR / pair_name
         pair_out.mkdir(parents=True, exist_ok=True)
@@ -278,7 +421,7 @@ def main() -> None:
                 break
 
             out_path = pair_out / pr_id
-            if out_path.exists():
+            if out_path.exists() and not args.force:
                 continue
 
             pair_data = load_pair(pair_name, pr_id)
@@ -287,13 +430,14 @@ def main() -> None:
 
             print(f"  [{pair_name}] {pr_id} ...", end=" ", flush=True)
             try:
-                result = run_debate_for_pr(pair_data)
+                result = run_debate_for_pr(pair_data, api_key)
                 out_path.mkdir(parents=True, exist_ok=True)
                 (out_path / "report.json").write_text(json.dumps(result, indent=2))
 
                 print(f"ok ({result['termination_reason']}, "
                       f"score={result['convergence_score']:.2f}, "
-                      f"{result['concessions_count']} concessions)")
+                      f"{result['concessions_count']} concessions, "
+                      f"{result['api_calls_a'] + result['api_calls_b']} API calls)")
                 count += 1
                 total += 1
             except Exception as e:

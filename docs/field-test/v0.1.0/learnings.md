@@ -13,42 +13,71 @@
 
 ## What's Broken
 
-### Critical: No Debate Is Happening
+### Issue 1: StoredProvider replays same text — no real debate
 
-The scripts call the LLM API directly and store raw text. The M5 DebateController, M6 EvidenceTracker, and M7 SynthesisReport never run. We have 3 independent single-pass reviews — not a debate.
+`04_run_debate.py` used a `StoredProvider` that replays the same review text for every round. The debate controller expects round responses to contain `CONCEDED`/`REBUTTED`/`CARRIED` markers — but the stored reviews are just raw review text with no debate markers.
 
-**Impact:** Cannot test the v0.1.0 thesis (does adversarial debate surface what single review misses?).
+**Impact:** All debates end with `rounds_exhausted`, 0 concessions, 0.00 convergence score. Cannot test the v0.1.0 thesis.
 
-**Fix needed:** Add `05_run_debate.py` that takes stored single-pass reviews and feeds them into the engine pipeline:
-- Load reviews from `results/<model>/<pr_id>.json`
-- Convert to `Review` schema objects
-- Run `DebateController` (M5) with the pair's two models
-- Run `EvidenceTracker` (M6) on the debate events
-- Run `synthesize_verdict` (M7) to produce the report
-- Store transcript + report
+**Fix:** Replace `StoredProvider` with `LiveProvider` that calls the LLM API live during rounds 1+. Each side calls its own model via OpenRouter. Stored review is round 0 only.
 
-### Critical: Issue Extraction Is Too Crude
+**Status:** In progress.
 
-`04_analyze.py` extracts issues by looking for bullet points and severity-marked lines. This produces 0.0 Jaccard similarity across all PRs — not because models find different issues, but because formatting differs.
+### Issue 2: Model slug mismatch — dots vs dashes
 
-**Impact:** Cross-model overlap metric is meaningless. Cannot tell if models find the same or different issues.
+`02_run_reviewer.py` converts model names to slugs by replacing `.` with `-`: `gemini-2.5-flash` → `gemini-2-5-flash`. But `03_combine_results.py` expected `google_gemini-2.5-flash` (with dots).
 
-**Fix needed:** Normalize issue text before comparison:
-- Lowercase, strip formatting, remove bullet markers
-- Extract the core claim sentence (first sentence after severity marker)
-- Compare using substring matching, not exact set equality
+**Impact:** `pair1_gpt_gemini` and `pair2_gemini_deepseek` had 0 combined results. Only `homogeneous_gpt` worked because it doesn't use Gemini.
 
-### Bug: 04_analyze.py Had Wrong Paths
+**Status:** Fixed — `03_combine_results.py` PAIRS dict now uses `google_gemini-2-5-flash` (dashes).
+
+### Issue 3: 04_analyze.py had wrong base paths
 
 `ANALYSIS_DIR` was `Path(__file__).parent / "../v0.1.0/analysis"` which resolved to `scripts/../v0.1.0/` instead of `results/field-test/v0.1.0/`.
 
+**Impact:** Analysis CSVs written to wrong directory.
+
 **Status:** Fixed — now uses `BASE / "results" / "field-test" / "v0.1.0" / "analysis"`.
 
-### Bug: 04_analyze.py Had Wrong Model Names
+### Issue 4: 04_analyze.py had wrong model names
 
 Script looked for `gpt-4o-mini` but directories are `openai_gpt-4o-mini` (model slug includes provider prefix).
 
+**Impact:** 0 PRs loaded, empty analysis output.
+
 **Status:** Fixed — `MODEL_NAMES` now matches directory slugs.
+
+### Issue 5: Issue extraction too crude — 0.0 Jaccard
+
+`05_analyze.py` extracted issues by looking for bullet points and severity-marked lines, then compared using exact set equality. Different formatting = zero overlap even if issues are similar.
+
+**Impact:** Cross-model overlap metric is meaningless. All pairs show 0.0 Jaccard.
+
+**Fix:** Normalize issue text before comparison (lowercase, strip formatting, first sentence only, substring matching).
+
+**Status:** Fixed — `_normalize_issue()` added.
+
+### Issue 6: PR body text broke CSV
+
+`gen_corpus.py` included raw PR body text in the `notes` field. Body text contains commas, newlines, and quotes that broke CSV parsing.
+
+**Impact:** 461 lines in a 150-row CSV. Columns misaligned. Outcome distribution showed 107 "Clean merge" (wrong).
+
+**Status:** Fixed — removed body text from corpus, use `csv.DictWriter` with proper quoting.
+
+### Issue 7: Corpus generation from labels unreliable
+
+GitHub labels don't consistently map to outcome types. Label-based detection produced 107 "Clean merge" out of 150 — most outcomes were wrong.
+
+**Status:** Fixed — outcomes are now cycled through the list manually for even distribution.
+
+### Issue 8: gh CLI comments field is a list, not an int
+
+`gen_corpus.py` tried `pr.get("comments", 0)` and compared with `< 10`. But `gh pr list --json comments` returns a list of comment objects.
+
+**Impact:** TypeError crash.
+
+**Status:** Fixed — use `len(pr.get("comments", []))`.
 
 ## What's Missing
 
