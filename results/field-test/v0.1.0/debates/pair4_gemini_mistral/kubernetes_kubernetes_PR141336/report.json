@@ -1,0 +1,321 @@
+{
+  "pr_id": "kubernetes_kubernetes_PR141336",
+  "pair": "pair4_gemini_mistral",
+  "model_a": "google/gemini-2.5-flash",
+  "model_b": "mistralai/mistral-small-3.2-24b-instruct",
+  "termination_reason": "rounds_exhausted",
+  "rounds_completed": 2,
+  "convergence_score": 0.4444444444444444,
+  "verdict_kind": "disputed",
+  "theater": false,
+  "capitulation_cascade": false,
+  "resolved_count": 12,
+  "total_claims": 27,
+  "concessions_count": 12,
+  "events_count": 16,
+  "latency_ms": 32482,
+  "api_calls_a": 2,
+  "api_calls_b": 2,
+  "total_tokens": 11586,
+  "report": {
+    "kind": "disputed",
+    "verdict": "Disagreement persists after debate. 12/27 claims resolved (convergence score: 0.44).",
+    "convergence_score": 0.4444444444444444,
+    "strongest_a": [
+      "[medium] Evidence:**",
+      "[medium] `pkg/scheduler/backend/queue/scheduling_queue_test.go:4806`",
+      "[medium] `pkg/scheduler/backend/queue/scheduling_queue_test.go:9884`",
+      "[medium] Description:**",
+      "[medium] Recommendation:**"
+    ],
+    "strongest_b": [],
+    "resolved": [
+      {
+        "claim_id": "cl_B_3",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: High"
+      },
+      {
+        "claim_id": "cl_B_4",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**: `pkg/scheduler/backend/queue/scheduling_queue_test.go` (Lines 4816-4817, 9901-9903)"
+      },
+      {
+        "claim_id": "cl_B_5",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The `stopRecorder()` function is called to stop the metrics recorder, but the context created for the recorder (`recorderCtx`) is not canceled explicitly. This can lead to a resource leak as the context might not be properly cleaned up."
+      },
+      {
+        "claim_id": "cl_B_8",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Medium"
+      },
+      {
+        "claim_id": "cl_B_9",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**: `pkg/scheduler/backend/queue/scheduling_queue_test.go` (Lines 4820-4822, 9905-9907)"
+      },
+      {
+        "claim_id": "cl_B_10",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The code calls `recorder.FlushMetrics()` after stopping the recorder and waiting for it to stop. However, there is no error handling for the `FlushMetrics` call. If `FlushMetrics` fails, the test might proceed with incorrect or incomplete metrics data."
+      },
+      {
+        "claim_id": "cl_B_13",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Medium"
+      },
+      {
+        "claim_id": "cl_B_14",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**: `pkg/scheduler/backend/queue/scheduling_queue_test.go` (Lines 4816-4817, 9901-9903)"
+      },
+      {
+        "claim_id": "cl_B_15",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The code stops the recorder and then waits for the `IsStoppedCh` channel to be closed. However, there is no guarantee that the background goroutine has completely finished processing before `FlushMetrics` is called. This could lead to a race condition where `FlushMetrics` is called be"
+      },
+      {
+        "claim_id": "cl_B_19",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Test Reliability**: The changes introduce new complexity in the test setup and teardown process. If the timing of stopping the recorder and flushing metrics is not precise, it could lead to flaky tests that pass or fail intermittently."
+      },
+      {
+        "claim_id": "cl_B_21",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Performance Impact**: The introduction of context cancellation and explicit stopping of the recorder adds overhead to the test execution. This could impact the overall performance of the test suite, especially if these changes are applied to multiple tests."
+      },
+      {
+        "claim_id": "cl_B_23",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Maintenance Burden**: The changes make the test code more complex and introduce new components (context cancellation, explicit recorder stopping) that need to be maintained. This could increase the maintenance burden and make the tests harder to understand and modify in the future."
+      }
+    ],
+    "unresolved": [
+      {
+        "claim_ids": [
+          "cl_A_10"
+        ],
+        "position_a": "Evidence:**",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Evidence:**. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_11"
+        ],
+        "position_a": "`pkg/scheduler/backend/queue/scheduling_queue_test.go:4806`",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: `pkg/scheduler/backend/queue/scheduling_queue_test.go:4806`. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_12"
+        ],
+        "position_a": "`pkg/scheduler/backend/queue/scheduling_queue_test.go:9884`",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: `pkg/scheduler/backend/queue/scheduling_queue_test.go:9884`. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_14"
+        ],
+        "position_a": "Description:**",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Description:**. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_17"
+        ],
+        "position_a": "Recommendation:**",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Recommendation:**. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_22"
+        ],
+        "position_a": "Severity:** Medium (if `IsStoppedCh` is removed or not used correctly)",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Severity:** Medium (if `IsStoppedCh` is removed or not used correctly). Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_23"
+        ],
+        "position_a": "Evidence:**",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Evidence:**. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_24"
+        ],
+        "position_a": "`pkg/scheduler/backend/queue/scheduling_queue_test.go:4818`",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: `pkg/scheduler/backend/queue/scheduling_queue_test.go:4818`. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_25"
+        ],
+        "position_a": "`pkg/scheduler/backend/queue/scheduling_queue_test.go:9909`",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: `pkg/scheduler/backend/queue/scheduling_queue_test.go:9909`. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_27"
+        ],
+        "position_a": "Description:**",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Description:**. Suggest: additional test coverage or a security review."
+      }
+    ],
+    "flags": {
+      "theater": false,
+      "capitulation_cascade": false
+    }
+  },
+  "events": [
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "REBUTTED obj_initial_a_0: The other reviewer's claim of High Severity (cl_B_3) is based on the assumption of a resource leak due to an uncancelled context (cl_B_5). However, the `metrics.NewMetricsAsyncRecorder` is designed to stop its internal goroutine when `Stop()` is called and `IsStoppedCh` is closed. The context passed to `NewMetricsAsyncRecorder` is primarily for the internal goroutine to listen for cancellation, but the explicit `Stop()` and `IsStoppedCh` mechanism ensures proper shutdown regardless of the context's cancellation status in this specific implementation. Therefore, the risk of a resource leak is lower than claimed.\nREBUTTED obj_initial_a_1: See rebuttal for obj_initial_a_0. The evidence provided by the other reviewer (cl_B_4) points to the lines where the `recorderCtx` is created but not explicitly cancelled. My claim's evidence (cl_A_10, cl_A_11, cl_A_12) focuses on the `Stop()` and `IsStoppedCh` mechanism which mitigates the resource leak.\nREBUTTED obj_initial_a_2: See rebuttal for obj_initial_a_0. The line `pkg/scheduler/backend/queue/scheduling_queue_test.go:4806` shows the creation of `recorderCtx`, which is then passed to `NewMetricsAsyncRecorder`. While `recorderCtx.Cancel()` is not called, the `recorder.Stop()` and `<-recorder.IsStoppedCh` mechanism ensures the recorder's goroutine terminates.\nREBUTTED obj_initial_a_3: See rebuttal for obj_initial_a_0. The line `pkg/scheduler/backend/queue/scheduling_queue_test.go:9884` similarly shows the creation of `recorderCtx`. The argument remains the same: the explicit stop mechanism handles the goroutine termination.\nREBUTTED obj_initial_a_4: The description in cl_A_14 highlights that the `recorderCtx.Cancel()` is not explicitly called. However, the `metrics.NewMetricsAsyncRecorder`'s `Stop()` method, which is called, is designed to gracefully shut down its internal goroutine and close `IsStoppedCh`. This makes the explicit `recorderCtx.Cancel()` less critical for resource cleanup in this specific case, reducing the severity of the issue.\nREBUTTED obj_initial_a_5: My recommendation (cl_A_17) suggests adding `defer recorderCtx.Cancel()` for completeness and best practice. While the `Stop()` and `IsStoppedCh` mechanism prevents a hard resource leak, explicitly cancelling the context is still a good habit for clarity and to handle potential future changes in the `metrics` package's internal implementation. This doesn't elevate the severity to High, as the immediate impact is low.\nCARRIED obj_initial_a_6: The other reviewer's claims (cl_B_3, cl_B_5) focus on the uncancelled context. My claim (cl_A_22) acknowledges a medium severity if `IsStoppedCh` is *removed or not used correctly*. This is a distinct, hypothetical risk. The current code *does* use `IsStoppedCh` correctly, which is why I assess the current situation as low severity (cl_A_9). My claim about medium severity is for a different scenario.\nCARRIED obj_initial_a_7: My evidence (cl_A_23, cl_A_24, cl_A_25) supports the claim that `IsStoppedCh` is used, which is crucial for the correct shutdown of the recorder. The other reviewer's evidence (cl_B_4) focuses on the uncancelled context, which is a different aspect.\nCARRIED obj_initial_a_8: `pkg/scheduler/backend/queue/scheduling_queue_test.go:4818` shows `<-recorder.IsStoppedCh`, which is the correct usage of the channel to wait for the recorder to stop. This directly supports my claim about the correct usage of `IsStoppedCh`.\nCARRIED obj_initial_a_9: `pkg/scheduler/backend/queue/scheduling_queue_test.go:9909` similarly shows `<-recorder.IsStoppedCh`, reinforcing the correct usage of the channel.\nCARRIED obj_initial_a_10: My description (cl_A_27) explains that the `IsStoppedCh` mechanism is crucial for ensuring the recorder's goroutine terminates. This is a separate point from the uncancelled context, and its correct usage is what keeps the severity low in the current code.\nREBUTTED obj_initial_a_11: The other reviewer's claims about resource leaks (cl_B_5) and race conditions (cl_B_15) are addressed by the `Stop()` and `IsStoppedCh` mechanism. The `IsStoppedCh` ensures that the background goroutine has indeed stopped before `FlushMetrics` is called, mitigating the race condition. The resource leak is also mitigated by the goroutine's termination. Therefore, the non-claim risk is lower than implied by the other reviewer.\nCARRIED obj_initial_a_12: My claim (cl_A_35) emphasizes the importance of the pattern of using `context.WithCancel`, explicit stopping, and waiting on `IsStoppedCh` for future maintainability. This is a general best practice for managing asynchronous resources in tests, and deviating from it *in future tests* could lead to issues. This claim is about future maintainability, not a direct criticism of the current code's immediate impact.\nCARRIED obj_initial_a_13: My claim (cl_A_36) acknowledges a *minor* performance impact. The other reviewer's claim (cl_B_21) states a general \"Performance Impact\" without specifying its magnitude. My claim is more nuanced, recognizing that while there's an overhead, it's likely negligible for this specific change.\nCARRIED obj_initial_a_14: My claim (cl_A_37) correctly identifies that `FlushMetrics()` doesn't return an error and that this is a limitation of the `metrics` package itself. The other reviewer's claim (cl_B_10) also points out the lack of error handling for `FlushMetrics`. My claim is not in conflict but rather provides context that this is an inherent limitation of the underlying package, not a flaw introduced by the current change."
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "CONCEDED obj_initial_b_0: Upon reviewing the other reviewer's claims, I realize that the severity of the context not being canceled explicitly might not be as high as initially thought, as the resource leak might not be significant in this specific context.\n\nCONCEDED obj_initial_b_2: The other reviewer's point about the context being managed by the `stopRecorder` function is valid. The context is indeed canceled within the `stopRecorder` function, so my initial claim about a resource leak is incorrect.\n\nCONCEDED obj_initial_b_5: The other reviewer correctly points out that `FlushMetrics()` does not return an error, so error handling is not applicable in this case. My claim about the lack of error handling is therefore invalid.\n\nCARRIED obj_initial_b_8: The race condition is still a valid concern. The code stops the recorder and waits for `IsStoppedCh` to be closed, but there is no explicit synchronization to ensure that all background processing is complete before `FlushMetrics` is called. This could still lead to a race condition.\n\nCONCEDED obj_initial_b_9: The other reviewer's point about the pattern being a good practice for managing asynchronous resources is valid. The complexity introduced might be justified by the benefits of proper resource management.\n\nCONCEDED obj_initial_b_10: The performance impact might indeed be minor, as the overhead of creating and managing an additional context and goroutine is likely negligible in the context of the test suite.\n\nCONCEDED obj_initial_b_11: The other reviewer's point about the pattern being a good practice for future maintainability is valid. The initial complexity might be outweighed by the benefits of consistent resource management across tests.\n\nFor objections obj_initial_b_1, obj_initial_b_3, obj_initial_b_4, obj_initial_b_6, obj_initial_b_7, and obj_initial_b_10, the responses are as follows:\n\nCONCEDED obj_initial_b_1: The evidence provided is correct, but the severity of the issue is lower than initially thought.\n\nCONCEDED obj_initial_b_3: The severity is indeed medium, as the issue is not as critical as initially assessed.\n\nCONCEDED obj_initial_b_4: The evidence is correct, but the severity of the issue is lower than initially thought.\n\nCONCEDED obj_initial_b_6: The severity is indeed medium, as the issue is not as critical as initially assessed.\n\nCONCEDED obj_initial_b_7: The evidence is correct, but the severity of the issue is lower than initially thought.\n\nCONCEDED obj_initial_b_10: The performance impact is indeed minor, as the overhead is likely negligible."
+    },
+    {
+      "round": 2,
+      "side": "A",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "REBUTTED obj_initial_a_0: My claim cl_A_9 (Severity: Low) refers to the impact of *not* calling `cancel()` on the `recorderCtx`. The other reviewer's claim cl_B_3 (Severity: High) refers to the impact of *not* calling `cancel()` on the `recorderCtx`. My claim is that the severity is low because the `recorderCtx` is a child of `testCtx`, which is guaranteed to be cancelled by `t.Cleanup()`. Therefore, the `recorderCtx` will eventually be cancelled, even if not explicitly. The resource leak is temporary and limited to the test's lifetime.\nREBUTTED obj_initial_a_1: My claim cl_A_10 (Evidence) refers to the evidence for the low severity of not explicitly calling `cancel()` on `recorderCtx`. The other reviewer's claim cl_B_4 (Evidence) refers to the evidence for their high severity claim. My evidence points to the fact that `recorderCtx` is a child of `testCtx`, which is cancelled by `t.Cleanup()`.\nREBUTTED obj_initial_a_2: My claim cl_A_11 (`pkg/scheduler/backend/queue/scheduling_queue_test.go:4806`) refers to the line where `recorderCtx` is created as a child of `testCtx`. This is the basis for my argument that the context will eventually be cancelled.\nREBUTTED obj_initial_a_3: My claim cl_A_12 (`pkg/scheduler/backend/queue/scheduling_queue_test.go:9884`) refers to the line where `recorderCtx` is created as a child of `testCtx`. This is the basis for my argument that the context will eventually be cancelled.\nREBUTTED obj_initial_a_4: My claim cl_A_14 (Description) describes why the severity is low: the `recorderCtx` is a child of `testCtx`, which is cancelled by `t.Cleanup()`. The other reviewer's claim cl_B_5 (Description) describes a resource leak due to not canceling `recorderCtx`, which I agree with, but I argue the severity is low due to the parent context cancellation.\nREBUTTED obj_initial_a_5: My claim cl_A_17 (Recommendation) suggests adding `defer cancel()` to explicitly cancel the `recorderCtx`. This is a good practice, even if the severity of not doing so is low.\nREBUTTED obj_initial_a_6: My claim cl_A_22 (Severity: Medium if `IsStoppedCh` is removed or not used correctly) addresses a different potential issue than the other reviewer's claims. My claim is about the importance of `IsStoppedCh` for proper synchronization, which is not directly addressed by the other reviewer's claims.\nCARRIED obj_initial_a_7: My claim cl_A_23 (Evidence) supports my claim cl_A_22, which is about the importance of `IsStoppedCh`. This is a separate concern from the other reviewer's claims.\nCARRIED obj_initial_a_8: My claim cl_A_24 (`pkg/scheduler/backend/queue/scheduling_queue_test.go:4818`) supports my claim cl_A_22, which is about the importance of `IsStoppedCh`. This is a separate concern from the other reviewer's claims.\nCARRIED obj_initial_a_9: My claim cl_A_25 (`pkg/scheduler/backend/queue/scheduling_queue_test.go:9909`) supports my claim cl_A_22, which is about the importance of `IsStoppedCh`. This is a separate concern from the other reviewer's claims.\nCARRIED obj_initial_a_10: My claim cl_A_27 (Description) describes the importance of `IsStoppedCh` for proper synchronization. This is a separate concern from the other reviewer's claims.\nCARRIED obj_initial_a_11: My claim cl_A_30 (Non-Claim Risk) highlights a potential risk if `IsStoppedCh` is not used correctly. This is a separate concern from the other reviewer's claims.\nCARRIED obj_initial_a_12: My claim cl_A_35 (Future Maintainability) discusses the importance of the pattern of using `context.WithCancel` and `IsStoppedCh` for managing asynchronous resources. This is a general maintainability concern, not directly rebutted by the other reviewer's specific claims about resource leaks or race conditions.\nCARRIED obj_initial_a_13: My claim cl_A_36 (Performance Impact (Minor)) acknowledges a minor performance overhead. The other reviewer's claim cl_B_21 (Performance Impact) also mentions performance impact, but my claim specifies it as minor and provides reasoning. I stand by my assessment of the impact as minor.\nCARRIED obj_initial_a_14: My claim cl_A_37 (Error Handling) discusses the lack of error handling for `FlushMetrics()`, attributing it to a limitation of the `metrics` package itself. The other reviewer's claim cl_B_10 (Description) also points out the lack of error handling for `FlushMetrics`, but my claim provides context that it's a limitation of the package, not a direct fault of this change."
+    },
+    {
+      "round": 2,
+      "side": "B",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "I will respond to each objection targeting my claims.\n\n- **Objection to cl_B_5 (Resource Leak Concern)**:\n  - **Response**: CARRIED obj_initial_a_10\n  - **Reason**: The context created for the recorder (`recorderCtx`) is not explicitly canceled, which can lead to resource leaks. The other reviewer's evidence does not address this concern directly. The context should be explicitly canceled to ensure proper cleanup.\n\n- **Objection to cl_B_10 (Error Handling for `FlushMetrics`)**:\n  - **Response**: CARRIED obj_initial_a_17\n  - **Reason**: The `FlushMetrics()` call does not have error handling, which could lead to incorrect or incomplete metrics data if the call fails. The other reviewer's evidence does not provide a reason to change this assessment.\n\n- **Objection to cl_B_15 (Race Condition Concern)**:\n  - **Response**: CARRIED obj_initial_a_27\n  - **Reason**: There is no guarantee that the background goroutine has completely finished processing before `FlushMetrics` is called. This could lead to a race condition. The other reviewer's evidence does not address this concern.\n\n- **Objection to cl_B_19 (Test Reliability)**:\n  - **Response**: CARRIED obj_initial_a_30\n  - **Reason**: The changes introduce new complexity in the test setup and teardown process, which could lead to flaky tests. The other reviewer's evidence does not mitigate this concern.\n\n- **Objection to cl_B_21 (Performance Impact)**:\n  - **Response**: CONCEDED obj_initial_a_36\n  - **Reason**: The other reviewer's evidence indicates that the overhead of creating and managing an additional context and goroutine for each test run is minor and theoretical. This reduces the severity of the performance impact concern.\n\n- **Objection to cl_B_23 (Maintenance Burden)**:\n  - **Response**: CARRIED obj_initial_a_35\n  - **Reason**: The changes make the test code more complex and introduce new components that need to be maintained. The other reviewer's evidence does not mitigate this concern. The pattern of creating a dedicated `context.WithCancel` for the recorder and explicitly stopping it is a good practice, but it does increase the maintenance burden."
+    }
+  ]
+}

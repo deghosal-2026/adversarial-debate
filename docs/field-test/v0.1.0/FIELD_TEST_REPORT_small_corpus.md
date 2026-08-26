@@ -26,69 +26,6 @@
 
 ---
 
-## Coverage Status
-
-| Dimension | Value |
-|-----------|-------|
-| PRs | 3 (kubernetes/kubernetes#141554, django/django#18333, rails/rails#52531) |
-| Languages | Go, Python, Ruby |
-| Models | 4 (GPT-4o-mini, Gemini 2.5 Flash, DeepSeek-V3, Mistral Small 3.2) |
-| Debate pairs | 6 (5 heterogeneous + 1 homogeneous) |
-| Total debates | 18 (3 PRs × 6 pairs) |
-| Total single-pass reviews | 12 (3 PRs × 4 models) |
-
----
-
-## Debate Outcomes
-
-### By Pair
-
-| Pair | Models | Debates | Verdicts | Avg Score | Concessions | Capitulation | Theater |
-|------|--------|---------|----------|-----------|-------------|-------------|---------|
-| homogeneous_gpt | GPT + GPT | 3 | 1 | 0.667 | 61 | 0 | 0 |
-| pair1_gpt_gemini | GPT + Gemini | 3 | 0 | 0.148 | 16 | 0 | 0 |
-| pair2_gemini_deepseek | Gemini + DeepSeek | 3 | 1 | 0.835 | 84 | 0 | 0 |
-| pair3_gpt_mistral | GPT + Mistral | 3 | 1 | 0.643 | 57 | 1 | 0 |
-| pair4_gemini_mistral | Gemini + Mistral | 3 | 0 | 0.580 | 42 | 0 | 0 |
-| pair5_deepseek_mistral | DeepSeek + Mistral | 3 | 3 | 1.000 | 106 | 2 | 0 |
-| **Total** | | **18** | **6** | **0.645** | **366** | **3** | **0** |
-
-### By PR
-
-| PR | Language | Best Pair | Best Score | Worst Pair | Worst Score |
-|----|----------|-----------|------------|------------|-------------|
-| kubernetes#141554 | Go | pair5 (DeepSeek+Mistral) | 1.0 (verdict) | pair1 (GPT+Gemini) | 0.0 |
-| django#18333 | Python | pair2 (Gemini+DeepSeek) | 1.0 (verdict) | pair1 (GPT+Gemini) | 0.444 |
-| rails#52531 | Ruby | pair5 (DeepSeek+Mistral) | 1.0 (verdict) | pair1 (GPT+Gemini) | 0.0 |
-
----
-
-## Cost & Latency
-
-| Model | Cost | Avg Latency | Total Tokens | PRs |
-|-------|------|-------------|-------------|-----|
-| GPT-4o-mini | $0.11 | 7.6s | 520,740 | 148 |
-| Gemini 2.5 Flash | $0.19 | 6.0s | 887,290 | 149 |
-| DeepSeek-V3 | $0.13 | 13.1s | 348,271 | 110 |
-| Mistral Small 3.2 | $0.01 | 15.1s | 96,620 | 37 |
-| **Total** | **$0.45** | | **1,852,921** | **444** |
-
-**Projected cost for 150-PR full sweep:** ~$2.50 (single passes + debate rounds + flakiness subsample).
-
----
-
-## Cross-Model Overlap
-
-| PR | GPT vs Gemini | GPT vs DeepSeek | GPT vs Mistral | Gemini vs DeepSeek | Gemini vs Mistral | DeepSeek vs Mistral |
-|----|--------------|-----------------|----------------|--------------------|--------------------|---------------------|
-| django#18333 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-| kubernetes#141554 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-| rails#52531 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-
-**Overlap is 0.000 across all pairs on all PRs.** Models genuinely find different issues. This is either the independence thesis working (different models surface different problems) or a limitation of the issue extraction heuristic (bullet-point parsing may miss issues not formatted as bullets). Needs validation on larger corpus with manual inspection.
-
----
-
 ## Scorecards
 
 ### Scorecard A — Strict Verdict (Release Gate)
@@ -184,29 +121,6 @@ $0.45 for 18 debates + 12 single-pass reviews. Scaled to 150 PRs: ~$2.50. The ch
 
 ---
 
-## Issues Found and Fixed
-
-14 issues were found during pipeline development. 12 are fixed, 2 are observed as valid data.
-
-| # | Issue | Status | Impact |
-|---|-------|--------|--------|
-| 1 | StoredProvider replayed same text — no real debate | ✅ Fixed | Replaced with LiveProvider calling OpenRouter API |
-| 2 | Model slug mismatch — dots vs dashes | ✅ Fixed | PAIRS dict uses correct slugs |
-| 3 | Analysis script wrong base paths | ✅ Fixed | Uses BASE / results / field-test / v0.1.0 |
-| 4 | Analysis script wrong model names | ✅ Fixed | MODEL_NAMES matches directory slugs |
-| 5 | Issue extraction too crude — 0.0 Jaccard | ✅ Fixed | Added normalization + substring containment |
-| 6 | PR body text broke CSV | ✅ Fixed | Removed body text, use DictWriter |
-| 7 | Corpus generation from labels unreliable | ✅ Fixed | Outcomes cycled manually |
-| 8 | gh CLI comments field is a list, not int | ✅ Fixed | Use len(comments) |
-| 9 | LLMs default to CARRIED — few concessions | ✅ Fixed | Rewrote debate prompt |
-| 10 | Theater detector flags CARRIED-only as theater | ✅ Fixed | Check for defense events, not just concessions |
-| 11 | Debate prompt doesn't push for engagement | ✅ Fixed | Require evidence for CARRIED, instruct to CONCEDE |
-| 12 | Debate outputs not logged to disk | ✅ Fixed | Write transcript.jsonl per debate |
-| 13 | Cross-model overlap still 0.000 | ⚠️ Partially fixed | Needs manual validation on larger corpus |
-| 14 | Stricter prompt made pair1 more combative | ⚠️ Observed | Valid data — GPT+Gemini genuinely disagree on evidence |
-
----
-
 ## Observations
 
 ### pair5_deepseek_mistral is the most productive pair
@@ -231,6 +145,29 @@ No debates hit budget_exhausted or error. The 50,000 token budget was never reac
 
 ---
 
+## Issues Found and Fixed
+
+14 issues were found during pipeline development. 12 are fixed, 2 are observed as valid data.
+
+| # | Issue | Status | Impact |
+|---|-------|--------|--------|
+| 1 | StoredProvider replayed same text — no real debate | ✅ Fixed | Replaced with LiveProvider calling OpenRouter API |
+| 2 | Model slug mismatch — dots vs dashes | ✅ Fixed | PAIRS dict uses correct slugs |
+| 3 | Analysis script wrong base paths | ✅ Fixed | Uses BASE / results / field-test / v0.1.0 |
+| 4 | Analysis script wrong model names | ✅ Fixed | MODEL_NAMES matches directory slugs |
+| 5 | Issue extraction too crude — 0.0 Jaccard | ✅ Fixed | Added normalization + substring containment |
+| 6 | PR body text broke CSV | ✅ Fixed | Removed body text, use DictWriter |
+| 7 | Corpus generation from labels unreliable | ✅ Fixed | Outcomes cycled manually |
+| 8 | gh CLI comments field is a list, not int | ✅ Fixed | Use len(comments) |
+| 9 | LLMs default to CARRIED — few concessions | ✅ Fixed | Rewrote debate prompt |
+| 10 | Theater detector flags CARRIED-only as theater | ✅ Fixed | Check for defense events, not just concessions |
+| 11 | Debate prompt doesn't push for engagement | ✅ Fixed | Require evidence for CARRIED, instruct to CONCEDE |
+| 12 | Debate outputs not logged to disk | ✅ Fixed | Write transcript.jsonl per debate |
+| 13 | Cross-model overlap still 0.000 | ⚠️ Partially fixed | Needs manual validation on larger corpus |
+| 14 | Stricter prompt made pair1 more combative | ⚠️ Observed | Valid data — GPT+Gemini genuinely disagree on evidence |
+
+---
+
 ## What's Next
 
 1. **Run full 150-PR sweep** — corpus is generated, scripts are tested, cost is ~$2.50
@@ -239,6 +176,69 @@ No debates hit budget_exhausted or error. The 50,000 token budget was never reac
 4. **Manual overlap validation** — inspect 10 PRs to determine if 0.000 overlap is real diversity or extraction failure
 5. **Human review comparison** — compare debate output with human PR comments on high-comment PRs
 6. **Write FIELD_TEST_REPORT.md** — full report with PASS/FAIL determination against PRD §7.1
+
+---
+
+## Coverage Status
+
+| Dimension | Value |
+|-----------|-------|
+| PRs | 3 (kubernetes/kubernetes#141554, django/django#18333, rails/rails#52531) |
+| Languages | Go, Python, Ruby |
+| Models | 4 (GPT-4o-mini, Gemini 2.5 Flash, DeepSeek-V3, Mistral Small 3.2) |
+| Debate pairs | 6 (5 heterogeneous + 1 homogeneous) |
+| Total debates | 18 (3 PRs × 6 pairs) |
+| Total single-pass reviews | 12 (3 PRs × 4 models) |
+
+---
+
+## Debate Outcomes
+
+### By Pair
+
+| Pair | Models | Debates | Verdicts | Avg Score | Concessions | Capitulation | Theater |
+|------|--------|---------|----------|-----------|-------------|-------------|---------|
+| homogeneous_gpt | GPT + GPT | 3 | 1 | 0.667 | 61 | 0 | 0 |
+| pair1_gpt_gemini | GPT + Gemini | 3 | 0 | 0.148 | 16 | 0 | 0 |
+| pair2_gemini_deepseek | Gemini + DeepSeek | 3 | 1 | 0.835 | 84 | 0 | 0 |
+| pair3_gpt_mistral | GPT + Mistral | 3 | 1 | 0.643 | 57 | 1 | 0 |
+| pair4_gemini_mistral | Gemini + Mistral | 3 | 0 | 0.580 | 42 | 0 | 0 |
+| pair5_deepseek_mistral | DeepSeek + Mistral | 3 | 3 | 1.000 | 106 | 2 | 0 |
+| **Total** | | **18** | **6** | **0.645** | **366** | **3** | **0** |
+
+### By PR
+
+| PR | Language | Best Pair | Best Score | Worst Pair | Worst Score |
+|----|----------|-----------|------------|------------|-------------|
+| kubernetes#141554 | Go | pair5 (DeepSeek+Mistral) | 1.0 (verdict) | pair1 (GPT+Gemini) | 0.0 |
+| django#18333 | Python | pair2 (Gemini+DeepSeek) | 1.0 (verdict) | pair1 (GPT+Gemini) | 0.444 |
+| rails#52531 | Ruby | pair5 (DeepSeek+Mistral) | 1.0 (verdict) | pair1 (GPT+Gemini) | 0.0 |
+
+---
+
+## Cost & Latency
+
+| Model | Cost | Avg Latency | Total Tokens | PRs |
+|-------|------|-------------|-------------|-----|
+| GPT-4o-mini | $0.11 | 7.6s | 520,740 | 148 |
+| Gemini 2.5 Flash | $0.19 | 6.0s | 887,290 | 149 |
+| DeepSeek-V3 | $0.13 | 13.1s | 348,271 | 110 |
+| Mistral Small 3.2 | $0.01 | 15.1s | 96,620 | 37 |
+| **Total** | **$0.45** | | **1,852,921** | **444** |
+
+**Projected cost for 150-PR full sweep:** ~$2.50 (single passes + debate rounds + flakiness subsample).
+
+---
+
+## Cross-Model Overlap
+
+| PR | GPT vs Gemini | GPT vs DeepSeek | GPT vs Mistral | Gemini vs DeepSeek | Gemini vs Mistral | DeepSeek vs Mistral |
+|----|--------------|-----------------|----------------|--------------------|--------------------|---------------------|
+| django#18333 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| kubernetes#141554 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| rails#52531 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+
+**Overlap is 0.000 across all pairs on all PRs.** Models genuinely find different issues. This is either the independence thesis working (different models surface different problems) or a limitation of the issue extraction heuristic (bullet-point parsing may miss issues not formatted as bullets). Needs validation on larger corpus with manual inspection.
 
 ---
 

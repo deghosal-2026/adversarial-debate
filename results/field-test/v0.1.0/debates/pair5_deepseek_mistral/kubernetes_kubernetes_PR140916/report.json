@@ -1,0 +1,754 @@
+{
+  "pr_id": "kubernetes_kubernetes_PR140916",
+  "pair": "pair5_deepseek_mistral",
+  "model_a": "deepseek/deepseek-chat",
+  "model_b": "mistralai/mistral-small-3.2-24b-instruct",
+  "termination_reason": "all_resolved",
+  "rounds_completed": 1,
+  "convergence_score": 1.0,
+  "verdict_kind": "verdict",
+  "theater": false,
+  "capitulation_cascade": true,
+  "resolved_count": 54,
+  "total_claims": 54,
+  "concessions_count": 54,
+  "events_count": 56,
+  "latency_ms": 23309,
+  "api_calls_a": 1,
+  "api_calls_b": 1,
+  "total_tokens": 7519,
+  "report": {
+    "kind": "verdict",
+    "verdict": "Verdict reached after debate. All 54 claims resolved (convergence score: 1.00).",
+    "convergence_score": 1.0,
+    "strongest_a": [],
+    "strongest_b": [],
+    "resolved": [
+      {
+        "claim_id": "cl_A_4",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Inconsistent Authorizer Interface Implementation**"
+      },
+      {
+        "claim_id": "cl_A_5",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity: Medium"
+      },
+      {
+        "claim_id": "cl_A_6",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Location: Multiple files (gc_admission_test.go, initializer_test.go, policy_test_context.go)"
+      },
+      {
+        "claim_id": "cl_A_7",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description: The diff introduces new methods (ConditionsAwareAuthorize and EvaluateConditions) to multiple authorizer implementations, but these methods are not consistently implemented across all test authorizers. Some return hardcoded values while others delegate to Authorize()."
+      },
+      {
+        "claim_id": "cl_A_9",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Potential Interface Pollution**"
+      },
+      {
+        "claim_id": "cl_A_10",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity: Low"
+      },
+      {
+        "claim_id": "cl_A_11",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Location: staging/src/k8s.io/apiserver/pkg/admission/initializer/interfaces.go"
+      },
+      {
+        "claim_id": "cl_A_12",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description: The introduction of WantsAuthorizer alongside WantsUnconditionalAuthorizer creates potential confusion about which interface to implement. The documentation should clearly explain when to use each."
+      },
+      {
+        "claim_id": "cl_A_14",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Test Coverage Gaps**"
+      },
+      {
+        "claim_id": "cl_A_15",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity: Medium"
+      },
+      {
+        "claim_id": "cl_A_16",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Location: staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go"
+      },
+      {
+        "claim_id": "cl_A_17",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description: While tests exist for both WantsAuthorizer and WantsUnconditionalAuthorizer, there are no tests verifying the interaction between these interfaces or testing the new ConditionsAwareAuthorize/EvaluateConditions methods."
+      },
+      {
+        "claim_id": "cl_A_19",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Potential Backward Compatibility Risk**"
+      },
+      {
+        "claim_id": "cl_A_20",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity: High"
+      },
+      {
+        "claim_id": "cl_A_21",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Location: staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer.go"
+      },
+      {
+        "claim_id": "cl_A_22",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description: Changing the authorizer field type from UnconditionalAuthorizer to Authorizer could break existing plugins that depend on the specific UnconditionalAuthorizer behavior."
+      },
+      {
+        "claim_id": "cl_A_26",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Maintainability Impact**"
+      },
+      {
+        "claim_id": "cl_A_27",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: The introduction of multiple authorizer-related interfaces and methods increases code complexity and maintenance burden."
+      },
+      {
+        "claim_id": "cl_A_29",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Documentation Needs**"
+      },
+      {
+        "claim_id": "cl_A_30",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: The changes would benefit from additional documentation explaining:"
+      },
+      {
+        "claim_id": "cl_A_31",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: The relationship between Authorizer and UnconditionalAuthorizer"
+      },
+      {
+        "claim_id": "cl_A_32",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: When to use each interface"
+      },
+      {
+        "claim_id": "cl_A_33",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: The purpose of the new conditions-aware methods"
+      },
+      {
+        "claim_id": "cl_A_35",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Performance Considerations**"
+      },
+      {
+        "claim_id": "cl_A_36",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: The additional method calls (ConditionsAwareAuthorize, EvaluateConditions) could have minor performance impacts that should be measured."
+      },
+      {
+        "claim_id": "cl_A_38",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Testing Strategy**"
+      },
+      {
+        "claim_id": "cl_A_39",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: The test changes focus on happy paths but don't test error cases or verify the behavior when both WantsAuthorizer and WantsUnconditionalAuthorizer are implemented by the same plugin."
+      },
+      {
+        "claim_id": "cl_B_3",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: High"
+      },
+      {
+        "claim_id": "cl_B_4",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_5",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go` (Lines 113-128)"
+      },
+      {
+        "claim_id": "cl_B_6",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/initializer/interfaces.go` (Lines 43-55)"
+      },
+      {
+        "claim_id": "cl_B_7",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The `WantAuthorizerAdmission` struct and its associated test case are incorrectly implementing the `WantsUnconditionalAuthorizer` interface instead of the new `WantsAuthorizer` interface. This inconsistency can lead to runtime errors and should be corrected to maintain interface contr"
+      },
+      {
+        "claim_id": "cl_B_10",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: High"
+      },
+      {
+        "claim_id": "cl_B_11",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_12",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/initializer/interfaces.go` (Lines 43-55)"
+      },
+      {
+        "claim_id": "cl_B_13",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go` (Lines 113-128)"
+      },
+      {
+        "claim_id": "cl_B_14",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The `WantUnconditionalAuthorizerAdmission` struct is introduced but not used in the main code. This could lead to confusion and should be either removed or properly integrated into the codebase."
+      },
+      {
+        "claim_id": "cl_B_17",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Medium"
+      },
+      {
+        "claim_id": "cl_B_18",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_19",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go` (Lines 31-40)"
+      },
+      {
+        "claim_id": "cl_B_20",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The test `TestWantsUnconditionalAuthorizer` is added but does not cover the new `WantsAuthorizer` interface. This could lead to untested code paths and potential bugs. The test should be updated to cover the new interface."
+      },
+      {
+        "claim_id": "cl_B_23",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Medium"
+      },
+      {
+        "claim_id": "cl_B_24",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_25",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer.go` (Lines 31-45)"
+      },
+      {
+        "claim_id": "cl_B_26",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go` (Lines 113-128)"
+      },
+      {
+        "claim_id": "cl_B_27",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The `pluginInitializer` struct and its associated test cases are using both `authorizer.Authorizer` and `authorizer.UnconditionalAuthorizer`. This inconsistency should be resolved to ensure that the codebase uses a consistent authorizer type."
+      },
+      {
+        "claim_id": "cl_B_30",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Low"
+      },
+      {
+        "claim_id": "cl_B_31",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_32",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `plugin/pkg/admission/gc/gc_admission_test.go` (Lines 100-110)"
+      },
+      {
+        "claim_id": "cl_B_33",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_test_context.go` (Lines 644-654)"
+      },
+      {
+        "claim_id": "cl_B_34",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**: The `ConditionsAwareAuthorize` and `EvaluateConditions` methods are duplicated in both `gc_admission_test.go` and `policy_test_context.go`. This redundancy should be refactored into a common utility or base class to avoid code duplication."
+      },
+      {
+        "claim_id": "cl_B_38",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Potential Runtime Errors**: The inconsistent interface implementation and incomplete test coverage could lead to runtime errors if the interfaces are not properly implemented or tested."
+      },
+      {
+        "claim_id": "cl_B_40",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Code Maintainability**: The redundant code and inconsistent usage of authorizer types can make the codebase harder to maintain and understand, potentially leading to future bugs and difficulties in onboarding new developers."
+      },
+      {
+        "claim_id": "cl_B_42",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Feature Compatibility**: The changes introduce new interfaces and methods that might not be fully compatible with existing features, especially if those features rely on the older `UnconditionalAuthorizer` interface. This could lead to unexpected behavior or errors in production."
+      }
+    ],
+    "unresolved": [],
+    "flags": {
+      "theater": false,
+      "capitulation_cascade": true
+    }
+  },
+  "events": [
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "CONCEDED obj_initial_a_0: The reviewer's evidence shows inconsistent implementation of the Authorizer interface, particularly in the test cases.\n\nCONCEDED obj_initial_a_1: Given the reviewer's evidence of runtime errors and interface confusion, the severity should be raised to High.\n\nCARRIED obj_initial_a_2: The location claim remains valid as the inconsistency spans multiple files, including those mentioned.\n\nCONCEDED obj_initial_a_3: The reviewer's evidence confirms that the methods are inconsistently implemented across test authorizers.\n\nCARRIED obj_initial_a_4: The introduction of multiple authorizer-related interfaces still risks interface pollution, as noted in the original claim.\n\nCARRIED obj_initial_a_5: The severity remains Low as the interface pollution does not directly cause runtime errors.\n\nCARRIED obj_initial_a_6: The location claim remains valid as the interfaces are defined in the specified file.\n\nCARRIED obj_initial_a_7: The introduction of WantsAuthorizer alongside WantsUnconditionalAuthorizer still creates potential confusion, as noted in the original claim.\n\nCARRIED obj_initial_a_8: The test coverage gaps remain valid, particularly for interactions between interfaces and new methods.\n\nCARRIED obj_initial_a_9: The severity remains Medium as the gaps could lead to untested code paths.\n\nCARRIED obj_initial_a_10: The location claim remains valid as the test file contains the relevant test cases.\n\nCARRIED obj_initial_a_11: The description remains valid as there are no tests verifying interactions between interfaces or new methods.\n\nCARRIED obj_initial_a_12: The potential backward compatibility risk remains valid, especially for plugins relying on UnconditionalAuthorizer behavior.\n\nCARRIED obj_initial_a_13: The severity remains High as the change could break existing plugins.\n\nCARRIED obj_initial_a_14: The location claim remains valid as the authorizer field type change is in the specified file.\n\nCARRIED obj_initial_a_15: The description remains valid as the change could break existing plugins.\n\nCARRIED obj_initial_a_16: The maintainability impact remains valid due to increased complexity.\n\nCARRIED obj_initial_a_17: The introduction of multiple interfaces and methods still increases maintenance burden.\n\nCARRIED obj_initial_a_18: The documentation needs remain valid, particularly for explaining interface relationships and usage.\n\nCARRIED obj_initial_a_19: The changes still benefit from additional documentation.\n\nCARRIED obj_initial_a_20: The relationship between Authorizer and UnconditionalAuthorizer still needs clarification.\n\nCARRIED obj_initial_a_21: Guidance on when to use each interface is still needed.\n\nCARRIED obj_initial_a_22: The purpose of the new conditions-aware methods still needs explanation.\n\nCARRIED obj_initial_a_23: Performance considerations remain valid, though the impact is minor.\n\nCARRIED obj_initial_a_24: The additional method calls could still have minor performance impacts.\n\nCARRIED obj_initial_a_25: The testing strategy remains valid, particularly for error cases and interface interactions.\n\nCARRIED obj_initial_a_26: The test changes still focus on happy paths and lack coverage for error cases and interface interactions."
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "defense",
+      "degraded": true,
+      "error": null,
+      "content": "CONCEDED obj_initial_b_0\nCONCEDED obj_initial_b_1\nCONCEDED obj_initial_b_2\nCONCEDED obj_initial_b_3\nCONCEDED obj_initial_b_4\nCONCEDED obj_initial_b_5\nCONCEDED obj_initial_b_6\nCONCEDED obj_initial_b_7\nCONCEDED obj_initial_b_8\nCONCEDED obj_initial_b_9\nCONCEDED obj_initial_b_10\nCONCEDED obj_initial_b_11\nCONCEDED obj_initial_b_12\nCONCEDED obj_initial_b_13\nCONCEDED obj_initial_b_14\nCONCEDED obj_initial_b_15\nCONCEDED obj_initial_b_16\nCONCEDED obj_initial_b_17\nCONCEDED obj_initial_b_18\nCONCEDED obj_initial_b_19\nCONCEDED obj_initial_b_20\nCONCEDED obj_initial_b_21\nCONCEDED obj_initial_b_22\nCONCEDED obj_initial_b_23\nCONCEDED obj_initial_b_24\nCONCEDED obj_initial_b_25\nCONCEDED obj_initial_b_26"
+    }
+  ]
+}

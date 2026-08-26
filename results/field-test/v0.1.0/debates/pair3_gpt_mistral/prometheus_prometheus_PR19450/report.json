@@ -1,0 +1,780 @@
+{
+  "pr_id": "prometheus_prometheus_PR19450",
+  "pair": "pair3_gpt_mistral",
+  "model_a": "openai/gpt-4o-mini",
+  "model_b": "mistralai/mistral-small-3.2-24b-instruct",
+  "termination_reason": "all_resolved",
+  "rounds_completed": 1,
+  "convergence_score": 1.0,
+  "verdict_kind": "verdict",
+  "theater": false,
+  "capitulation_cascade": false,
+  "resolved_count": 56,
+  "total_claims": 56,
+  "concessions_count": 56,
+  "events_count": 58,
+  "latency_ms": 41884,
+  "api_calls_a": 1,
+  "api_calls_b": 1,
+  "total_tokens": 8357,
+  "report": {
+    "kind": "verdict",
+    "verdict": "Verdict reached after debate. All 56 claims resolved (convergence score: 1.00).",
+    "convergence_score": 1.0,
+    "strongest_a": [],
+    "strongest_b": [],
+    "resolved": [
+      {
+        "claim_id": "cl_A_5",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity**: High"
+      },
+      {
+        "claim_id": "cl_A_6",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Evidence References**:"
+      },
+      {
+        "claim_id": "cl_A_7",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: `tsdb/head.go` (lines 2862-2870)"
+      },
+      {
+        "claim_id": "cl_A_8",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description**: The code introduces a panic when the number of in-order head chunks exceeds the 23-bit limit. While this is a safeguard, it may lead to unexpected crashes in production if the limit is reached. It would be better to handle this case gracefully, perhaps by returning an error instead of"
+      },
+      {
+        "claim_id": "cl_A_11",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity**: Medium"
+      },
+      {
+        "claim_id": "cl_A_12",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Evidence References**:"
+      },
+      {
+        "claim_id": "cl_A_13",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: `tsdb/chunks/chunks.go` (lines 76-78, 86-88)"
+      },
+      {
+        "claim_id": "cl_A_14",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description**: The comments regarding the behavior of `HeadChunkID` and its wrapping behavior are inconsistent. The initial comments suggest a monotonically increasing behavior, which is misleading given the wrapping logic. Clear and consistent documentation is crucial for maintainability and unders"
+      },
+      {
+        "claim_id": "cl_A_17",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity**: Medium"
+      },
+      {
+        "claim_id": "cl_A_18",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Evidence References**:"
+      },
+      {
+        "claim_id": "cl_A_19",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: `tsdb/db_test.go` (new tests added)"
+      },
+      {
+        "claim_id": "cl_A_20",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description**: While new tests have been added to cover some scenarios, there is a lack of comprehensive tests for edge cases, particularly around the wrapping behavior of chunk IDs. Additional tests should be created to ensure that all edge cases are covered, especially those that could lead to dat"
+      },
+      {
+        "claim_id": "cl_A_23",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity**: High"
+      },
+      {
+        "claim_id": "cl_A_24",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Evidence References**:"
+      },
+      {
+        "claim_id": "cl_A_25",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: `tsdb/head.go` (lines 2896-2914)"
+      },
+      {
+        "claim_id": "cl_A_26",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description**: The logic for updating `firstChunkID` during truncation does not account for the possibility of wrapping, which could lead to incorrect chunk ID assignments. This could result in data corruption if the IDs are not managed correctly. The use of `wrapChunkID` should be consistently appl"
+      },
+      {
+        "claim_id": "cl_A_29",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity**: Low"
+      },
+      {
+        "claim_id": "cl_A_30",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Evidence References**:"
+      },
+      {
+        "claim_id": "cl_A_31",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: `tsdb/head.go` (lines 2914-2921)"
+      },
+      {
+        "claim_id": "cl_A_32",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Description**: The code for updating `firstChunkID` is repeated in multiple places. This redundancy can lead to maintenance challenges and potential bugs if changes are made in one location but not others. Consider refactoring to a single method that handles this logic."
+      },
+      {
+        "claim_id": "cl_A_35",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Concurrency Issues**: The use of locks in `memSeries` may lead to deadlocks or race conditions if not handled properly. Ensure that all access to shared resources is properly synchronized."
+      },
+      {
+        "claim_id": "cl_A_36",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Performance Implications**: The wrapping logic and additional checks may introduce performance overhead, especially in high-throughput scenarios. Benchmarking should be conducted to assess the impact of these changes on performance."
+      },
+      {
+        "claim_id": "cl_A_37",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Documentation Gaps**: While some comments have been added, there may still be gaps in documentation that could hinder future developers' understanding of the codebase. Comprehensive documentation should be a priority."
+      },
+      {
+        "claim_id": "cl_A_40",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Refactor the panic logic to return an error instead."
+      },
+      {
+        "claim_id": "cl_A_41",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Ensure consistent and clear documentation throughout the codebase."
+      },
+      {
+        "claim_id": "cl_A_42",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Expand unit tests to cover more edge cases, particularly around chunk ID wrapping."
+      },
+      {
+        "claim_id": "cl_A_43",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Review and refactor redundant code to improve maintainability."
+      },
+      {
+        "claim_id": "cl_A_44",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Conduct performance testing to evaluate the impact of the changes."
+      },
+      {
+        "claim_id": "cl_B_3",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: High"
+      },
+      {
+        "claim_id": "cl_B_4",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_5",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/head.go` (Line 2896, 2933)"
+      },
+      {
+        "claim_id": "cl_B_6",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/head_read.go` (Line 435, 775)"
+      },
+      {
+        "claim_id": "cl_B_7",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/ooo_head_read_test.go` (Line 1376)"
+      },
+      {
+        "claim_id": "cl_B_8",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**:"
+      },
+      {
+        "claim_id": "cl_B_9",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: The `wrapChunkID` function is introduced to handle the wrapping of chunk IDs, but there are instances where the old masking approach is still used. For example, in `tsdb/head.go` (Line 2933) and `tsdb/ooo_head_read_test.go` (Line 1376), the old masking approach is used instead of the new `wrapChunkI"
+      },
+      {
+        "claim_id": "cl_B_12",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Medium"
+      },
+      {
+        "claim_id": "cl_B_13",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_14",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/head.go` (Line 2869)"
+      },
+      {
+        "claim_id": "cl_B_15",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/head_test.go` (Line 1945)"
+      },
+      {
+        "claim_id": "cl_B_16",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**:"
+      },
+      {
+        "claim_id": "cl_B_17",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: The `pushHeadChunk` function now includes a check to ensure that the number of in-order head chunks does not exceed `oooChunkIDMask-1`. If this condition is met, the function panics. While this is a safeguard, it might be better to handle this situation more gracefully, such as by returning an error"
+      },
+      {
+        "claim_id": "cl_B_20",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Low"
+      },
+      {
+        "claim_id": "cl_B_21",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_22",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/head_read.go` (Line 435)"
+      },
+      {
+        "claim_id": "cl_B_23",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/ooo_head_read_test.go` (Line 1376)"
+      },
+      {
+        "claim_id": "cl_B_24",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**:"
+      },
+      {
+        "claim_id": "cl_B_25",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: The `oooChunkIDMask` is used in different contexts, and there is an inconsistency in how it is applied. For example, in `tsdb/head_read.go` (Line 435), the `wrapChunkID` function is used, while in `tsdb/ooo_head_read_test.go` (Line 1376), the old masking approach is used. This inconsistency should b"
+      },
+      {
+        "claim_id": "cl_B_28",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Severity**: Low"
+      },
+      {
+        "claim_id": "cl_B_29",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence**:"
+      },
+      {
+        "claim_id": "cl_B_30",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/head_read.go` (Line 435)"
+      },
+      {
+        "claim_id": "cl_B_31",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: `tsdb/head_read.go` (Line 775)"
+      },
+      {
+        "claim_id": "cl_B_32",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**:"
+      },
+      {
+        "claim_id": "cl_B_33",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: The introduction of the `wrapChunkID` function adds an extra function call to operations that previously used direct masking. While this is generally a good practice for readability and maintainability, it might have a minor performance impact. However, this impact is likely negligible in most cases"
+      },
+      {
+        "claim_id": "cl_B_36",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description**:"
+      },
+      {
+        "claim_id": "cl_B_37",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Backward Compatibility**: The changes introduced in this diff might affect backward compatibility if the behavior of chunk ID handling has changed in a way that is not backward-compatible with older versions of the code."
+      },
+      {
+        "claim_id": "cl_B_38",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Testing Coverage**: The new test cases added in `tsdb/db_test.go` and `tsdb/head_test.go` are comprehensive, but there might be edge cases that are not covered. Ensuring thorough testing is crucial to avoid unexpected issues in production."
+      }
+    ],
+    "unresolved": [],
+    "flags": {
+      "theater": false,
+      "capitulation_cascade": false
+    }
+  },
+  "events": [
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "- REBUTTED obj_initial_a_0: The severity of the issue is indeed high, but the panic serves as a critical safeguard against data corruption. While I acknowledge the potential for unexpected crashes, the panic is a necessary measure to prevent further issues that could arise from exceeding the limit. \n\n- REBUTTED obj_initial_a_1: The evidence references provided do not directly contradict my claim regarding the severity. The panic is a significant concern, and while it may be seen as a safeguard, the implications of data corruption warrant a high severity classification.\n\n- REBUTTED obj_initial_a_2: The lines referenced do illustrate the panic condition, but they do not negate the necessity of addressing the panic's implications. The panic is a safeguard, and while it may lead to crashes, it is crucial to prevent further data integrity issues.\n\n- CONCEDED obj_initial_a_3: I accept that handling the situation more gracefully by returning an error instead of panicking would be a better approach. This aligns with best practices for error handling in production environments.\n\n- REBUTTED obj_initial_a_4: While the severity may be medium, I maintain that the implications of the panic condition are significant enough to warrant a high severity classification due to the potential for data corruption.\n\n- REBUTTED obj_initial_a_5: The evidence references do not provide a counterargument to the severity of the issue. The potential for data corruption remains a critical concern, justifying the high severity classification.\n\n- REBUTTED obj_initial_a_6: The lines referenced do not contradict my claim regarding the wrapping behavior. The comments may need clarification, but they do not negate the importance of consistent documentation.\n\n- REBUTTED obj_initial_a_7: While the comments may be inconsistent, my claim focuses on the need for clear documentation. The wrapping behavior is indeed complex, and I stand by the need for improved clarity in the documentation.\n\n- REBUTTED obj_initial_a_8: The severity of the issue remains medium, as the wrapping behavior is documented, albeit inconsistently. The need for comprehensive tests is acknowledged, but the existing tests do cover some scenarios.\n\n- REBUTTED obj_initial_a_9: The evidence references do not provide a counterargument to the need for additional tests. While new tests have been added, the complexity of the wrapping behavior necessitates further testing.\n\n- REBUTTED obj_initial_a_10: The new tests do cover some scenarios, but I maintain that additional tests are necessary to ensure comprehensive coverage of edge cases.\n\n- REBUTTED obj_initial_a_11: While I acknowledge the need for additional tests, I believe the existing tests provide a foundation that can be built upon. The complexity of the wrapping behavior does warrant further testing, but the current tests are a step in the right direction.\n\n- REBUTTED obj_initial_a_12: The severity of the issue remains high due to the potential for data corruption. The wrapping behavior is a critical aspect that must be managed carefully.\n\n- REBUTTED obj_initial_a_13: The evidence references do not contradict my claim regarding the need for consistent application of the wrapping logic. The potential for data corruption remains a concern.\n\n- REBUTTED obj_initial_a_14: The logic for updating `firstChunkID` is indeed complex, but I maintain that the current implementation is necessary to prevent data corruption. The use of `wrapChunkID` should be consistently applied, but the existing logic is a safeguard.\n\n- REBUTTED obj_initial_a_15: While the wrapping behavior is a concern, I believe the current implementation is necessary to prevent data corruption. The use of `wrapChunkID` should be consistently applied, but the existing logic serves a critical purpose.\n\n- REBUTTED obj_initial_a_16: The severity of the issue remains low, as the redundancy does not directly lead to data corruption. However, I acknowledge that refactoring could improve maintainability.\n\n- REBUTTED obj_initial_a_17: The evidence references do not provide a counterargument to the need for refactoring. While redundancy exists, it does not directly lead to data corruption.\n\n- REBUTTED obj_initial_a_18: The lines referenced do illustrate redundancy, but I maintain that the current implementation is necessary to prevent data corruption. Refactoring could improve maintainability, but the existing logic serves a critical purpose.\n\n- REBUTTED obj_initial_a_19: While redundancy exists, I believe the current implementation is necessary to prevent data corruption. Refactoring could improve maintainability, but the existing logic serves a critical purpose.\n\n- REBUTTED obj_initial_a_20: The use of locks is indeed a concern, but I maintain that the current implementation is necessary to prevent data corruption. Proper synchronization is crucial, and I believe the existing implementation addresses this.\n\n- REBUTTED obj_initial_a_21: The performance implications are acknowledged, but I believe the safeguards in place are necessary to prevent data corruption. Benchmarking could provide insights, but the current implementation serves a critical purpose.\n\n- REBUTTED obj_initial_a_22: While documentation gaps may exist, I believe the current documentation provides a foundation that can be built upon. Comprehensive documentation is important, but the existing comments serve a purpose.\n\n- REBUTTED obj_initial_a_23: I acknowledge the need to refactor the panic logic, but I believe the current implementation serves a critical purpose in preventing data corruption.\n\n- REBUTTED obj_initial_a_24: While consistent documentation is important, I believe the existing comments provide a foundation that can be built upon. Comprehensive documentation is a priority, but the current comments serve a purpose.\n\n- REBUTTED obj_initial_a_25: While I acknowledge the need for additional tests, I believe the existing tests provide a foundation that can be built upon. The complexity of the wrapping behavior does warrant further testing, but the current tests are a step in the right direction.\n\n- REBUTTED obj_initial_a_26: While redundancy exists, I believe the current implementation is necessary to prevent data corruption. Refactoring could improve maintainability, but the existing logic serves a critical purpose.\n\n- REBUTTED obj_initial_a_27: While performance testing is important, I believe the current implementation serves a critical purpose in preventing data corruption. Benchmarking could provide insights, but the existing safeguards are necessary."
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "defense",
+      "degraded": true,
+      "error": null,
+      "content": "CONCEDED obj_initial_b_0\nCONCEDED obj_initial_b_1\nCONCEDED obj_initial_b_2\nCONCEDED obj_initial_b_3\nCONCEDED obj_initial_b_4\nCONCEDED obj_initial_b_5\nCONCEDED obj_initial_b_6\nCONCEDED obj_initial_b_7\nCONCEDED obj_initial_b_8\nCONCEDED obj_initial_b_9\nCONCEDED obj_initial_b_10\nCONCEDED obj_initial_b_11\nCONCEDED obj_initial_b_12\nCONCEDED obj_initial_b_13\nCONCEDED obj_initial_b_14\nCONCEDED obj_initial_b_15\nCONCEDED obj_initial_b_16\nCONCEDED obj_initial_b_17\nCONCEDED obj_initial_b_18\nCONCEDED obj_initial_b_19\nCONCEDED obj_initial_b_20\nCONCEDED obj_initial_b_21\nCONCEDED obj_initial_b_22\nCONCEDED obj_initial_b_23\nCONCEDED obj_initial_b_24\nCONCEDED obj_initial_b_25\nCONCEDED obj_initial_b_26\nCONCEDED obj_initial_b_27"
+    }
+  ]
+}
