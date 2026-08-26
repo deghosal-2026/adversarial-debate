@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Ground-truth verification: side-by-side of known revert reasons vs debate claims.
+
+Produces a CSV for manual judgment: did any debate pair surface the actual
+cause of the revert/advisory?
+
+Usage:
+    python3 06_ground_truth.py --corpus results/field-test/v0.1.0/corpus0.csv
+
+Output:
+    results/field-test/v0.1.0/analysis/ground-truth-comparison.csv
+    Columns: pr_id, outcome, known_reason, pair, claim_id, claim_text, severity,
+             conceded_by_or_status, human_judgment (blank - fill in)
+"""
+
+from __future__ import annotations
+
+import csv
+import json
+import sys
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
+
+GROUND_TRUTH_OUTCOMES = {
+    "Merged-then-reverted",
+    "Merged-then-hotfixed",
+    "Merged-then-security-advisory",
+    "Merged-then-fixed",
+    "Rejected/closed-without-merge",
+    "Closed-by-author-after-review",
+    "Race condition caught in review",
+    "Breaking API change caught in review",
+    "Refactoring that introduced regression",
+}
+
+
+def load_corpus(corpus_csv: Path) -> dict[str, dict]:
+    """Load corpus rows keyed by pr_id."""
+    rows = {}
+    with open(corpus_csv) as f:
+        for row in csv.DictReader(f):
+            repo = row["repo"]
+            pr_num = int(row["url"].strip().rstrip("/").split("/")[-1])
+            pr_id = f"{repo.replace('/', '_')}_PR{pr_num}"
+            row["pr_id"] = pr_id
+            rows[pr_id] = row
+    return rows
+
+
+def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser(description="Ground-truth verification export")
+    parser.add_argument("--corpus", required=True, help="Path to corpus CSV")
+    args = parser.parse_args()
+
+    corpus = load_corpus(Path(args.corpus))
+
+    # Only PRs with known ground truth (revert reason documented)
+    gt_prs = {
+        pid: row for pid, row in corpus.items()
+        if row.get("outcome") in GROUND_TRUTH_OUTCOMES and row.get("revert_reason", "").strip()
+    }
+    print(f"PRs with ground truth: {len(gt_prs)}")
+
+    out_rows = []
+    for pr_dir in sorted(DEBATES_DIR.iterdir()):
+        if not pr_dir.is_dir():
+            continue
+        pair_name = pr_dir.name
+
+        for report_path in sorted(pr_dir.glob("*/report.json")):
+            d = json.loads(report_path.read_text())
+            pr_id = d.get("pr_id", "")
+
+            if pr_id not in gt_prs:
+                continue
+
+            known_reason = gt_prs[pr_id]["revert_reason"].strip()
+
+            # Resolved claims (concessions) — these are claims where one side admitted fault
+            report = d.get("report", {})
+            for r in report.get("resolved", []):
+                out_rows.append({
+                    "pr_id": pr_id,
+                    "outcome": gt_prs[pr_id]["outcome"],
+                    "known_reason": known_reason,
+                    "pair": pair_name,
+                    "claim_source": "resolved(conceded)",
+                    "claim_id": r.get("claim_id", ""),
+                    "claim_text": r.get("rationale", "")[:300],
+                    "severity": "",
+                    "human_judgment": "",  # fill: MATCH / NO_MATCH / PARTIAL
+                })
+
+            # Unresolved points — surviving disagreement
+            for u in report.get("unresolved", []):
+                text = f"A: {u.get('position_a', '')[:150]} | B: {u.get('position_b', '')[:150]}"
+                out_rows.append({
+                    "pr_id": pr_id,
+                    "outcome": gt_prs[pr_id]["outcome"],
+                    "known_reason": known_reason,
+                    "pair": pair_name,
+                    "claim_source": "unresolved",
+                    "claim_id": ",".join(u.get("claim_ids", [])),
+                    "claim_text": text[:300],
+                    "severity": u.get("severity", ""),
+                    "human_judgment": "",
+                })
+
+    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = ANALYSIS_DIR / "ground-truth-comparison.csv"
+    with open(out_path, "w", newline="") as f:
+        if out_rows:
+            w = csv.DictWriter(f, fieldnames=out_rows[0].keys())
+            w.writeheader()
+            w.writerows(out_rows)
+
+    print(f"Wrote {out_path} ({len(out_rows)} rows)")
+    print()
+    print("Next: open the CSV and fill human_judgment column:")
+    print("  MATCH    — claim text describes the same root cause as known_reason")
+    print("  PARTIAL  — related but not the exact cause")
+    print("  NO_MATCH — unrelated")
+    print()
+    matched_prs = {r["pr_id"] for r in out_rows}
+    print(f"PRs covered: {len(matched_prs)}")
+
+
+if __name__ == "__main__":
+    main()

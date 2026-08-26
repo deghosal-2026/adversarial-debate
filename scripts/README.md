@@ -124,6 +124,15 @@ Produces:
 
 Prints summary tables to stdout.
 
+### Step 6 — Ground-truth verification
+
+```bash
+python3 scripts/06_ground_truth.py --corpus results/field-test/v0.1.0/corpus0.csv
+python3 scripts/06_ground_truth.py --corpus results/field-test/v0.1.0/corpus1.csv
+```
+
+Produces `analysis/ground-truth-comparison.csv` — side-by-side of known revert/advisory reasons vs debate claims for manual judgment. Fill the `human_judgment` column: MATCH / PARTIAL / NO_MATCH. This is the binary bar evidence (PRD §7.1).
+
 ## Output Structure
 
 ```
@@ -148,10 +157,12 @@ results/field-test/v0.1.0/
 │       └── <pr_id>/
 │           ├── report.json
 │           └── transcript.jsonl
-├── analysis/                 # analysis CSVs (from step 5)
+├── analysis/                 # analysis CSVs (from step 5-6)
 │   ├── cross-model-overlap.csv
 │   ├── distinctness-ratings.csv
 │   ├── cost-latency.csv
+│   ├── debate-summary.csv
+│   └── ground-truth-comparison.csv
 │   └── debate-summary.csv
 └── FIELD_TEST_REPORT.md      # final report (written manually)
 ```

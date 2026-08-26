@@ -430,7 +430,18 @@ def main() -> None:
 
             out_path = pair_out / pr_id
             if out_path.exists() and not args.force:
-                continue
+                # Re-run if the previous run errored (e.g. HTTP 429 rate limit)
+                report_file = out_path / "report.json"
+                if report_file.is_file():
+                    try:
+                        prev = json.loads(report_file.read_text())
+                        if prev.get("termination_reason") != "error":
+                            continue
+                        print(f"  [{pair_name}] {pr_id} ... retrying previous error", flush=True)
+                    except json.JSONDecodeError:
+                        pass  # corrupt file — re-run
+                else:
+                    continue
 
             pair_data = load_pair(pair_name, pr_id)
             if pair_data is None:
