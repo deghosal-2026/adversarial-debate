@@ -11,7 +11,7 @@ gh auth login
 # 2. OpenRouter API key (same key for all LLMs)
 export OPENROUTER_API_KEY=sk-or-...
 
-# 3. corpus.csv created at results/field-test/v0.1.0/corpus.csv
+# 3. corpus.csv at results/field-test/v0.1.0/corpus.csv (or --corpus path)
 ```
 
 ## Workflow
@@ -19,13 +19,11 @@ export OPENROUTER_API_KEY=sk-or-...
 ### Step 1 — Download corpus (one-time)
 
 ```bash
-python3 scripts/01_download_corpus.py
+# Download full corpus
+python3 scripts/01_download_corpus.py --corpus results/field-test/v0.1.0/corpus.csv
 
 # Re-download everything
-python3 scripts/01_download_corpus.py --force
-
-# Custom corpus path
-python3 scripts/01_download_corpus.py --corpus path/to/corpus.csv
+python3 scripts/01_download_corpus.py --corpus results/field-test/v0.1.0/corpus.csv --force
 ```
 
 Downloads PR diffs + metadata from GitHub via `gh` CLI. Stores under `results/field-test/v0.1.0/corpus/`. Skips already-downloaded PRs.
@@ -34,13 +32,13 @@ Downloads PR diffs + metadata from GitHub via `gh` CLI. Stores under `results/fi
 
 ```bash
 # GPT-4o-mini (run independently, resumes from checkpoint)
-python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv
 
 # Gemini 2.5 Flash
-python3 scripts/02_run_reviewer.py --model google/gemini-2.5-flash
+python3 scripts/02_run_reviewer.py --model google/gemini-2.5-flash --corpus results/field-test/v0.1.0/corpus.csv
 
 # DeepSeek
-python3 scripts/02_run_reviewer.py --model deepseek/deepseek-chat
+python3 scripts/02_run_reviewer.py --model deepseek/deepseek-chat --corpus results/field-test/v0.1.0/corpus.csv
 ```
 
 Each model runs independently. If one fails, just re-run that model — it skips already-completed PRs via a `CHECKPOINT` file.
@@ -48,13 +46,16 @@ Each model runs independently. If one fails, just re-run that model — it skips
 **Useful flags:**
 ```bash
 # Test on 5 PRs first (cost control)
-python3 02_run_reviewer.py --model openai/gpt-4o-mini --limit 5
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --limit 5
 
-# Dry run (no API calls, just shows what would run + cost estimate)
-python3 02_run_reviewer.py --model openai/gpt-4o-mini --dry-run
+# Use a different corpus file (e.g. mini test corpus)
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus_test.csv
+
+# Dry run (no API calls, shows what would run + cost estimate)
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --dry-run
 
 # Run a single PR (debugging)
-python3 02_run_reviewer.py --model openai/gpt-4o-mini --pr kubernetes_kubernetes_PR12345
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --pr kubernetes_kubernetes_PR12345
 ```
 
 **Output:** `results/field-test/v0.1.0/results/<model_slug>/<pr_id>.json`
@@ -64,7 +65,7 @@ Each JSON contains: raw LLM response, latency, token counts, computed cost.
 ### Step 3 — Combine into pairs
 
 ```bash
-python3 scripts/03_combine_results.py
+python3 scripts/03_combine_results.py --corpus results/field-test/v0.1.0/corpus.csv
 ```
 
 Maps individual model outputs into the pair configurations defined in the field test plan:

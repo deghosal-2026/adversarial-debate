@@ -59,7 +59,9 @@ def download_pr(repo: str, pr_num: int, force: bool = False) -> bool:
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Download PR corpus")
-    parser.add_argument("--corpus", default=str(CORPUS_CSV), help="Path to corpus.csv")
+    parser.add_argument("--corpus", default=str(CORPUS_CSV), help="Path to corpus.csv (default: results/field-test/v0.1.0/corpus.csv)")
+    parser.add_argument("--out", default=str(CORPUS_DIR),
+                        help="Output directory for downloaded diffs (default: auto from corpus path)")
     parser.add_argument("--force", action="store_true", help="Re-download all")
     args = parser.parse_args()
 

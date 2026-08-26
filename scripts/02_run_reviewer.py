@@ -60,12 +60,12 @@ def compute_cost(model: str, prompt_tokens: int, completion_tokens: int) -> floa
     return round((prompt_tokens / 1_000_000) * in_price + (completion_tokens / 1_000_000) * out_price, 6)
 
 
-def load_diffs(pr_filter: str | None = None) -> list[dict]:
-    if not CORPUS_CSV.is_file():
-        print(f"ERROR: corpus.csv not found at {CORPUS_CSV}")
+def load_diffs(corpus_csv: Path, pr_filter: str | None = None) -> list[dict]:
+    if not corpus_csv.is_file():
+        print(f"ERROR: corpus file not found: {corpus_csv}")
         sys.exit(1)
 
-    with open(CORPUS_CSV) as f:
+    with open(corpus_csv) as f:
         rows = list(csv.DictReader(f))
 
     result = []
@@ -145,18 +145,20 @@ def call_llm(model: str, diff_text: str, api_key: str) -> dict:
 
 
 def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
-                  pr_filter: str | None = None) -> None:
+                  pr_filter: str | None = None,
+                  corpus_csv: Path | None = None) -> None:
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key and not dry_run:
         print("ERROR: OPENROUTER_API_KEY env var not set")
         sys.exit(1)
 
+    csv_path = corpus_csv or CORPUS_CSV
     model_slug = model.replace("/", "_").replace(".", "-").replace(":", "-")
     model_dir = RESULTS_DIR / model_slug
     model_dir.mkdir(parents=True, exist_ok=True)
     checkpoint = model_dir / "CHECKPOINT"
 
-    diffs = load_diffs(pr_filter)
+    diffs = load_diffs(csv_path, pr_filter)
     if not diffs:
         print("No PRs to process (check corpus.csv and downloaded diffs)")
         return
@@ -227,6 +229,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run a single LLM reviewer")
     parser.add_argument("--model", required=True,
                         help="OpenRouter model (e.g. openai/gpt-4o-mini)")
+    parser.add_argument("--corpus", default=None,
+                        help="Path to corpus CSV (default: results/field-test/v0.1.0/corpus.csv)")
     parser.add_argument("--limit", type=int, default=None,
                         help="Max PRs to process (for testing)")
     parser.add_argument("--dry-run", action="store_true",
@@ -235,7 +239,8 @@ def main() -> None:
                         help="Run a single PR by pr_id (debugging)")
     args = parser.parse_args()
 
-    run_for_model(args.model, args.limit, args.dry_run, args.pr)
+    corpus_path = Path(args.corpus) if args.corpus else None
+    run_for_model(args.model, args.limit, args.dry_run, args.pr, corpus_path)
 
 
 if __name__ == "__main__":

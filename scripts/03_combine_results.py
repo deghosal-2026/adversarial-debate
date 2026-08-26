@@ -36,11 +36,18 @@ def load_result(model_slug: str, pr_id: str) -> dict | None:
 
 
 def main() -> None:
-    if not CORPUS_CSV.is_file():
-        print(f"ERROR: corpus.csv not found at {CORPUS_CSV}")
+    import argparse
+    parser = argparse.ArgumentParser(description="Combine model results into pairs")
+    parser.add_argument("--corpus", default=None,
+                        help="Path to corpus CSV (default: results/field-test/v0.1.0/corpus.csv)")
+    args = parser.parse_args()
+
+    csv_path = Path(args.corpus) if args.corpus else CORPUS_CSV
+    if not csv_path.is_file():
+        print(f"ERROR: corpus file not found at {csv_path}")
         sys.exit(1)
 
-    with open(CORPUS_CSV) as f:
+    with open(csv_path) as f:
         rows = list(csv.DictReader(f))
 
     pr_ids = []
