@@ -134,7 +134,9 @@ def main() -> None:
     print(f"Est cost: ~${est:.2f}")
 
     # Split pending into chunks, one per worker — each writes its own file
-    chunk_dir = ANALYSIS_DIR / "judge-chunks"
+    # Chunk dir is unique per input file so parallel runs don't collide
+    input_stem = in_path.stem  # e.g. ground-truth-comparison or ground-truth-comparison-c0
+    chunk_dir = ANALYSIS_DIR / f"judge-chunks-{input_stem}"
     chunk_dir.mkdir(parents=True, exist_ok=True)
 
     chunk_size = max(1, len(pending) // total_workers + 1)
