@@ -1,6 +1,6 @@
 # Field Test Plan — v0.1.0 "Prove the Loop"
 
-> **Status:** Draft · **Version:** 0.1.0 · **Window:** Aug 25-31, 2026
+> **Status:** Approved · **Version:** 0.1.0 · **Window:** Aug 25-31, 2026
 > **Owner:** Deb Ghosal · **Exit bar:** [PRD §7.1](../../design/prd/07-success-metrics.md)
 >
 > This plan describes **how** we test the falsifiable v0.1.0 bar, **where** the corpus comes from, **which** models and pairs we run, and **what** success looks like. It is the execution companion to the [field-testing strategy](../field-testing-strategy.md) (Tier 0) and the [competitor benchmark protocol](../design/prd/19-competitor-benchmark.md).
