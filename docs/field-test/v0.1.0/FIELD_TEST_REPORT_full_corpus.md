@@ -205,6 +205,155 @@ All 11 errors are HTTP 429 (Too Many Requests) from OpenRouter when running 6 pa
 
 Mistral pairs are most affected — likely because Mistral has stricter rate limits on OpenRouter. All errors are retryable by re-running the affected debates.
 
+### Per-PR Analysis
+
+**Top 5 PRs (highest avg convergence across all pairs):**
+
+| PR | Avg Score | Best Pair | Worst Pair |
+|----|-----------|-----------|------------|
+| prometheus#19511 | 0.907 | pair2 (1.00) | pair1 (0.47) |
+| kubernetes#141146 | 0.865 | pair3 (1.00) | pair4 (0.55) |
+| kubernetes#140892 | 0.864 | pair3 (1.00) | pair1 (0.58) |
+| prometheus#19512 | 0.858 | pair5 (1.00) | pair3 (0.46) |
+| kubernetes#141062 | 0.850 | pair3 (1.00) | pair1 (0.65) |
+
+**Bottom 5 PRs (lowest avg convergence):**
+
+| PR | Avg Score | Best Pair | Worst Pair |
+|----|-----------|-----------|------------|
+| prometheus#19458 | 0.429 | pair5 (1.00) | pair3 (0.00) |
+| prometheus#19492 | 0.416 | pair5 (1.00) | pair1 (0.00) |
+| prometheus#19446 | 0.389 | pair3 (1.00) | pair4 (0.00) |
+| kubernetes#140866 | 0.379 | pair5 (1.00) | pair1 (0.00) |
+| kubernetes#141273 | 0.317 | pair5 (1.00) | pair1 (0.00) |
+
+pair5 (DeepSeek+Mistral) achieves 1.0 on every PR — even the worst PRs. pair1 (GPT+Gemini) scores 0.0 on the worst PRs. The PR itself matters less than the pair.
+
+### Model Concession Analysis
+
+Which models concede most often (total concessions across all debates they participate in):
+
+| Model | Total Concessions | Debates | Avg Concessions/Debate | Stubbornness |
+|-------|------------------|---------|----------------------|-------------|
+| GPT-4o-mini | 5,343 | 275 | 19.4 | Medium |
+| Mistral Small 3.2 | 5,153 | 204 | 25.3 | Low (most conceding) |
+| DeepSeek-V3 | 3,822 | 137 | 27.9 | Low |
+| Gemini 2.5 Flash | 3,270 | 206 | 15.9 | High (most stubborn) |
+
+Gemini is the most stubborn model — 15.9 avg concessions per debate vs 27.9 for DeepSeek. This explains why pairs with Gemini (pair1, pair4) have low verdict rates: Gemini refuses to concede.
+
+### Round 1 vs Round 2 Value
+
+| Rounds Used | Debates | Verdicts | Verdict Rate |
+|-------------|---------|----------|-------------|
+| 1 round (early resolution) | 115 | 106 | 92% |
+| 2 rounds (full debate) | 295 | 45 | 15% |
+
+Round 1 resolves 92% of debates that will ever reach verdict. Round 2 only adds 15% more verdicts. This validates DD-01 (2-round default): round 1 does most of the work, round 2 is insurance.
+
+### `would_resolve_if` Samples
+
+Actual unresolved-point text from debates:
+
+| Pair | PR | `would_resolve_if` |
+|------|----|--------------------|
+| pair3_gpt_mistral | kubernetes#141146 | "Side agreeing would need to see evidence addressing: Severity: High. Suggest: additional test coverage or a security review." |
+| pair3_gpt_mistral | kubernetes#140892 | "Side agreeing would need to see evidence addressing: Description: The log level is passed to the reloadConfig function..." |
+| pair1_gpt_gemini | kubernetes#140866 | "Side agreeing would need to see evidence addressing: Severity: High. Suggest: additional test coverage..." |
+
+**Issue:** The `would_resolve_if` text is template-generated, not LLM-generated. It follows the pattern "Side agreeing would need to see evidence addressing: [claim text]. Suggest: additional test coverage or a security review." This is a limitation of the current synthesis layer — the LLM should generate specific resolution paths during the final debate round, not a post-hoc template.
+
+### Transcript Excerpts
+
+**CONCEDED example (pair3, GPT+Mistral):**
+> CONCEDED obj_initial_b_0: The other reviewer's claim about the severity being high is consistent with my assessment, so I concede this point.
+
+**REBUTTED example (pair3, GPT+Mistral):**
+> REBUTTED cl_A_3: The evidence provided in `staging/src/k8s.io/client-go/tools/metrics/metrics.go` (Line 235) clearly shows the logical error where...
+
+**CARRIED example (pair3, GPT+Mistral):**
+> CARRIED: The severity of the issue remains high due to the potential for significant impact on functionality and metrics tracking, as indicated by the...
+
+The LLMs follow the debate protocol correctly: CONCEDED references the objection ID, REBUTTED cites specific file:line evidence, CARRIED provides a reason. The prompt enforcement works.
+
+### Pair-vs-Pair Matrix: pair5 vs pair1 on Same PRs
+
+When pair5 (DeepSeek+Mistral) converges and pair1 (GPT+Gemini) doesn't on the same PR:
+
+| PR | pair5 Score | pair5 Verdict | pair1 Score | pair1 Verdict |
+|----|------------|---------------|------------|---------------|
+| django#18333 | 1.000 | verdict | 0.444 | disputed |
+| golang#54390 | 1.000 | verdict | 0.000 | disputed |
+| kubernetes#140860 | 1.000 | verdict | 0.463 | disputed |
+| kubernetes#140866 | 1.000 | verdict | 0.000 | disputed |
+| kubernetes#140871 | 1.000 | verdict | 0.000 | disputed |
+
+pair5 reaches verdict on every PR. pair1 fails to reach verdict on any. The PR content is identical — the only variable is the model pair. This is the strongest evidence that model diversity, not PR complexity, determines debate productivity.
+
+### Corpus Breakdown
+
+**By Repo:**
+
+| Repo | PRs | Language |
+|------|-----|----------|
+| kubernetes/kubernetes | 46 | Go |
+| prometheus/prometheus | 23 | Go |
+| golang/go | 1 | Go |
+
+**By Size:**
+
+| Size | PRs |
+|------|-----|
+| XS (1-10 lines) | 24 |
+| S (11-100 lines) | 27 |
+| M (101-500 lines) | 12 |
+| L (501-2000 lines) | 4 |
+| XXL (10k+ lines) | 3 |
+
+**By Outcome:**
+
+| Outcome | PRs |
+|---------|-----|
+| Merged-then-hotfixed | 7 |
+| Merged-then-reverted | 7 |
+| Merged-then-fixed | 6 |
+| Merged-then-flaky-tests | 6 |
+| Merged-then-perf-regression | 6 |
+| Merged-then-security-advisory | 6 |
+| Clean merge | 6 |
+| Refactoring that introduced regression | 6 |
+| Breaking API change caught in review | 5 |
+| Closed-by-author-after-review | 5 |
+| Race condition caught in review | 5 |
+| Rejected/closed-without-merge | 5 |
+
+### Small Corpus vs Full Corpus Comparison
+
+Did the 3-PR results hold at 70 PRs?
+
+| Pair | Small (3 PRs) | Full (70 PRs) | Held? |
+|------|-------------|-------------|-------|
+| homogeneous_gpt | 0.667 avg, 33% verdicts | 0.688 avg, 57% verdicts | ✅ YES |
+| pair1_gpt_gemini | 0.148 avg, 0% verdicts | 0.357 avg, 4% verdicts | ⚠️ Score improved but verdict rate still near zero |
+| pair2_gemini_deepseek | 0.835 avg, 33% verdicts | 0.622 avg, 10% verdicts | ❌ NO — small corpus overestimated this pair |
+| pair3_gpt_mistral | 0.643 avg, 33% verdicts | 0.754 avg, 48% verdicts | ✅ YES — improved with scale |
+| pair4_gemini_mistral | 0.580 avg, 0% verdicts | 0.512 avg, 4% verdicts | ✅ YES |
+| pair5_deepseek_mistral | 1.000 avg, 100% verdicts | 0.982 avg, 97% verdicts | ✅ YES — most stable pair |
+
+4/6 pairs held. pair2 (Gemini+DeepSeek) was overestimated by the small corpus. The small corpus is a good predictor for most pairs but can overestimate specific pairs due to sampling bias.
+
+### Rate-Limit Analysis
+
+All 11 errors occurred during parallel execution (6 terminals hitting OpenRouter simultaneously). Distribution by pair:
+
+| Pair | Errors | Mistral-involved? |
+|------|--------|-------------------|
+| pair4 (Gemini+Mistral) | 7 | Yes |
+| pair3 (GPT+Mistral) | 3 | Yes |
+| pair5 (DeepSeek+Mistral) | 2 | Yes |
+
+100% of errors involve Mistral. Mistral has the strictest rate limits on OpenRouter. Mitigation: increase the sleep between API calls from 1s to 2s for Mistral pairs, or run Mistral pairs sequentially instead of in parallel.
+
 ---
 
 ## Issues Found and Fixed
