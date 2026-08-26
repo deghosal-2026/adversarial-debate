@@ -77,14 +77,36 @@ def call_llm(model: str, known_reason: str, claim_text: str, api_key: str) -> st
     return "ERROR"  # unreachable
 
 
+def judge_chunk(chunk: list[dict], model: str,
+                api_key: str, chunk_path: Path, worker_id: int) -> dict:
+    """Judge a chunk of rows and save to its own file."""
+    counts = {"MATCH": 0, "PARTIAL": 0, "NO_MATCH": 0, "ERROR": 0}
+    for i, row in enumerate(chunk):
+        verdict = call_llm(model, row["known_reason"], row["claim_text"], api_key)
+        row["human_judgment"] = f"{verdict} (llm-judge:{model})"
+        counts[verdict] = counts.get(verdict, 0) + 1
+
+        if (i + 1) % 25 == 0:
+            _save(chunk, chunk_path)
+
+        time.sleep(0.3)
+
+    _save(chunk, chunk_path)
+    return counts
+
+
 def main() -> None:
     import argparse
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     parser = argparse.ArgumentParser(description="LLM judge for ground truth")
     parser.add_argument("--model", default="openai/gpt-4o-mini",
                         help="Judge model")
     parser.add_argument("--input", default=str(ANALYSIS_DIR / "ground-truth-comparison.csv"))
     parser.add_argument("--output", default=str(ANALYSIS_DIR / "ground-truth-judged.csv"))
     parser.add_argument("--limit", type=int, default=None, help="Max rows to judge")
+    parser.add_argument("--workers", type=int, default=6,
+                        help="Parallel workers (default 6)")
     args = parser.parse_args()
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -106,26 +128,68 @@ def main() -> None:
     if args.limit:
         pending = pending[:args.limit]
 
-    print(f"Judging {len(pending)}/{len(rows)} rows with {args.model}")
+    total_workers = args.workers
+    print(f"Judging {len(pending)}/{len(rows)} rows with {args.model} ({total_workers} workers)")
     est = len(pending) * 0.0002
     print(f"Est cost: ~${est:.2f}")
 
-    counts = {"MATCH": 0, "PARTIAL": 0, "NO_MATCH": 0, "ERROR": 0}
-    for i, row in enumerate(pending):
-        verdict = call_llm(args.model, row["known_reason"], row["claim_text"], api_key)
-        row["human_judgment"] = f"{verdict} (llm-judge)"
-        counts[verdict] = counts.get(verdict, 0) + 1
+    # Split pending into chunks, one per worker — each writes its own file
+    chunk_dir = ANALYSIS_DIR / "judge-chunks"
+    chunk_dir.mkdir(parents=True, exist_ok=True)
 
-        if (i + 1) % 50 == 0:
-            print(f"  [{i+1}/{len(pending)}] {counts}")
-            # Incremental save
-            _save(rows, out_path)
+    chunk_size = max(1, len(pending) // total_workers + 1)
+    chunks = [pending[i:i + chunk_size] for i in range(0, len(pending), chunk_size)]
 
-        time.sleep(0.3)
+    total_counts = {"MATCH": 0, "PARTIAL": 0, "NO_MATCH": 0, "ERROR": 0}
 
-    _save(rows, out_path)
-    print(f"\nDone: {counts}")
-    print(f"Wrote {out_path}")
+    with ThreadPoolExecutor(max_workers=total_workers) as pool:
+        futures = {}
+        for w, chunk in enumerate(chunks):
+            chunk_path = chunk_dir / f"chunk_{w:02d}.csv"
+            # Resume: load existing chunk progress if present
+            if chunk_path.is_file():
+                judged = {r.get("claim_id", i): r.get("human_judgment", "")
+                          for i, r in enumerate(csv.DictReader(open(chunk_path)))}
+                for r in chunk:
+                    key = r.get("claim_id", "")
+                    if not r.get("human_judgment") and key in judged and judged[key]:
+                        r["human_judgment"] = judged[key]
+            futures[pool.submit(judge_chunk, chunk, args.model, api_key, chunk_path, w)] = (w, chunk)
+
+        for future in as_completed(futures):
+            worker_id, chunk = futures[future]
+            try:
+                counts = future.result()
+                for k, v in counts.items():
+                    total_counts[k] += v
+                print(f"  worker {worker_id}: finished ({len(chunk)} rows) {counts}")
+            except Exception as e:
+                print(f"  worker {worker_id}: ERROR {e}")
+
+    # Merge all chunk files into the final output
+    merged = []
+    seen_keys = set()
+    for cf in sorted(chunk_dir.glob("chunk_*.csv")):
+        for r in csv.DictReader(open(cf)):
+            key = (r.get("pr_id", ""), r.get("pair", ""), r.get("claim_id", ""),
+                   r.get("claim_source", ""))
+            if key not in seen_keys or r.get("human_judgment"):
+                if key in seen_keys:
+                    # replace un-judged duplicate with judged version
+                    merged = [m for m in merged if (m.get("pr_id",""), m.get("pair",""), m.get("claim_id",""), m.get("claim_source","")) != key or m.get("human_judgment")]
+                seen_keys.add(key)
+                merged.append(r)
+
+    # Include never-pending original rows too
+    judged_keys = {(r.get("pr_id",""), r.get("pair",""), r.get("claim_id",""), r.get("claim_source","")) for r in merged}
+    for r in rows:
+        key = (r.get("pr_id",""), r.get("pair",""), r.get("claim_id",""), r.get("claim_source",""))
+        if key not in judged_keys:
+            merged.append(r)
+
+    _save(merged, out_path)
+    print(f"\nDone: {total_counts}")
+    print(f"Merged {len(merged)} rows -> {out_path}")
 
 
 def _save(rows: list[dict], path: Path) -> None:
