@@ -54,6 +54,8 @@ def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Ground-truth verification export")
     parser.add_argument("--corpus", required=True, help="Path to corpus CSV")
+    parser.add_argument("--output", default=None,
+                        help="Output CSV (default: analysis/ground-truth-comparison.csv)")
     args = parser.parse_args()
 
     corpus = load_corpus(Path(args.corpus))
@@ -111,7 +113,7 @@ def main() -> None:
                 })
 
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = ANALYSIS_DIR / "ground-truth-comparison.csv"
+    out_path = Path(args.output) if args.output else ANALYSIS_DIR / "ground-truth-comparison.csv"
     with open(out_path, "w", newline="") as f:
         if out_rows:
             w = csv.DictWriter(f, fieldnames=out_rows[0].keys())
