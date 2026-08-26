@@ -544,11 +544,12 @@ Actionable recommendations for v0.2.0 and beyond:
 
 ---
 
-## What's Next
+## What's Next (v0.2.0)
 
-1. **Flakiness sweep** — 30 PRs × 5 seeds to measure verdict stability
-2. **Human review comparison** — compare debate output with human PR comments on high-comment PRs
-3. **`would_resolve_if` improvement** — replace template generation with LLM-generated resolution paths (v0.2.0)
+1. **Human review comparison** — compare debate output with human PR comments on high-comment PRs
+2. **`would_resolve_if` improvement** — replace template generation with LLM-generated resolution paths
+3. **Corpus expansion** — add Python/TypeScript PRs to validate language independence
+4. **Spot-check LLM judge verdicts** — manually review 20 random rows from ground-truth-final.csv
 
 ---
 
