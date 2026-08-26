@@ -170,33 +170,51 @@ Per [§19.2 Step 1](../../design/prd/19-competitor-benchmark.md), the corpus is 
 
 ## §4 Model Pairs
 
-### 4.1 Primary Pair (Heterogeneous — 300 PRs)
+All models via OpenRouter (single API key: `OPENROUTER_API_KEY`).
 
-| Slot | Provider | Model | Family |
-|------|----------|-------|--------|
-| A | OpenAI | `gpt-4o` | openai |
-| B | Anthropic | `claude-sonnet-4-20250514` | anthropic |
+### 4.1 Pair 1 — GPT-4o-mini + Gemini 2.5 Flash (Budget, 150 PRs)
 
-**Rationale:** Maximally diverse pair. GPT-4o and Claude are from different families, different training distributions, and different RLHF preferences. Research shows heterogeneous pairs catch 2-3× more distinct issues than homogeneous pairs (Mila 2025, Khan et al. 2024).
+| Slot | OpenRouter Model | Family | Input $/MTok | Output $/MTok |
+|------|-----------------|--------|-------------|--------------|
+| A | `openai/gpt-4o-mini` | openai | $0.15 | $0.60 |
+| B | `google/gemini-2.5-flash` | google | $0.15 | $0.60 |
 
-### 4.2 Homogeneous Subsample (50 PRs)
+**Full sweep cost:** ~$9 · Diverse families (OpenAI vs Google)
 
-| Slot | Provider | Model | Family |
-|------|----------|-------|--------|
-| A | OpenAI | `gpt-4o` | openai |
-| B | OpenAI | `gpt-4o-mini` | openai |
+### 4.2 Pair 2 — Gemini 2.5 Flash + DeepSeek-V3 (Diverse, 150 PRs)
 
-**Purpose:** Measure the diversity delta. Run on the same 50 PRs (representative subsample stratified by outcome + language + size). Compare distinct-issue yield between the heterogeneous and homogeneous pair on identical artifacts.
+| Slot | OpenRouter Model | Family | Input $/MTok | Output $/MTok |
+|------|-----------------|--------|-------------|--------------|
+| A | `google/gemini-2.5-flash` | google | $0.15 | $0.60 |
+| B | `deepseek/deepseek-chat` | deepseek | $0.27 | $1.10 |
 
-### 4.3 Single-Reviewer Baseline (300 PRs)
+**Full sweep cost:** ~$9 · Maximally diverse (Google vs DeepSeek)
 
-| Slot | Provider | Model | Family |
-|------|----------|-------|--------|
-| A | OpenAI | `gpt-4o` | openai |
+### 4.3 Single-Reviewer Baseline (150 PRs)
 
-**Purpose:** One pass, no debate, no revelation gate. This is the "Tool X" baseline. Captures issues found, cost, latency. Anonymized during distinctness rating.
+| Slot | OpenRouter Model |
+|------|-----------------|
+| A | `openai/gpt-4o-mini` |
 
-**Rationale for using GPT-4o (not Claude) as baseline:** GPT-4o is the more widely used code-review model; the baseline represents what a typical single-reviewer tool would produce. The heterogeneous pair catches what *this specific model* missed, which is the strongest test of the independence thesis.
+One pass, no debate. This is the "Tool X" baseline for blind comparison.
+
+### 4.4 Homogeneous Subsample (30 PRs)
+
+| Slot | OpenRouter Model |
+|------|-----------------|
+| A | `openai/gpt-4o-mini` |
+| B | `openai/gpt-4o-mini` |
+
+Same model both sides — measures debate process value without model diversity.
+
+### 4.5 Total Cost Estimate
+
+| Component | Cost |
+|-----------|------|
+| 3 models × 150 PRs (single pass each) | ~$9 |
+| Flakiness subsample (50 PRs × 5 seeds) | ~$5 |
+| Round saturation (20 PRs × 3 rounds) | ~$1 |
+| **Total** | **~$15** |
 
 ---
 
@@ -220,15 +238,15 @@ advdeb review --pr <url> --rounds 2 --pair diverse --verbose
 ```toml
 [providers.a]
 type = "openai_compatible"
-base_url = "https://api.openai.com/v1"
-model = "gpt-4o"
-key_env = "OPENAI_API_KEY"
+base_url = "https://openrouter.ai/api/v1"
+model = "openai/gpt-4o-mini"
+key_env = "OPENROUTER_API_KEY"
 
 [providers.b]
 type = "openai_compatible"
-base_url = "https://api.anthropic.com/v1"
-model = "claude-sonnet-4-20250514"
-key_env = "ANTHROPIC_API_KEY"
+base_url = "https://openrouter.ai/api/v1"
+model = "google/gemini-2.5-flash"
+key_env = "OPENROUTER_API_KEY"
 
 rounds = 2
 max_llm_calls = 50
