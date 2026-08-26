@@ -33,6 +33,37 @@ When the debate system prompt instructs LLMs to use CONCEDED/REBUTTED/CARRIED ma
 
 **Mitigation:** May need to tune the debate prompt to encourage more genuine engagement (evidence-based concessions, not just "I maintain my position"). But for v0.1.0 field test, this is the real signal — some PRs produce productive debate, some don't.
 
+### Issue 10: Theater detector flags CARRIED-only debates as theater
+
+The theater detector in M6 (`EvidenceTracker._detect_theater`) returns `True` when there are zero concessions. But 8/9 debates had zero concessions because both sides chose CARRIED — they engaged with the objections but refused to concede. That's not theater (the debate happened, claims were addressed), it's just unproductive debate.
+
+**Impact:** Theater rate shows 89% (8/9) which is misleading. Real theater would be a debate where nobody even responds to objections.
+
+**Fix:** Theater should be `True` only when there are zero state changes of ANY kind — no concessions AND no CARRIED responses AND no REBUTTED responses. If sides are at least addressing objections (even with CARRIED), that's a real debate, just a stubborn one.
+
+**Status:** Needs fix in `EvidenceTracker._detect_theater`.
+
+### Issue 11: Debate prompt doesn't push for genuine engagement
+
+The system prompt says "CONCEDED: you accept the objection and withdraw your claim" but doesn't encourage reviewers to actually consider the other side's evidence. LLMs default to CARRIED because it's the safest response — they don't lose face.
+
+**Fix:** Rewrite the system prompt to:
+- Require evidence for CARRIED (not just "I maintain my position")
+- Explicitly instruct: "If the other reviewer provides evidence you cannot refute, you MUST CONCEDE"
+- Add: "CARRIED without new evidence is not acceptable — provide a specific reason"
+
+### Issue 12: Debate round outputs not logged to disk
+
+The debate events (LLM responses per round) are stored inside `report.json` under the `events` key, but there's no separate transcript file. The field test plan calls for `transcript.jsonl` per debate.
+
+**Fix:** Write a `transcript.jsonl` file alongside `report.json` with one JSON line per event.
+
+### Issue 13: Cross-model overlap still 0.000
+
+Even after normalizing issue extraction, Jaccard is 0.000 across all 3 PRs. The `_normalize_issue` function extracts the first sentence after stripping severity/bullets, but models phrase the same issue very differently. Substring matching is needed, not exact set equality.
+
+**Fix:** Use substring containment instead of exact match — if normalized issue A is a substring of B or vice versa, count as overlap.
+
 ### Issue 2: Model slug mismatch — dots vs dashes
 
 `02_run_reviewer.py` converts model names to slugs by replacing `.` with `-`: `gemini-2.5-flash` → `gemini-2-5-flash`. But `03_combine_results.py` expected `google_gemini-2.5-flash` (with dots).

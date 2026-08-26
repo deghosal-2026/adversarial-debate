@@ -78,6 +78,33 @@ def jaccard_similarity(a: set, b: set) -> float:
     return len(a & b) / len(a | b)
 
 
+def overlap_similarity(issues_a: set, issues_b: set) -> float:
+    """Compute overlap using substring containment, not exact match.
+
+    An issue in A overlaps with B if any issue in B contains it as a substring
+    or vice versa. This handles cases where models phrase the same issue
+    differently (e.g. "missing null check" vs "null check is missing").
+    """
+    if not issues_a and not issues_b:
+        return 1.0
+    if not issues_a or not issues_b:
+        return 0.0
+
+    matched_a = set()
+    matched_b = set()
+    for a in issues_a:
+        for b in issues_b:
+            if a in b or b in a:
+                matched_a.add(a)
+                matched_b.add(b)
+                break
+
+    total = len(issues_a) + len(issues_b)
+    if total == 0:
+        return 1.0
+    return (len(matched_a) + len(matched_b)) / total
+
+
 def main() -> None:
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -107,8 +134,8 @@ def main() -> None:
         for a in MODEL_NAMES:
             for b in MODEL_NAMES:
                 if a < b:
-                    sim = jaccard_similarity(issues_by_model[a], issues_by_model[b])
-                    row[f"jaccard_{a}_vs_{b}"] = str(round(sim, 3))
+                    sim = overlap_similarity(issues_by_model[a], issues_by_model[b])
+                    row[f"overlap_{a}_vs_{b}"] = str(round(sim, 3))
         overlap_rows.append(row)
 
     overlap_path = ANALYSIS_DIR / "cross-model-overlap.csv"
@@ -183,10 +210,10 @@ def main() -> None:
               f"{stats['pr_count']} PRs")
     print(f"  TOTAL: {round(total_cost, 4)} USD")
 
-    avg_jaccard = sum(r.get("jaccard_gpt-4o-mini_vs_gemini-2.5-flash", 0)
+    avg_overlap = sum(float(r.get("overlap_openai_gpt-4o-mini_vs_google_gemini-2-5-flash", 0))
                        for r in overlap_rows) / len(overlap_rows) if overlap_rows else 0
     print(f"\n=== CROSS-MODEL OVERLAP ===")
-    print(f"  Avg Jaccard (GPT-4o-mini vs Gemini): {avg_jaccard:.3f}")
+    print(f"  Avg overlap (GPT-4o-mini vs Gemini): {avg_overlap:.3f}")
     print(f"  (0 = completely different, 1 = identical)")
 
     # 5. Debate summary

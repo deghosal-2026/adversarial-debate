@@ -216,10 +216,17 @@ class EvidenceTracker:
     def _detect_theater(self) -> bool:
         """True if no state changes occurred during the debate.
 
-        No concessions, no new resolution events = the debate was theater.
+        No concessions AND no defense responses = the debate was theater.
+        If sides at least addressed objections (even with CARRIED), that's a
+        real (if stubborn) debate, not theater.
         """
         if not self._concessions and not self._transitions:
-            # Also check: no claim status changes beyond initial
+            # Check if any defense events happened — if sides responded to
+            # objections (even with CARRIED), the debate was real
+            has_defense = any(e.kind == "defense" for e in self._events)
+            if has_defense:
+                return False
+            # No defense, no concessions, no transitions = theater
             return all(claim.status == "open" for claim in self._initial_claims.values())
 
         # If we have only the seeding transitions (concessions we applied)

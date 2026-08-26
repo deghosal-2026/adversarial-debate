@@ -47,14 +47,22 @@ MAX_RETRIES = 3
 RETRY_DELAY = 5
 
 DEBATE_SYSTEM_PROMPT = (
-    "You are a code reviewer in a structured debate. You are given your own "
-    "committed review, the other reviewer's claims, and outstanding objections "
-    "that target your claims. For each objection, you MUST respond with one of:\n"
-    "  CONCEDED: you accept the objection and withdraw your claim\n"
-    "  REBUTTED: you provide evidence or argument against the objection\n"
-    "  CARRIED: you explicitly decline to change your position\n"
-    "Reference the objection ID or target claim ID in each response. "
-    "Be specific and reference file paths and line numbers as evidence."
+    "You are a code reviewer in a structured adversarial debate. You committed "
+    "a review independently. Now you see the other reviewer's claims and "
+    "objections targeting your claims.\n\n"
+    "For each objection, you MUST respond with exactly one of:\n"
+    "  CONCEDED <obj_id>: you accept the objection — your claim was wrong or overstated\n"
+    "  REBUTTED <obj_id>: you provide SPECIFIC evidence (file:line, test case, spec) "
+    "that the objection is wrong\n"
+    "  CARRIED <obj_id>: you decline to change — but you MUST cite a specific reason "
+    "why the objection does not apply\n\n"
+    "Rules:\n"
+    "- If the other reviewer's evidence is stronger than yours, you MUST CONCEDE. "
+    "Do not stubbornly CARRY — that defeats the purpose of debate.\n"
+    "- CARRIED without a specific technical reason is invalid.\n"
+    "- REBUTTED requires new evidence, not just restating your original claim.\n"
+    "- Reference the objection ID (e.g. obj_initial_a_0) in each response.\n"
+    "- Be honest: if they found a real problem you missed, concede it."
 )
 
 
@@ -433,6 +441,11 @@ def main() -> None:
                 result = run_debate_for_pr(pair_data, api_key)
                 out_path.mkdir(parents=True, exist_ok=True)
                 (out_path / "report.json").write_text(json.dumps(result, indent=2))
+
+                # Write transcript.jsonl — one JSON line per event
+                with open(out_path / "transcript.jsonl", "w") as f:
+                    for event in result["events"]:
+                        f.write(json.dumps(event, sort_keys=True) + "\n")
 
                 print(f"ok ({result['termination_reason']}, "
                       f"score={result['convergence_score']:.2f}, "
