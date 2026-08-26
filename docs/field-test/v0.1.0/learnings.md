@@ -21,7 +21,17 @@
 
 **Fix:** Replace `StoredProvider` with `LiveProvider` that calls the LLM API live during rounds 1+. Each side calls its own model via OpenRouter. Stored review is round 0 only.
 
-**Status:** In progress.
+**Status:** Fixed — `LiveProvider` calls OpenRouter API live during rounds. First successful debate: pair1_gpt_gemini on rails#52531 produced 4 concessions, score=0.21.
+
+### Issue 9: LLMs default to CARRIED — few concessions
+
+When the debate system prompt instructs LLMs to use CONCEDED/REBUTTED/CARRIED markers, most responses are CARRIED (reviewer refuses to change position). On 6 completed debates: 1 had 4 concessions (rails#52531), 5 had 0.
+
+**Root cause:** This is correct behavior — if both models hold firm, there are no concessions. The debate is real (events are generated, claims are addressed), just unproductive. The validator correctly distinguishes CARRIED from CONCEDED.
+
+**Impact:** Low concession rate means low convergence scores. Score=0.00 on 5/6 debates. This is honest data, not a bug.
+
+**Mitigation:** May need to tune the debate prompt to encourage more genuine engagement (evidence-based concessions, not just "I maintain my position"). But for v0.1.0 field test, this is the real signal — some PRs produce productive debate, some don't.
 
 ### Issue 2: Model slug mismatch — dots vs dashes
 
