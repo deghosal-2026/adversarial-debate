@@ -64,10 +64,10 @@ A debate is a "pass" if it produced real engagement (non-theater, claims address
 | Heterogeneous vs homogeneous delta | +30% distinct | pair5 (0.982) vs homogeneous (0.688) = +43% | ✅ PASS |
 | Engine errors (non-rate-limit) | 0 | 0 | ✅ PASS |
 | Binary bar (≥1 distinct issue confirmed by ground truth) | ≥1 artifact | 49/49 PRs (100%) matched; 6,145/7,612 claims (81%) MATCH, 0 NO_MATCH | ✅ PASS |
-| Verdict stability | > 80% | ⏳ PENDING — flakiness sweep not yet run | ⏳ |
+| Verdict stability | > 80% | 96% (5 PRs × 5 runs; 4/5 PRs at 100%, 0 flaky) | ✅ PASS |
 | `would_resolve_if` actionable | > 50% | Deferred to v0.2.0 — current output is template-generated; LLM generation planned | ⏭️ DEFERRED |
 
-**Verdict: PASS.** 7/8 criteria pass. Only `would_resolve_if` actionability rating remains pending (manual). The binary bar is decisively met: every single PR with a documented revert/advisory reason had at least one debate claim matching the actual cause.
+**Verdict: PASS.** 7 criteria PASS, 1 DEFERRED to v0.2.0 (`would_resolve_if` manual rating). The binary bar is decisively met: every PR with a documented revert/advisory reason had at least one debate claim matching the actual cause, and verdicts are stable across repeated runs (96%).
 
 ---
 
@@ -418,6 +418,26 @@ All pairs perform consistently (78-84%), confirming the match signal is not driv
 Even the weakest pair (pair1, GPT+Gemini, 4% verdict rate) achieved 78% match rate — its debates are stubborn but on-target. The debates find the right issues even when they don't converge.
 
 Caveat: claims were judged by an LLM (the same family as one debate participant). Spot-checking showed high agreement, but ~10-20% of PARTIAL judgments could arguably be MATCH or vice versa. This does not change the verdict: even at conservative estimates, far more than 1 PR meets the bar.
+
+---
+
+## Flakiness Sweep
+
+Verdict stability measured by re-running pair5 (DeepSeek+Mistral) on 5 PRs × 5 independent debates (25 total runs):
+
+| PR | Dominant Verdict | Stability | Avg Score | Run Verdicts |
+|----|-----------------|-----------|-----------|--------------|
+| kubernetes#141554 | verdict | 100% | 1.000 | 5× verdict |
+| kubernetes#141194 | verdict | 80% | 0.994 | 4× verdict, 1× disputed |
+| kubernetes#141440 | verdict | 100% | 1.000 | 5× verdict |
+| kubernetes#141146 | verdict | 100% | 1.000 | 5× verdict |
+| kubernetes#141363 | verdict | 100% | 1.000 | 5× verdict |
+
+**Overall stability: 96%** (24/25 runs agree). **Zero flaky PRs** (threshold: <80% agreement).
+
+The single flip (PR#141194) produced one disputed outcome while still scoring 0.994 convergence — the disagreement was marginal, not a verdict reversal between converged and broken. LLM non-determinism at temperature 0 produces occasional variation, but verdicts are overwhelmingly reproducible.
+
+This satisfies the plan's stability gate (>80%) with room to spare.
 
 ---
 
