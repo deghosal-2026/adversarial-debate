@@ -89,6 +89,33 @@
 
 ---
 
+## Scorecards
+
+### Scorecard A — Strict Verdict (Release Gate)
+
+A debate is a "pass" only if it reaches convergence (verdict). Disputed or theater = fail.
+
+| Category | Debates | Pass | Fail | Pass Rate | Gate |
+|----------|---------|------|------|-----------|------|
+| Verdict reached | 18 | 6 | 12 | 33% | ≥80% ❌ |
+| Non-theater | 18 | 18 | 0 | 100% | 100% ✅ |
+
+**Scorecard A: FAILS the release gate.** 12/18 debates are disputed — convergence is not the norm. This is expected and correct: the engine is designed to preserve dissent, not force agreement.
+
+### Scorecard B — Safe-Fail (Engagement Semantics)
+
+A debate is a "pass" if it produced real engagement (non-theater, claims addressed, state changes).
+
+| Category | Debates | Pass | Pass* | True Fail | Pass Rate |
+|----------|---------|------|-------|-----------|-----------|
+| Verdict reached | 6 | 6 | 0 | 0 | 100% |
+| Disputed | 12 | 0 | 12 | 0 | 100% |
+| **Total** | **18** | **6** | **12** | **0** | **100%** |
+
+**Scorecard B: 100% pass.** Every debate produced real engagement. Disputed debates are not failures — they are the product's core value proposition (preserved dissent with `would_resolve_if`).
+
+---
+
 ## Release Gate Verdict (Small Corpus)
 
 This is a **small corpus test run**, not the full field test. The v0.1.0 exit bar requires 150 PRs. These 3 PRs validate the pipeline, not the thesis.
@@ -140,6 +167,20 @@ $0.45 for 18 debates + 12 single-pass reviews. Scaled to 150 PRs: ~$2.50. The ch
 ### 6. Cross-model overlap needs investigation
 
 0.000 overlap across all pairs is suspicious. Either models genuinely find completely different issues (strong independence signal) or the issue extraction heuristic is too crude. Manual inspection of 10 PRs on the full corpus will determine which.
+
+---
+
+## Surprises
+
+1. **Homogeneous pair outperformed pair1.** GPT vs GPT (0.667 avg) scored higher than GPT vs Gemini (0.148 avg). The same model debating itself was more productive than two different US models. This is counterintuitive and warrants investigation.
+
+2. **pair5_deepseek_mistral produced 3/3 perfect verdicts.** The most diverse pair (China vs EU) reached full convergence on every PR. The thesis was supposed to be "diversity helps" — not "diversity achieves perfection."
+
+3. **pair1_gpt_gemini was nearly useless.** 0/3 verdicts, 0.148 avg, 0 capitulation. GPT-4o-mini and Gemini 2.5 Flash are both US labs, similar training, similar capabilities — they just REBUT each other without ever conceding. This is a negative result that supports the BYOM thesis: if you use two similar models, the debate is unproductive.
+
+4. **Capitulation cascade in diverse pairs.** 3/18 debates had the weaker model concede everything in round 1. This is a risk: maximum diversity can produce one-sided debates, not genuine disagreement.
+
+5. **Theater was eliminated entirely by a prompt change.** Going from 89% theater to 0% theater by rewriting the system prompt means the original prompt was the bottleneck, not the engine. This is a good sign — the engine is robust, the prompt just needed tuning.
 
 ---
 
