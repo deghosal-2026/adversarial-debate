@@ -47,7 +47,7 @@ PRICING = {
     "openai/gpt-4o-mini": (0.15, 0.60),
     "google/gemini-2.5-flash": (0.15, 0.60),
     "deepseek/deepseek-chat": (0.27, 1.10),
-    "mistralai/mistral-small": (0.20, 0.60),
+    "mistralai/mistral-small-3.2-24b-instruct": (0.075, 0.20),
 }
 
 MAX_RETRIES = 3

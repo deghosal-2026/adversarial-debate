@@ -179,7 +179,7 @@ All models via OpenRouter (single API key: `OPENROUTER_API_KEY`).
 | GPT-4o-mini | `openai/gpt-4o-mini` | openai | US | $0.15 | $0.60 |
 | Gemini 2.5 Flash | `google/gemini-2.5-flash` | google | US | $0.15 | $0.60 |
 | DeepSeek-V3 | `deepseek/deepseek-chat` | deepseek | China | $0.27 | $1.10 |
-| Mistral Small | `mistralai/mistral-small` | mistral | EU | $0.20 | $0.60 |
+| Mistral Small 3.2 | `mistralai/mistral-small-3.2-24b-instruct` | mistral | EU | $0.075 | $0.20 |
 
 ### 4.2 Debate Pairs (5 pairs, 150 PRs each)
 

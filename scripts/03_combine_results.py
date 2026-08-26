@@ -23,9 +23,9 @@ PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
 PAIRS = {
     "pair1_gpt_gemini": {"a": "openai_gpt-4o-mini", "b": "google_gemini-2-5-flash"},
     "pair2_gemini_deepseek": {"a": "google_gemini-2-5-flash", "b": "deepseek_deepseek-chat"},
-    "pair3_gpt_mistral": {"a": "openai_gpt-4o-mini", "b": "mistralai_mistral-small"},
-    "pair4_gemini_mistral": {"a": "google_gemini-2-5-flash", "b": "mistralai_mistral-small"},
-    "pair5_deepseek_mistral": {"a": "deepseek_deepseek-chat", "b": "mistralai_mistral-small"},
+    "pair3_gpt_mistral": {"a": "openai_gpt-4o-mini", "b": "mistralai_mistral-small-3-2-24b-instruct"},
+    "pair4_gemini_mistral": {"a": "google_gemini-2-5-flash", "b": "mistralai_mistral-small-3-2-24b-instruct"},
+    "pair5_deepseek_mistral": {"a": "deepseek_deepseek-chat", "b": "mistralai_mistral-small-3-2-24b-instruct"},
     "homogeneous_gpt": {"a": "openai_gpt-4o-mini", "b": "openai_gpt-4o-mini"},
     "baseline_gpt": {"a": "openai_gpt-4o-mini", "b": None},
 }

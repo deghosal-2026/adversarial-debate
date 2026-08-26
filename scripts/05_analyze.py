@@ -39,7 +39,7 @@ MODEL_NAMES = [
     "openai_gpt-4o-mini",
     "google_gemini-2-5-flash",
     "deepseek_deepseek-chat",
-    "mistralai_mistral-small",
+    "mistralai_mistral-small-3-2-24b-instruct",
 ]
 
 
