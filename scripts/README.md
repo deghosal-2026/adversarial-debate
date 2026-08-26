@@ -106,7 +106,9 @@ Runs the full engine pipeline on paired reviews:
 - M6 EvidenceTracker (claim lifecycle, convergence score, theater detection)
 - M7 SynthesisReport (verdict/disputed, `would_resolve_if`, flags)
 
-**Output:** `results/field-test/v0.1.0/debates/<pair_name>/<pr_id>/report.json` — termination reason, convergence score, concessions, unresolved points, theater/capitulation flags, full event log.
+**Output:** `results/field-test/v0.1.0/debates/<pair_name>/<pr_id>/`
+- `report.json` — termination reason, convergence score, concessions, unresolved points, theater/capitulation flags, full event log
+- `transcript.jsonl` — one JSON line per debate event
 
 ### Step 5 — Analyze and compare
 
@@ -115,7 +117,7 @@ python3 scripts/05_analyze.py
 ```
 
 Produces:
-- `results/field-test/v0.1.0/analysis/cross-model-overlap.csv` — Jaccard similarity per PR per model pair
+- `results/field-test/v0.1.0/analysis/cross-model-overlap.csv` — overlap similarity per PR per model pair (substring containment)
 - `results/field-test/v0.1.0/analysis/distinctness-ratings.csv` — Issue counts per model per PR
 - `results/field-test/v0.1.0/analysis/cost-latency.csv` — Cost, latency, token totals per model
 - `results/field-test/v0.1.0/analysis/debate-summary.csv` — Per-PR debate outcomes (verdict, score, theater, concessions)
@@ -131,16 +133,21 @@ results/field-test/v0.1.0/
 ├── results/                  # raw LLM outputs (per model, from step 2)
 │   ├── openai_gpt-4o-mini/
 │   ├── google_gemini-2-5-flash/
-│   └── deepseek_deepseek-chat/
+│   ├── deepseek_deepseek-chat/
+│   └── mistralai_mistral-small/
 ├── pairs/                    # combined pair data (from step 3)
 │   ├── pair1_gpt_gemini/
 │   ├── pair2_gemini_deepseek/
+│   ├── pair3_gpt_mistral/
+│   ├── pair4_gemini_mistral/
+│   ├── pair5_deepseek_mistral/
 │   ├── homogeneous_gpt/
 │   └── baseline_gpt/
 ├── debates/                  # debate engine output (from step 4)
 │   └── <pair_name>/
 │       └── <pr_id>/
-│           └── report.json
+│           ├── report.json
+│           └── transcript.jsonl
 ├── analysis/                 # analysis CSVs (from step 5)
 │   ├── cross-model-overlap.csv
 │   ├── distinctness-ratings.csv
