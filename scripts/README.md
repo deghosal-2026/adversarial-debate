@@ -47,6 +47,9 @@ python3 scripts/02_run_reviewer.py --model google/gemini-2.5-flash --corpus resu
 
 # DeepSeek
 python3 scripts/02_run_reviewer.py --model deepseek/deepseek-chat --corpus results/field-test/v0.1.0/corpus.csv
+
+# Mistral Small
+python3 scripts/02_run_reviewer.py --model mistralai/mistral-small --corpus results/field-test/v0.1.0/corpus.csv
 ```
 
 Each model runs independently. If one fails, re-run that model — it skips completed PRs via a `CHECKPOINT` file.
@@ -77,6 +80,9 @@ python3 scripts/03_combine_results.py --corpus results/field-test/v0.1.0/corpus.
 Maps individual model outputs into pair configurations:
 - `pair1_gpt_gemini` — GPT-4o-mini + Gemini 2.5 Flash
 - `pair2_gemini_deepseek` — Gemini 2.5 Flash + DeepSeek
+- `pair3_gpt_mistral` — GPT-4o-mini + Mistral Small
+- `pair4_gemini_mistral` — Gemini 2.5 Flash + Mistral Small
+- `pair5_deepseek_mistral` — DeepSeek + Mistral Small
 - `homogeneous_gpt` — GPT-4o-mini both sides
 - `baseline_gpt` — GPT-4o-mini single pass (no debate)
 

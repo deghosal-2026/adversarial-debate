@@ -172,23 +172,24 @@ Per [§19.2 Step 1](../../design/prd/19-competitor-benchmark.md), the corpus is 
 
 All models via OpenRouter (single API key: `OPENROUTER_API_KEY`).
 
-### 4.1 Pair 1 — GPT-4o-mini + Gemini 2.5 Flash (Budget, 150 PRs)
+### 4.1 Models (4 models, maximally diverse families)
 
-| Slot | OpenRouter Model | Family | Input $/MTok | Output $/MTok |
-|------|-----------------|--------|-------------|--------------|
-| A | `openai/gpt-4o-mini` | openai | $0.15 | $0.60 |
-| B | `google/gemini-2.5-flash` | google | $0.15 | $0.60 |
+| Model | OpenRouter ID | Family | Origin | Input $/MTok | Output $/MTok |
+|-------|--------------|--------|--------|-------------|--------------|
+| GPT-4o-mini | `openai/gpt-4o-mini` | openai | US | $0.15 | $0.60 |
+| Gemini 2.5 Flash | `google/gemini-2.5-flash` | google | US | $0.15 | $0.60 |
+| DeepSeek-V3 | `deepseek/deepseek-chat` | deepseek | China | $0.27 | $1.10 |
+| Mistral Small | `mistralai/mistral-small` | mistral | EU | $0.20 | $0.60 |
 
-**Full sweep cost:** ~$9 · Diverse families (OpenAI vs Google)
+### 4.2 Debate Pairs (5 pairs, 150 PRs each)
 
-### 4.2 Pair 2 — Gemini 2.5 Flash + DeepSeek-V3 (Diverse, 150 PRs)
-
-| Slot | OpenRouter Model | Family | Input $/MTok | Output $/MTok |
-|------|-----------------|--------|-------------|--------------|
-| A | `google/gemini-2.5-flash` | google | $0.15 | $0.60 |
-| B | `deepseek/deepseek-chat` | deepseek | $0.27 | $1.10 |
-
-**Full sweep cost:** ~$9 · Maximally diverse (Google vs DeepSeek)
+| Pair | Slot A | Slot B | Diversity | Why |
+|------|--------|--------|-----------|-----|
+| pair1_gpt_gemini | GPT-4o-mini | Gemini 2.5 Flash | OpenAI vs Google | US mainstream pair |
+| pair2_gemini_deepseek | Gemini 2.5 Flash | DeepSeek-V3 | Google vs DeepSeek | US vs China (best performer in test) |
+| pair3_gpt_mistral | GPT-4o-mini | Mistral Small | OpenAI vs Mistral | US vs EU |
+| pair4_gemini_mistral | Gemini 2.5 Flash | Mistral Small | Google vs Mistral | US vs EU |
+| pair5_deepseek_mistral | DeepSeek-V3 | Mistral Small | China vs EU | Maximally diverse |
 
 ### 4.3 Single-Reviewer Baseline (150 PRs)
 
@@ -211,10 +212,11 @@ Same model both sides — measures debate process value without model diversity.
 
 | Component | Cost |
 |-----------|------|
-| 3 models × 150 PRs (single pass each) | ~$9 |
-| Flakiness subsample (50 PRs × 5 seeds) | ~$5 |
-| Round saturation (20 PRs × 3 rounds) | ~$1 |
-| **Total** | **~$15** |
+| 4 models × 150 PRs (single pass each) | ~$0.32 |
+| 5 pairs × 150 PRs (debate rounds) | ~$1.50 |
+| Flakiness subsample (50 PRs × 5 seeds) | ~$0.50 |
+| Round saturation (20 PRs × 3 rounds) | ~$0.10 |
+| **Total** | **~$2.50** |
 
 ---
 

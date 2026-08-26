@@ -128,9 +128,11 @@ After the prompt fix, pair1_gpt_gemini on rails#52531 went from 4 concessions (s
 2. **gh CLI `comments` field is a list, not an int** — use `len(comments)` for count
 3. **PR body text breaks CSV** — must use `csv.DictWriter` with proper quoting, not include raw body
 4. **Corpus generation from labels is unreliable** — GitHub labels don't consistently map to outcome types. Better to cycle through outcomes manually.
-5. **Cost per PR is ~$0.002** — 150 PRs × 3 models = $0.90 for single passes. Debate rounds add ~$0.02/debate.
+5. **Cost per PR is ~$0.002** — 150 PRs × 4 models = ~$0.32 for single passes. Debate rounds add ~$0.02/debate.
 6. **DeepSeek is 2-3× slower** than GPT-4o-mini and Gemini — factor into scheduling.
 7. **Debate prompt matters enormously** — changing the system prompt from permissive to strict (require evidence for CARRIED) moved theater from 89% to 0% and avg score from 0.02 to 0.45.
 8. **Model diversity drives concession rate** — Gemini+DeepSeek (most diverse pair) produces the most productive debates. GPT+Gemini (less diverse) produces more REBUTTED standoffs.
 9. **Theater detection must check for defense events** — zero concessions ≠ theater if sides at least responded to objections.
 10. **LiveProvider is necessary** — StoredProvider cannot produce real debate. The LLM must respond to the specific debate prompt during rounds.
+11. **4th model (Mistral Small) added** — European lab, maximally diverse from US (OpenAI/Google) and Chinese (DeepSeek). 5 pairs now test the diversity thesis: 3 original + 3 new (GPT+Mistral, Gemini+Mistral, DeepSeek+Mistral). Total cost for full sweep: ~$2.50.
+12. **Pair diversity ranking from test data** — pair2 (Gemini+DeepSeek) had best results (verdict, 0.69, 0.82 scores). Need to validate whether this holds on larger corpus and whether Mistral pairs produce similar or better results.

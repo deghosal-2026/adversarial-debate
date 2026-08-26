@@ -35,7 +35,12 @@ DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
 ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
 OUT_DIR = BASE / "results" / "field-test" / "v0.1.0"
 
-MODEL_NAMES = ["openai_gpt-4o-mini", "google_gemini-2-5-flash", "deepseek_deepseek-chat"]
+MODEL_NAMES = [
+    "openai_gpt-4o-mini",
+    "google_gemini-2-5-flash",
+    "deepseek_deepseek-chat",
+    "mistralai_mistral-small",
+]
 
 
 def extract_issues(raw_text: str) -> list[str]:
