@@ -270,14 +270,16 @@ class TestDebateController:
 
     def test_provider_error_terminates_with_error(self) -> None:
         """If a provider raises, the debate terminates with error."""
+
         class FailingProvider:
-            def review(self, _request: ReviewRequest) -> ReviewResult:
+            def review(self, request: ReviewRequest) -> ReviewResult:
+                del request
                 msg = "Provider failure"
                 raise RuntimeError(msg)
 
         controller = DebateController(
-            provider_a=FailingProvider(),  # type: ignore[arg-type]
-            provider_b=FailingProvider(),  # type: ignore[arg-type]
+            provider_a=FailingProvider(),
+            provider_b=FailingProvider(),
             session_a=_make_session("A"),
             session_b=_make_session("B"),
             review_a=_make_review("A", claims=[_make_claim("cl_001", "A1")]),
@@ -630,9 +632,9 @@ class TestScriptedDebateE2E:
     def test_prompt_with_risks_includes_risks_section(self) -> None:
         """Prompt builder includes risks section when review has risks."""
         review = _make_review("A", claims=[_make_claim("cl_001", "Claim")])
-        review = review.model_copy(update={
-            "risks": [Risk(id="risk_1", text="Potential issue", severity="high")]
-        })
+        review = review.model_copy(
+            update={"risks": [Risk(id="risk_1", text="Potential issue", severity="high")]}
+        )
         ctx = RoundContext(
             own_review=review,
             own_session=_make_session("A"),
@@ -674,9 +676,7 @@ class TestScriptedDebateE2E:
     def test_unaddressed_objection_emits_event(self) -> None:
         """Unaddressed objections trigger a system event."""
         provider_a = ScriptedDebateProvider(
-            responses=[
-                ReviewResult(raw_text="Nothing here.", claims=[], risks=[], confidence=0.5)
-            ]
+            responses=[ReviewResult(raw_text="Nothing here.", claims=[], risks=[], confidence=0.5)]
         )
         provider_b = ScriptedDebateProvider(
             responses=[

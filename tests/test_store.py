@@ -147,7 +147,7 @@ class TestSchemaVersioning:
     def test_refuses_newer_schema(self) -> None:
         s = SQLiteStore(":memory:")
         s.initialize()
-        with s._connect() as conn:  # type: ignore[attr-defined]
+        with s._connect() as conn:
             conn.execute("UPDATE schema_version SET version = 99")
         with pytest.raises(StoreError, match="newer than"):
             s.initialize()
@@ -178,6 +178,7 @@ class TestResume:
     def test_create_run_with_resumed_from(self, store: SQLiteStore) -> None:
         run_id = store.create_run("art_001", resumed_from=2)
         status = store.get_run_status(run_id)
+        assert status is not None
         assert status["resumed_from"] == 2
 
 
@@ -220,18 +221,24 @@ class TestEventStorage:
 
     def test_append_events_sequential(self, store: SQLiteStore) -> None:
         run_id = store.create_run("art_001")
-        seqs = store.append_events(run_id, [
-            _make_event(content="First"),
-            _make_event(content="Second"),
-        ])
+        seqs = store.append_events(
+            run_id,
+            [
+                _make_event(content="First"),
+                _make_event(content="Second"),
+            ],
+        )
         assert seqs == [1, 2]
 
     def test_get_events_returns_in_order(self, store: SQLiteStore) -> None:
         run_id = store.create_run("art_001")
-        store.append_events(run_id, [
-            _make_event(round_index=1, content="First"),
-            _make_event(round_index=2, content="Second"),
-        ])
+        store.append_events(
+            run_id,
+            [
+                _make_event(round_index=1, content="First"),
+                _make_event(round_index=2, content="Second"),
+            ],
+        )
         events = store.get_events(run_id)
         assert len(events) == 2
         assert events[0]["content"] == "First"
@@ -249,11 +256,14 @@ class TestEventStorage:
 
     def test_get_last_sequence_after_events(self, store: SQLiteStore) -> None:
         run_id = store.create_run("art_001")
-        store.append_events(run_id, [
-            _make_event(content="A"),
-            _make_event(content="B"),
-            _make_event(content="C"),
-        ])
+        store.append_events(
+            run_id,
+            [
+                _make_event(content="A"),
+                _make_event(content="B"),
+                _make_event(content="C"),
+            ],
+        )
         assert store.get_last_sequence(run_id) == 3
 
     def test_degraded_event_stored(self, store: SQLiteStore) -> None:
@@ -277,11 +287,14 @@ class TestEventStorage:
 class TestCrashSafety:
     def test_sequence_integrity_no_gaps(self, store: SQLiteStore) -> None:
         run_id = store.create_run("art_001")
-        store.append_events(run_id, [
-            _make_event(content="A"),
-            _make_event(content="B"),
-            _make_event(content="C"),
-        ])
+        store.append_events(
+            run_id,
+            [
+                _make_event(content="A"),
+                _make_event(content="B"),
+                _make_event(content="C"),
+            ],
+        )
         assert store.check_sequence_integrity(run_id) == []
 
     def test_sequence_integrity_empty_run(self, store: SQLiteStore) -> None:
@@ -294,10 +307,13 @@ class TestCrashSafety:
         s1 = SQLiteStore(db_path)
         s1.initialize()
         run_id = s1.create_run("art_001")
-        s1.append_events(run_id, [
-            _make_event(round_index=1, content="Round 1"),
-            _make_event(round_index=2, content="Round 2"),
-        ])
+        s1.append_events(
+            run_id,
+            [
+                _make_event(round_index=1, content="Round 1"),
+                _make_event(round_index=2, content="Round 2"),
+            ],
+        )
         state1 = s1.get_events(run_id)
         s1.close()
 
@@ -328,9 +344,12 @@ class TestCrashSafety:
         run_id = store.create_run("art_001")
         report = _make_report()
 
-        store.append_events(run_id, [
-            _make_event(round_index=1, content="Round 1"),
-        ])
+        store.append_events(
+            run_id,
+            [
+                _make_event(round_index=1, content="Round 1"),
+            ],
+        )
         store.mark_complete(run_id, report=report, partial=True, partial_reason="budget_exhausted")
 
         stored = store.get_report(run_id)

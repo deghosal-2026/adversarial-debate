@@ -38,9 +38,7 @@ def _make_claim(
     )
 
 
-def _make_concession(
-    claim_id: str, by_side: Side = "A", round_num: int = 1
-) -> Concession:
+def _make_concession(claim_id: str, by_side: Side = "A", round_num: int = 1) -> Concession:
     return Concession(
         id=f"concession_{claim_id}",
         claim_id=claim_id,

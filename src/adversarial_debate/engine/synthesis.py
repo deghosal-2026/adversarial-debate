@@ -133,12 +133,8 @@ def synthesize_verdict(  # noqa: PLR0913, PLR0917
     header = header or HeaderBlock()
 
     # Build strongest arguments per side
-    strongest_a = _strongest_arguments(
-        claims_by_side.get("A", []), evidence.claims
-    )
-    strongest_b = _strongest_arguments(
-        claims_by_side.get("B", []), evidence.claims
-    )
+    strongest_a = _strongest_arguments(claims_by_side.get("A", []), evidence.claims)
+    strongest_b = _strongest_arguments(claims_by_side.get("B", []), evidence.claims)
 
     # Build resolved entries
     resolved = _build_resolved(concessions, evidence.claims)
@@ -195,7 +191,8 @@ def _strongest_arguments(
     """Top claims by severity for a side."""
     claim_ids = {c.id for c in side_claims}
     relevant = [
-        s for s in snapshots
+        s
+        for s in snapshots
         if s.id in claim_ids and s.final_status in ("upheld", "open", "resolved")
     ]
     severity_order = {"high": 0, "medium": 1, "low": 2}
@@ -234,9 +231,7 @@ def _build_unresolved(
     side_a_map = {c.id: c for c in claims_by_side.get("A", [])}
     side_b_map = {c.id: c for c in claims_by_side.get("B", [])}
 
-    open_snapshots = [
-        s for s in evidence.claims if s.final_status == "open"
-    ]
+    open_snapshots = [s for s in evidence.claims if s.final_status == "open"]
     # Sort by severity (high first), then limit
     severity_order = {"high": 0, "medium": 1, "low": 2}
     open_snapshots.sort(key=lambda s: severity_order.get(s.severity, 99))

@@ -82,6 +82,7 @@ key_env = "OPENAI_API_KEY"
 
 # ── exit codes ────────────────────────────────────────────────────────────────
 
+
 class ExitCode:  # noqa: D101
     OK = 0
     USAGE = 1
@@ -119,9 +120,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     """Write a commented advdeb.toml config file."""
     path = Path(args.path)
     if path.exists() and not args.force:
-        _print_error(
-            f"{path} already exists. Use --force to overwrite."
-        )
+        _print_error(f"{path} already exists. Use --force to overwrite.")
         return ExitCode.USAGE
 
     path.write_text(_CONFIG_TEMPLATE)
@@ -145,10 +144,7 @@ def cmd_review(args: argparse.Namespace) -> int:
     """Run a review debate on a PR."""
     config_path = Path(args.config)
     if not config_path.is_file():
-        _print_error(
-            f"config file not found: {config_path} "
-            f"(run 'advdeb init' to scaffold one)"
-        )
+        _print_error(f"config file not found: {config_path} (run 'advdeb init' to scaffold one)")
         return ExitCode.USAGE
 
     try:
@@ -415,7 +411,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to SQLite database (default: advdeb.db)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Enable verbose output",
     )
@@ -432,8 +429,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_review.add_argument("--pr", required=True, help="PR URL or path")
     p_review.add_argument("--domain", default="pr_review", help="Review domain")
     p_review.add_argument("--rounds", type=int, default=None, help="Number of rounds")
-    p_review.add_argument("--pair", choices=["diverse", "same"], default=None,
-                          help="Pair diversity")
+    p_review.add_argument(
+        "--pair", choices=["diverse", "same"], default=None, help="Pair diversity"
+    )
     p_review.add_argument("--budget", type=int, default=None, help="Token budget")
     p_review.add_argument("--config", default="advdeb.toml", help="Config file path")
 
@@ -457,7 +455,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:  # noqa: PLR0911
+def main(argv: list[str] | None = None) -> int:
     """Main entry point."""
     parser = build_parser()
 
@@ -467,39 +465,20 @@ def main(argv: list[str] | None = None) -> int:  # noqa: PLR0911
         return ExitCode.USAGE
 
     try:
-        if args.command == "init":
-            return cmd_init(args)
-        if args.command == "review":
-            return cmd_review(args)
-        if args.command == "report":
-            return cmd_report(args)
-        if args.command == "transcript":
-            return cmd_transcript(args)
-        if args.command == "resume":
-            return cmd_resume(args)
-        if args.command == "list":
-            return cmd_list(args)
-        parser.print_help()
-        return ExitCode.USAGE
-    except Exception as exc:
-        if args.verbose:
-            raise
-        _print_error(str(exc))
-        return ExitCode.ENGINE_ERROR
-        if args.command == "init":
-            return cmd_init(args)
-        if args.command == "review":
-            return cmd_review(args)
-        if args.command == "report":
-            return cmd_report(args)
-        if args.command == "transcript":
-            return cmd_transcript(args)
-        if args.command == "resume":
-            return cmd_resume(args)
-        if args.command == "list":
-            return cmd_list(args)
-        parser.print_help()
-        return ExitCode.USAGE  # noqa: TRY300
+        dispatch: dict[str, Any] = {
+            "init": cmd_init,
+            "review": cmd_review,
+            "report": cmd_report,
+            "transcript": cmd_transcript,
+            "resume": cmd_resume,
+            "list": cmd_list,
+        }
+        handler = dispatch.get(args.command)
+        if handler is None:
+            parser.print_help()
+            return ExitCode.USAGE
+        result = handler(args)
+        return int(result)
     except Exception as exc:
         if args.verbose:
             raise

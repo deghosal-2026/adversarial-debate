@@ -4,7 +4,9 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![Status](https://img.shields.io/badge/status-v0.1.0%20in%20development-orange)]()
+[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen)]()
+[![PyPI](https://img.shields.io/pypi/v/adversarial-debate)](https://pypi.org/project/adversarial-debate/)
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/14254/badge)](https://www.bestpractices.dev/en/projects/14254/passing)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000)](https://github.com/astral-sh/ruff)
 
 **A multi-agent adversarial review engine. Two independent LLMs analyze the same artifact without seeing each other's answers, debate their conclusions point by point, and produce either a converged decision — or a structured disagreement report that preserves the dissent.**
@@ -12,8 +14,8 @@
 </div>
 
 > [!NOTE]
-> **Status:** v0.1.0 under active development (target ship: Week of Aug 25-31, 2026).
-> The core isolation rule is already locked: **reviewer B cannot see reviewer A's answer until it has fully committed its own.**
+> **Status:** v0.1.0 shipped Aug 2026. Field-tested on 70 real PRs across 6 model pairs — 411 debates, $0.53 total cost.
+> The core isolation rule is mechanically enforced: **reviewer B cannot see reviewer A's answer until it has fully committed its own.**
 
 ---
 
@@ -31,6 +33,29 @@ AdversarialDebate productizes that discipline for LLM systems:
 - **Dissent preservation** — if disagreement survives the debate, the system ships a structured disagreement report instead of pretending consensus exists.
 
 The outcome is not always consensus. Sometimes the most valuable result is a sharply defined disagreement showing exactly where uncertainty lives.
+
+## Quickstart
+
+```bash
+pip install adversarial-debate
+
+# Scaffold config
+advdeb init
+
+# Edit in your API keys
+# $EDITOR advdeb.toml
+
+# Review a PR
+advdeb review --pr https://github.com/kubernetes/kubernetes/pull/140860 --domain pr_review
+
+# View the report
+advdeb report <run_id>
+
+# Export the transcript
+advdeb transcript <run_id> --export jsonl
+```
+
+See [docs/reference/quickstart.md](docs/reference/quickstart.md) for the full walkthrough.
 
 ## What It Is
 

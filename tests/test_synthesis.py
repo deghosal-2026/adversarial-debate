@@ -45,9 +45,7 @@ def _make_evidence(  # noqa: PLR0913, PLR0917
     )
 
 
-def _make_claim(
-    claim_id: str, text: str = "", severity: Severity = "medium"
-) -> Claim:
+def _make_claim(claim_id: str, text: str = "", severity: Severity = "medium") -> Claim:
     return Claim(
         id=claim_id,
         review_id="rev_test",
@@ -74,9 +72,7 @@ def _make_snapshot(
     )
 
 
-def _make_concession(
-    claim_id: str, by_side: Side = "A", round_num: int = 1
-) -> Concession:
+def _make_concession(claim_id: str, by_side: Side = "A", round_num: int = 1) -> Concession:
     return Concession(
         id=f"concession_{claim_id}",
         claim_id=claim_id,
@@ -116,8 +112,10 @@ class TestJointVerdict:
     def test_verdict_when_converged(self) -> None:
         evidence = _make_evidence(verdict="verdict", resolved=3, total=3)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         assert report.kind == "verdict"
         assert "Verdict" in report.verdict
@@ -125,8 +123,10 @@ class TestJointVerdict:
     def test_disputed_when_not_converged(self) -> None:
         evidence = _make_evidence(verdict="disputed", resolved=1, total=3)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         assert report.kind == "disputed"
         assert "Disagreement" in report.verdict
@@ -136,8 +136,10 @@ class TestJointVerdict:
         snapshots = [_make_snapshot("cl_001", "Low issue", "low", "upheld")]
         evidence = _make_evidence(verdict="verdict", resolved=1, total=1, claims=snapshots)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": claims_a}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": claims_a},
+            concessions=[],
         )
         assert len(report.strongest_a) == 1
         assert "low" in report.strongest_a[0].lower()
@@ -146,8 +148,11 @@ class TestJointVerdict:
         evidence = _make_evidence(verdict="verdict", resolved=1, total=1)
         header = HeaderBlock(engine_version="0.1.0")
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": [], "B": []}, concessions=[], header=header,
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
+            header=header,
         )
         assert report.header.engine_version == "0.1.0"
 
@@ -164,8 +169,10 @@ class TestJointVerdict:
         ]
         evidence = _make_evidence(verdict="verdict", resolved=3, total=3, claims=snapshots)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": claims_a, "B": claims_b}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": claims_a, "B": claims_b},
+            concessions=[],
         )
         assert len(report.strongest_a) == 2
         assert len(report.strongest_b) == 1
@@ -181,8 +188,10 @@ class TestDisagreementReporter:
         concessions = [_make_concession("cl_001", by_side="A")]
         evidence = _make_evidence(verdict="disputed", resolved=1, total=2, claims=snapshots)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": claims, "B": []}, concessions=concessions,
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": claims, "B": []},
+            concessions=concessions,
         )
         assert len(report.resolved) == 1
         assert report.resolved[0].claim_id == "cl_001"
@@ -193,7 +202,8 @@ class TestDisagreementReporter:
         snapshots = [_make_snapshot("cl_001", "Unresolved issue", "high", "open")]
         evidence = _make_evidence(verdict="disputed", resolved=0, total=1, claims=snapshots)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
+            artifact_id="art_001",
+            evidence=evidence,
             claims_by_side={"A": [_make_claim("cl_001", "Unresolved issue", "high")]},
             concessions=[],
         )
@@ -204,13 +214,11 @@ class TestDisagreementReporter:
         assert report.unresolved[0].claim_ids == ["cl_001"]
 
     def test_top_n_cap_on_unresolved_points(self) -> None:
-        snapshots = [
-            _make_snapshot(f"cl_{i:03d}", f"Issue {i}", "high", "open")
-            for i in range(20)
-        ]
+        snapshots = [_make_snapshot(f"cl_{i:03d}", f"Issue {i}", "high", "open") for i in range(20)]
         evidence = _make_evidence(verdict="disputed", resolved=0, total=20, claims=snapshots)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
+            artifact_id="art_001",
+            evidence=evidence,
             claims_by_side={
                 "A": [_make_claim(f"cl_{i:03d}", f"Issue {i}", "high") for i in range(20)]
             },
@@ -223,7 +231,8 @@ class TestDisagreementReporter:
         snapshots = [_make_snapshot("cl_001", "XSS in search", "high", "open")]
         evidence = _make_evidence(verdict="disputed", resolved=0, total=1, claims=snapshots)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
+            artifact_id="art_001",
+            evidence=evidence,
             claims_by_side={"A": [_make_claim("cl_001", "XSS in search", "high")]},
             concessions=[],
         )
@@ -233,8 +242,10 @@ class TestDisagreementReporter:
     def test_empty_resolved_when_no_concessions(self) -> None:
         evidence = _make_evidence(verdict="verdict", resolved=0, total=0)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         assert report.resolved == []
 
@@ -243,8 +254,10 @@ class TestDisagreementReporter:
             verdict="disputed", resolved=0, total=1, theater=True, cascade=True
         )
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         assert report.flags.theater is True
         assert report.flags.capitulation_cascade is True
@@ -292,7 +305,8 @@ class TestJsonlExporter:
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events=[])
         first = json.loads(export.strip().split("\n")[0])
@@ -302,7 +316,8 @@ class TestJsonlExporter:
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events=[])
         last = json.loads(export.strip().split("\n")[-1])
@@ -316,7 +331,8 @@ class TestJsonlExporter:
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events)
         lines = export.strip().split("\n")
@@ -329,8 +345,10 @@ class TestJsonlExporter:
     def test_report_line_contains_all_fields(self) -> None:
         evidence = _make_evidence(verdict="disputed", resolved=1, total=3)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events=[])
         report_line = json.loads(export.strip().split("\n")[-2])
@@ -344,7 +362,8 @@ class TestJsonlExporter:
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         assert verify_export(export_jsonl(report, events=[])) is True
 
@@ -352,7 +371,8 @@ class TestJsonlExporter:
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events=[])
         truncated = "\n".join(export.strip().split("\n")[:-1])
@@ -365,16 +385,15 @@ class TestJsonlExporter:
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events=[], content_hash="abc123")
         header = json.loads(export.strip().split("\n")[0])
         assert header["content_hash"] == "abc123"
 
     def test_header_to_dict(self) -> None:
-        header = HeaderBlock(
-            engine_version="0.1.0", prompt_version="v1", seeds={"A": 42}
-        )
+        header = HeaderBlock(engine_version="0.1.0", prompt_version="v1", seeds={"A": 42})
         d = header.to_dict()
         assert d["engine_version"] == "0.1.0"
         assert d["seeds"] == {"A": 42}
@@ -384,14 +403,17 @@ class TestJsonlExporter:
             id="conc_001", claim_id="cl_001", by_side="A", round=1, rationale="Ok"
         )
         event = DebateEvent(
-            round_index=1, side="A", kind="defense",
+            round_index=1,
+            side="A",
+            kind="defense",
             message=_make_event("defense", content="conceded").message,
             concession=concession,
         )
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events=[event])
         event_line = json.loads(export.strip().split("\n")[1])
@@ -400,12 +422,16 @@ class TestJsonlExporter:
 
     def test_event_with_error_in_export(self) -> None:
         event = DebateEvent(
-            round_index=1, side="A", kind="system", error="Provider failure",
+            round_index=1,
+            side="A",
+            kind="system",
+            error="Provider failure",
         )
         report = synthesize_verdict(
             artifact_id="art_001",
             evidence=_make_evidence(verdict="verdict", resolved=1, total=1),
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         export = export_jsonl(report, events=[event])
         event_line = json.loads(export.strip().split("\n")[1])
@@ -433,14 +459,20 @@ class TestDeterminism:
         header = HeaderBlock(engine_version="0.1.0", prompt_version="v1")
 
         r1 = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
+            artifact_id="art_001",
+            evidence=evidence,
             claims_by_side={"A": claims_a, "B": claims_b},
-            concessions=concessions, header=header, max_unresolved=10,
+            concessions=concessions,
+            header=header,
+            max_unresolved=10,
         )
         r2 = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
+            artifact_id="art_001",
+            evidence=evidence,
             claims_by_side={"A": claims_a, "B": claims_b},
-            concessions=concessions, header=header, max_unresolved=10,
+            concessions=concessions,
+            header=header,
+            max_unresolved=10,
         )
         assert r1 == r2
         assert r1.verdict == r2.verdict
@@ -449,8 +481,10 @@ class TestDeterminism:
     def test_same_input_same_jsonl(self) -> None:
         evidence = _make_evidence(verdict="verdict", resolved=1, total=1)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
-            claims_by_side={"A": [], "B": []}, concessions=[],
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
         )
         e1 = export_jsonl(report, events=[])
         e2 = export_jsonl(report, events=[])
@@ -460,7 +494,8 @@ class TestDeterminism:
         snapshots = [_make_snapshot("cl_001", "Issue", "high", "open")]
         evidence = _make_evidence(verdict="disputed", resolved=0, total=1, claims=snapshots)
         report = synthesize_verdict(
-            artifact_id="art_001", evidence=evidence,
+            artifact_id="art_001",
+            evidence=evidence,
             claims_by_side={"A": [_make_claim("cl_001", "Issue", "high")]},
             concessions=[],
         )

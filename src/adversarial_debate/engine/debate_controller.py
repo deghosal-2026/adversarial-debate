@@ -227,9 +227,7 @@ def detect_degradation(text: str) -> bool:
 
     # Repetition: same sentence repeated 3+ times
     sentences = [
-        s.strip()
-        for s in text.replace("!", ".").replace("?", ".").split(".")
-        if s.strip()
+        s.strip() for s in text.replace("!", ".").replace("?", ".").split(".") if s.strip()
     ]
     if len(sentences) >= 3:  # noqa: PLR2004
         for i in range(len(sentences) - 2):
@@ -291,8 +289,7 @@ def check_claims_cap(claims: list[Claim], max_claims: int = 20) -> list[Claim]:
 class DebateProvider(Protocol):
     """Protocol for providers during debate rounds (returns ReviewResult with raw_text)."""
 
-    def review(self, request: ReviewRequest) -> ReviewResult:
-        ...
+    def review(self, request: ReviewRequest) -> ReviewResult: ...
 
 
 # ── main controller ───────────────────────────────────────────────────────────

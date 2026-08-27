@@ -207,8 +207,7 @@ class SQLiteStore:
 
         with self._connect() as conn:
             existing = conn.execute(
-                "SELECT id, status FROM debate_runs "
-                "WHERE artifact_id = ? AND status = 'active'",
+                "SELECT id, status FROM debate_runs WHERE artifact_id = ? AND status = 'active'",
                 (artifact_id,),
             ).fetchone()
             if existing is not None:
@@ -237,8 +236,7 @@ class SQLiteStore:
         """Return the active run id for an artifact, or None."""
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT id FROM debate_runs "
-                "WHERE artifact_id = ? AND status = 'active'",
+                "SELECT id FROM debate_runs WHERE artifact_id = ? AND status = 'active'",
                 (artifact_id,),
             ).fetchone()
             return row[0] if row else None
@@ -254,8 +252,7 @@ class SQLiteStore:
         now = _now()
         with self._connect() as conn:
             conn.execute(
-                "UPDATE debate_runs SET status = 'completed', completed_at = ? "
-                "WHERE id = ?",
+                "UPDATE debate_runs SET status = 'completed', completed_at = ? WHERE id = ?",
                 (now, run_id),
             )
             if report is not None:
@@ -332,9 +329,7 @@ class SQLiteStore:
             )
             return seq
 
-    def append_events(
-        self, run_id: str, events: list[DebateEvent]
-    ) -> list[int]:
+    def append_events(self, run_id: str, events: list[DebateEvent]) -> list[int]:
         """Append multiple events atomically. Returns list of sequence numbers."""
         with self._connect() as conn:
             seqs: list[int] = []
@@ -416,8 +411,7 @@ class SQLiteStore:
         """Check for gaps in sequence numbers. Returns missing sequence numbers."""
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT sequence FROM transcript_events "
-                "WHERE run_id = ? ORDER BY sequence",
+                "SELECT sequence FROM transcript_events WHERE run_id = ? ORDER BY sequence",
                 (run_id,),
             ).fetchall()
             seqs = [r[0] for r in rows]
@@ -442,8 +436,7 @@ class SQLiteStore:
     def _next_sequence(self, conn: sqlite3.Connection, run_id: str) -> int:
         """Get the next monotonic sequence number for a run."""
         row = conn.execute(
-            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM transcript_events "
-            "WHERE run_id = ?",
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM transcript_events WHERE run_id = ?",
             (run_id,),
         ).fetchone()
         return int(row[0])
