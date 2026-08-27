@@ -1,5 +1,16 @@
 # Contributing to AdversarialDebate
 
+## Reporting Bugs
+
+Report bugs via [GitHub Issues](https://github.com/deghosal-2026/adversarial-debate/issues). Include:
+
+- AdversarialDebate version (`pip show adversarial-debate`)
+- Python version, OS, model provider
+- Steps to reproduce, expected vs actual behavior
+- Full error output and transcript if applicable
+
+Security vulnerabilities: see [SECURITY.md](SECURITY.md) for private disclosure.
+
 ## Adapter-First Contribution Path
 
 The fastest way to contribute is to write a **domain adapter** — a new normalizer that converts a different input type (architecture review, incident hypothesis, contract clause, change request) into the common review schema.
