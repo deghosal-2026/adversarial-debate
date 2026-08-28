@@ -434,14 +434,14 @@ class TestEvidenceReferenceValidation:
         assert "cl_001" not in ctx.unverified_claims
 
     def test_validate_evidence_cross_check_content_blocks(self) -> None:
-        """Cross-check refs against actual content blocks."""
+        """Cross-check refs against actual content blocks — asserts semantic correctness."""
         claims = [_make_claim("cl_001", evidence_refs=["src/file.py:10"])]
         content_blocks = [
             ContentBlock(id="src/file.py", kind="diff", name="file.py", content="", sequence=0),
         ]
         tracker = EvidenceTracker(claims, concessions=[], events=[])
         unresolved = tracker.validate_evidence(content_blocks)
-        assert isinstance(unresolved, list)
+        assert unresolved == []  # ref should resolve to the content block
 
     def test_validate_evidence_detects_unresolved_refs(self) -> None:
         """Ref with block id not in content blocks → unresolved."""

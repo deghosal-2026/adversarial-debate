@@ -49,29 +49,25 @@ def extract_issues(raw_text: str) -> list[str]:
     Simple heuristic: look for bullet points, numbered items, or
     severity-marked lines. Normalizes text before comparison.
     """
-    import re as _re
-
     issues = []
     for line in raw_text.split("\n"):
         line = line.strip()
         if not line:
             continue
-        if _re.match(r"^[\*\-]\s", line) or _re.match(r"^\d+[\.\)]\s", line):
+        if re.match(r"^[\*\-]\s", line) or re.match(r"^\d+[\.\)]\s", line):
             issues.append(_normalize_issue(line))
-        elif _re.search(r"\b(high|medium|low)\b", line, _re.IGNORECASE):
+        elif re.search(r"\b(high|medium|low)\b", line, re.IGNORECASE):
             issues.append(_normalize_issue(line))
     return issues
 
 
 def _normalize_issue(text: str) -> str:
     """Normalize issue text for comparison: lowercase, strip formatting, first sentence."""
-    import re as _re
-
     text = text.lower().strip()
-    text = _re.sub(r"^[\*\\-]\s*", "", text)  # strip bullet
-    text = _re.sub(r"^\d+[\.\)]\s*", "", text)  # strip number
-    text = _re.sub(r"^(severity:?\s*)?(high|medium|low):?\s*", "", text)  # strip severity prefix
-    text = _re.sub(r"\s+", " ", text)  # collapse whitespace
+    text = re.sub(r"^[\*\\-]\s*", "", text)  # strip bullet
+    text = re.sub(r"^\d+[\.\)]\s*", "", text)  # strip number
+    text = re.sub(r"^(severity:?\s*)?(high|medium|low):?\s*", "", text)  # strip severity prefix
+    text = re.sub(r"\s+", " ", text)  # collapse whitespace
     # Take first sentence only
     text = text.split(".")[0].strip()
     return text if len(text) > 5 else text
@@ -124,7 +120,7 @@ def main() -> None:
             data = json.loads(f.read_text())
             all_results[model][data["pr_id"]] = data
 
-    pr_ids = list(all_results[MODEL_NAMES[0]])
+    pr_ids = list({pid for m in MODEL_NAMES for pid in all_results[m]})
     print(f"Loaded results for {len(pr_ids)} PRs across {len(MODEL_NAMES)} models")
 
     # 1. Cross-model overlap

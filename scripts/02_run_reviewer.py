@@ -56,7 +56,8 @@ RETRY_DELAY = 5
 
 def compute_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     if model not in PRICING:
-        return 0.0
+        msg = f"Unknown model {model!r}. Add pricing to PRICING dict."
+        raise KeyError(msg)
     in_price, out_price = PRICING[model]
     return round((prompt_tokens / 1_000_000) * in_price + (completion_tokens / 1_000_000) * out_price, 6)
 
@@ -176,8 +177,14 @@ def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
         print(f"All {len(diffs)} PRs already done for {model}")
         return
 
-    # Cost estimate
-    est_cost = len(pending) * 0.002  # rough: ~2k tokens per PR at cheap rates
+    # Cost estimate — model-aware
+    if model in PRICING:
+        in_price, out_price = PRICING[model]
+        avg_tokens = 2000
+        avg_in = avg_out = avg_tokens / 2
+        est_cost = len(pending) * ((avg_in / 1_000_000) * in_price + (avg_out / 1_000_000) * out_price)
+    else:
+        est_cost = len(pending) * 0.002  # fallback for unknown models
     print(f"Model: {model}")
     print(f"Pending: {len(pending)}/{len(diffs)} ({len(diffs) - len(pending)} cached)")
     print(f"Est cost: ~${est_cost:.2f}")

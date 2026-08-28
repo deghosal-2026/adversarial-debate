@@ -235,7 +235,14 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
     from adversarial_debate.schemas import Review, ReviewerSession
 
     side_a = pair_data["side_a"]
-    side_b = pair_data["side_b"]
+    side_b = pair_data.get("side_b")
+    if side_b is None:
+        msg = (
+            f"side_b is null for pair {pair_data.get('pair', 'unknown')} "
+            f"PR {pair_data.get('pr_id', 'unknown')}. "
+            "Baseline pairs (single-reviewer) should use a different pipeline."
+        )
+        raise ValueError(msg)
     now = datetime.now(UTC)
 
     # Build Review objects from stored LLM output (round 0)

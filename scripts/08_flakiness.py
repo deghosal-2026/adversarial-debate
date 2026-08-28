@@ -23,7 +23,6 @@ from collections import Counter
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE / "scripts"))
 
 CORPUS_DEFAULT = BASE / "results" / "field-test" / "v0.1.0" / "corpus0.csv"
 PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
@@ -44,8 +43,16 @@ def load_corpus_ids(corpus_csv: Path) -> list[str]:
 
 
 def main() -> None:
-    from importlib import import_module
-    rd = import_module("04_run_debate")
+    # Import 04_run_debate from the scripts directory
+    scripts_dir = str(BASE / "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    try:
+        from importlib import import_module
+        rd = import_module("04_run_debate")
+    finally:
+        if scripts_dir in sys.path:
+            sys.path.remove(scripts_dir)
 
     parser = argparse.ArgumentParser(description="Flakiness sweep")
     parser.add_argument("--corpus", default=str(CORPUS_DEFAULT))
@@ -116,6 +123,19 @@ def main() -> None:
                 verdicts.append(d["verdict_kind"])
                 scores.append(d["convergence_score"])
         if not verdicts:
+            continue
+        if len(verdicts) < args.runs:
+            rows.append({
+                "pr_id": pr_id,
+                "runs": str(len(verdicts)),
+                "verdicts": ",".join(verdicts),
+                "dominant_verdict": "incomplete",
+                "stability": "0.00",
+                "avg_convergence": "0.000",
+                "score_range": "0.00-0.00",
+                "flaky": "True",
+            })
+            print(f"  {pr_id}: INCOMPLETE ({len(verdicts)}/{args.runs} runs)")
             continue
         counter = Counter(verdicts)
         most_common_verdict, count = counter.most_common(1)[0]

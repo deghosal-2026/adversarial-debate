@@ -150,10 +150,15 @@ def main() -> None:
             chunk_path = chunk_dir / f"chunk_{w:02d}.csv"
             # Resume: load existing chunk progress if present
             if chunk_path.is_file():
-                judged = {r.get("claim_id", i): r.get("human_judgment", "")
-                          for i, r in enumerate(csv.DictReader(open(chunk_path)))}
+                with open(chunk_path, newline="") as f:
+                    judged = {
+                        (r.get("pr_id", ""), r.get("pair", ""), r.get("claim_id", ""),
+                         r.get("claim_source", "")): r.get("human_judgment", "")
+                        for r in csv.DictReader(f)
+                    }
                 for r in chunk:
-                    key = r.get("claim_id", "")
+                    key = (r.get("pr_id", ""), r.get("pair", ""), r.get("claim_id", ""),
+                           r.get("claim_source", ""))
                     if not r.get("human_judgment") and key in judged and judged[key]:
                         r["human_judgment"] = judged[key]
             futures[pool.submit(judge_chunk, chunk, args.model, api_key, chunk_path, w)] = (w, chunk)
@@ -168,19 +173,17 @@ def main() -> None:
             except Exception as e:
                 print(f"  worker {worker_id}: ERROR {e}")
 
-    # Merge all chunk files into the final output
-    merged = []
-    seen_keys = set()
+    # Merge all chunk files into the final output using a dict
+    merged_dict: dict[tuple, dict] = {}
     for cf in sorted(chunk_dir.glob("chunk_*.csv")):
-        for r in csv.DictReader(open(cf)):
-            key = (r.get("pr_id", ""), r.get("pair", ""), r.get("claim_id", ""),
-                   r.get("claim_source", ""))
-            if key not in seen_keys or r.get("human_judgment"):
-                if key in seen_keys:
-                    # replace un-judged duplicate with judged version
-                    merged = [m for m in merged if (m.get("pr_id",""), m.get("pair",""), m.get("claim_id",""), m.get("claim_source","")) != key or m.get("human_judgment")]
-                seen_keys.add(key)
-                merged.append(r)
+        with open(cf, newline="") as f:
+            for r in csv.DictReader(f):
+                key = (r.get("pr_id", ""), r.get("pair", ""), r.get("claim_id", ""),
+                       r.get("claim_source", ""))
+                existing = merged_dict.get(key)
+                if existing is None or (not existing.get("human_judgment") and r.get("human_judgment")):
+                    merged_dict[key] = r
+    merged = list(merged_dict.values())
 
     # Include never-pending original rows too
     judged_keys = {(r.get("pr_id",""), r.get("pair",""), r.get("claim_id",""), r.get("claim_source","")) for r in merged}

@@ -92,7 +92,7 @@ def main() -> None:
                     "pair": pair_name,
                     "claim_source": "resolved(conceded)",
                     "claim_id": r.get("claim_id", ""),
-                    "claim_text": r.get("rationale", "")[:300],
+                    "claim_text": r.get("claim_text", r.get("rationale", ""))[:300],
                     "severity": "",
                     "human_judgment": "",  # fill: MATCH / NO_MATCH / PARTIAL
                 })

@@ -5,6 +5,7 @@ Supports malformed-output scenarios to exercise fail-closed paths in M5.
 """
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -42,9 +43,21 @@ class ScriptedReviewer:
             data = yaml.safe_load(Path(path).read_text())
         except FileNotFoundError:
             self._scenarios = []
+            print(
+                f"WARNING: scenarios file not found: {path}; "
+                f"reviewer will return empty results",
+                file=sys.stderr,
+            )
             return
         if isinstance(data, dict) and "scenarios" in data:
             self._scenarios = data["scenarios"]
+        else:
+            self._scenarios = []
+            print(
+                f"WARNING: scenarios file {path} has no 'scenarios' key; "
+                f"reviewer will return empty results",
+                file=sys.stderr,
+            )
 
     def review(self, request: ReviewRequest) -> ReviewResult:
         """Match the request against scenarios and return canned result.
