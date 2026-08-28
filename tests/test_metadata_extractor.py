@@ -234,3 +234,10 @@ def test_gh_cli_run_wraps_subprocess(monkeypatch: pytest.MonkeyPatch) -> None:
     rc, out, err = GhCli().run(["pr", "view", "x"])
     assert (rc, out, err) == (0, "ok", "")
     assert recorded["args"] == ["gh", "pr", "view", "x"]
+
+
+def test_extract_github_with_unavailable_gh() -> None:
+    """_extract_github raises actionable error when gh is not available."""
+    extractor = PrMetadataExtractor(gh=FakeGh(available=False))
+    with pytest.raises(MetadataExtractionError, match="gh CLI is not installed"):
+        extractor.extract("https://github.com/acme/widgets/pull/482", [])

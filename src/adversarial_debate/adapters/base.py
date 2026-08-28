@@ -65,13 +65,21 @@ def unregister(domain: str) -> None:
     del _REGISTRY[domain]
 
 
+def _lazy_load_builtins() -> None:
+    """Ensure built-in adapters are registered."""
+    if "pr_review" not in _REGISTRY:
+        from adversarial_debate.adapters import pr_review  # noqa: PLC0415, F401
+
+
 def available_domains() -> list[str]:
     """Sorted list of registered domain keys."""
+    _lazy_load_builtins()
     return sorted(_REGISTRY)
 
 
 def get_normalizer(domain: str) -> Normalizer:
     """Look up a registered normalizer; unknown domains list availability."""
+    _lazy_load_builtins()
     if domain not in _REGISTRY:
         msg = (
             f"unknown domain {domain!r}: no adapter is registered for it. "

@@ -3,8 +3,8 @@
 Adapter contribution protocol per PRD [05-features §5.3](docs/design/prd/05-features.md);
 adapters live in ``adversarial_debate/adapters/<domain>/``, self-register on
 import (plugin style), and require no engine changes. Built-in adapters are
-loaded lazily on first registry access; importing an adapter package directly
-also registers it.
+loaded lazily on first registry access via ``_lazy_load_builtins()`` in
+``base.py``; importing an adapter package directly also registers it.
 """
 
 from adversarial_debate.adapters.base import (

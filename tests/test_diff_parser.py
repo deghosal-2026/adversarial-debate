@@ -138,6 +138,22 @@ def test_git_binary_patch_base64_preserved() -> None:
     assert parsed.warnings == []
 
 
+def test_indented_binary_notice_preserved() -> None:
+    """Whitespace-prefixed 'Binary files ... differ' lines are preserved."""
+    binary = (
+        "diff --git a/assets/logo.png b/assets/logo.png\n"
+        "index 9a03e21..7c11d40 100644\n"
+        " Binary files a/assets/logo.png and b/assets/logo.png differ\n"
+    )
+    parsed = parse_diff(binary)
+    assert names(parsed) == ["assets/logo.png"]
+    content = parsed.blocks[0].content
+    assert "Binary files a/assets/logo.png" in content
+    # No "diff body outside any hunk skipped" warning should be emitted
+    binary_warnings = [w for w in parsed.warnings if "Binary" in w or "outside any hunk" in w]
+    assert not binary_warnings
+
+
 MALFORMED = (
     "diff --git a/ok.py b/ok.py\n"
     "--- a/ok.py\n"
