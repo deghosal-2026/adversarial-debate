@@ -724,10 +724,14 @@ class TestScriptedDebateE2E:
     def test_concessions_are_recorded(self) -> None:
         """Concessions from responses are stored in termination state."""
         provider_a = ScriptedDebateProvider(
-            responses=[ReviewResult(raw_text="CONCEDED.", claims=[], risks=[], confidence=0.5)]
+            responses=[
+                ReviewResult(raw_text="CONCEDED on cl_001.", claims=[], risks=[], confidence=0.5)
+            ]
         )
         provider_b = ScriptedDebateProvider(
-            responses=[ReviewResult(raw_text="CONCEDED.", claims=[], risks=[], confidence=0.5)]
+            responses=[
+                ReviewResult(raw_text="CONCEDED on cl_002.", claims=[], risks=[], confidence=0.5)
+            ]
         )
 
         controller = DebateController(
@@ -742,8 +746,8 @@ class TestScriptedDebateE2E:
         )
 
         state = controller.run()
-        # Should have some events with concessions
-        assert len(state.concessions) >= 0
+        # Concessions should be recorded when CONCEDED appears in responses
+        assert len(state.concessions) >= 1
 
     def test_unaddressed_objection_emits_event(self) -> None:
         """Unaddressed objections trigger a system event."""
@@ -768,8 +772,9 @@ class TestScriptedDebateE2E:
         )
 
         state = controller.run()
-        # At least one event should exist
-        assert len(state.events) >= 1
+        # Should have a system/degraded event for unaddressed objections
+        system_events = [e for e in state.events if e.kind == "system" and e.degraded]
+        assert len(system_events) >= 1
 
 
 # ── End-to-end with ScriptedReviewer (M2) ─────────────────────────────────────

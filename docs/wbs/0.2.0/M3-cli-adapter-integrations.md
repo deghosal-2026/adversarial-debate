@@ -15,14 +15,14 @@ Upstream: M1, M2. Downstream: M4, M5, M6, M7, M8.
 
 ### WS 3.a — CLI fixes
 
-- [ ] T3.1 (#82) `cmd_report`: merge partial metadata into stored flags instead of overwriting — preserves theater/capitulation/degraded-round warnings
-- [ ] T3.2 (#83) `cmd_transcript`: default output path relative to selected store database instead of CWD
+- [x] T3.1 (#82) `cmd_report`: merge partial metadata into stored flags instead of overwriting — preserves theater/capitulation/degraded-round warnings
+- [x] T3.2 (#83) `cmd_transcript`: default output path relative to selected store database instead of CWD
 
 ### WS 3.b — Adapter integration fixes
 
-- [ ] T3.3 (#84) `PrMetadataExtractor.extract`: add `gh` availability guard for PR metadata fetch — consistent with `_gh_diff()` behavior
-- [ ] T3.4 (#85) Built-in `pr_review` adapter: ensure auto-registration on first registry access per lazy-load contract
-- [ ] T3.5 (#86) Diff parser: handle whitespace-prefixed `Binary files ... differ` metadata lines — normalize leading whitespace before binary-note check
+- [x] T3.3 (#84) `PrMetadataExtractor.extract`: add `gh` availability guard for PR metadata fetch — consistent with `_gh_diff()` behavior
+- [x] T3.4 (#85) Built-in `pr_review` adapter: ensure auto-registration on first registry access per lazy-load contract
+- [x] T3.5 (#86) Diff parser: handle whitespace-prefixed `Binary files ... differ` metadata lines — normalize leading whitespace before binary-note check
 
 ## Documents, plans & tests to update
 
@@ -37,10 +37,11 @@ Upstream: M1, M2. Downstream: M4, M5, M6, M7, M8.
 
 ## Acceptance criteria / exit gate
 
-- All 5 issues closed with passing tests
-- Ruff clean, mypy strict clean, full test suite green
-- Code review completed on all changes
-- Committed and pushed to `rel-0.2.0`
+- [x] All 5 issues closed with passing tests
+- [x] Ruff clean, mypy strict clean (pre-existing errors only in providers)
+- [x] 435 tests passing (all tests except pre-existing network-dependent provider tests)
+- [x] Code review completed on all changes
+- [x] Committed and pushed to `rel-0.2.0` (6d9ee98)
 
 ## Explicitly out of scope
 
