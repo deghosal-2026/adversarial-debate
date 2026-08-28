@@ -1,0 +1,289 @@
+{
+  "additions": 1,
+  "author": {
+    "id": "MDQ6VXNlcjgwMzgxMDA=",
+    "is_bot": false,
+    "login": "lukaszwojciechowski",
+    "name": "\u0141ukasz Wojciechowski"
+  },
+  "body": "#### What type of PR is this?\r\n\r\n/kind bug\r\n/kind flake\r\n\r\n#### What this PR does / why we need it:\r\nThe test's oldInput used metav1.Now() (wall clock) for Responder[0].StartTime while input used clock.Now() (fake clock initialized from time.Now()). On Windows, where the system clock resolution is ~15ms, both calls could return the same timestamp, making oldInput and input semantically equal and triggering the \"Expected oldInput and input to differ\" assertion.\r\n\r\nUse clockBefore(time.Minute) for oldInput's StartTime to guarantee a deterministic difference between old and new state.\r\n\r\n#### Which issue(s) this PR is related to:\r\nFixes #140924\r\n\r\n#### Special notes for your reviewer:\r\n\r\n#### Does this PR introduce a user-facing change?\r\n```release-note\r\nNONE\r\n```\r\n\r\n#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:\r\n\r\n```docs\r\n\r\n```\r\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABLnduoA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-24T21:22:29Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5074546336",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLneGCA",
+      "author": {
+        "login": "lukaszwojciechowski"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/cc @atiratree ",
+      "createdAt": "2026-07-24T21:23:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5074552328",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLng9zQ",
+      "author": {
+        "login": "lukaszwojciechowski"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/sig api-machinery",
+      "createdAt": "2026-07-24T21:29:23Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5074599373",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLq2AXA",
+      "author": {
+        "login": "atiratree"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/triage accepted\r\n/priority important-soon",
+      "createdAt": "2026-07-25T10:05:47Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5078089820",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL3dLfA",
+      "author": {
+        "login": "lukaszwojciechowski"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/test pull-kubernetes-node-e2e-containerd",
+      "createdAt": "2026-07-27T12:31:07Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5091314556",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4ojag",
+      "author": {
+        "login": "atiratree"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm",
+      "createdAt": "2026-07-27T14:23:31Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5092549482",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4oqww",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 38899612bbec80e2bfd154d7729d8151636c65a7</details>",
+      "createdAt": "2026-07-27T14:23:41Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5092551363",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNcRxbA",
+      "author": {
+        "login": "lukaszwojciechowski"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "for approve\r\n/assign @liggitt \r\n/assign @deads2k ",
+      "createdAt": "2026-08-05T20:34:48Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5197033836",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOSvlEA",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-unit-windows",
+      "createdAt": "2026-08-11T13:56:59Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5254145296",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOSwCPQ",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-unit-windows-master",
+      "createdAt": "2026-08-11T13:57:37Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5254152765",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOSyqNw",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "change lgtm\r\n/lgtm\r\n/approve\r\n/hold for pass in the pull-kubernetes-unit-windows-master job\r\n\r\nonce that passes, including the test-only unit test fix in 1.37 and unholding makes sense to me",
+      "createdAt": "2026-08-11T14:01:21Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5254195767",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOSyxjA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5254195767\" title=\"Approved\">liggitt</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/140925#\" title=\"Author self-approved\">lukaszwojciechowski</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[pkg/apis/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/OWNERS)~~ [liggitt]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-11T14:01:30Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5254197644",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOS2uWw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @kubernetes/release-team-leads FYI",
+      "createdAt": "2026-08-11T14:07:04Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5254262363",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOTQmtw",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Green pull-kubernetes-unit-windows-master run\r\n\r\n/hold cancel\r\n/milestone v1.37\r\n\r\ncc @kubernetes/release-team-leads for visibility to unit-test fix to stabilize 1.37 CI on windows",
+      "createdAt": "2026-08-11T14:42:41Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140925#issuecomment-5254686391",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 1,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTQ1MjgyMjM=",
+      "name": "priority/important-soon",
+      "description": "Must be staffed and worked on either currently, or very soon, ideally in time for the next release.",
+      "color": "eb6420"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTM4MzU=",
+      "name": "sig/api-machinery",
+      "description": "Categorizes an issue or PR as relevant to SIG API Machinery.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA3OTM=",
+      "name": "size/XS",
+      "description": "Denotes a PR that changes 0-9 lines, ignoring generated files.",
+      "color": "009900"
+    },
+    {
+      "id": "MDU6TGFiZWwyNjQ3NDk5MTI=",
+      "name": "kind/flake",
+      "description": "Categorizes issue or PR as related to a flaky test.",
+      "color": "f7c6c7"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODU2NjU2",
+      "name": "triage/accepted",
+      "description": "Indicates an issue or PR is ready to be actively worked on.",
+      "color": "8fc951"
+    }
+  ],
+  "mergedAt": "2026-08-11T15:33:16Z",
+  "state": "MERGED",
+  "title": "Fix flaky TestValidateEvictionStatusUpdate/mark_active_and_started"
+}

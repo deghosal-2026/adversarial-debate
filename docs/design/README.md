@@ -20,7 +20,7 @@ The insight that justifies the project: **most AI second opinions are fake becau
 
 ## Scope Snapshot (draft, to be locked at AD-M1)
 
-- **Delivery surfaces:** Python library + CLI; FastAPI service + React side-by-side review UI
+- **Delivery surfaces:** Python library + CLI (v0.1.0). FastAPI service + React side-by-side review UI are planned for future releases (v0.3+).
 - **Isolation:** strict context separation per reviewer; revelation only after both commit; provable via transcript audit
 - **Debate:** bounded rounds (default 2-3); mandatory point-by-point response; claims/objections/concessions schema
 - **Synthesis:** convergence detection → joint verdict or disagreement report (`verdict`, `resolved`, `unresolved[].would_resolve_if`)

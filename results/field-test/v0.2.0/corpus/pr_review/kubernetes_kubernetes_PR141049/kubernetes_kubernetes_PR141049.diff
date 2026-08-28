@@ -1,0 +1,41 @@
+diff --git a/cluster/gce/config-default.sh b/cluster/gce/config-default.sh
+index 3413397f7d40b..b22869c7c6021 100755
+--- a/cluster/gce/config-default.sh
++++ b/cluster/gce/config-default.sh
+@@ -88,7 +88,7 @@ fi
+ # By default, the latest image from the image family will be used unless an
+ # explicit image will be set.
+ GCI_VERSION=${KUBE_GCI_VERSION:-}
+-IMAGE_FAMILY=${KUBE_GCE_IMAGE_FAMILY:-cos-125-lts}
++IMAGE_FAMILY=${KUBE_GCE_IMAGE_FAMILY:-cos-129-lts}
+ IMAGE_PROJECT=${KUBE_GCE_IMAGE_PROJECT:-cos-cloud}
+ export MASTER_IMAGE=${KUBE_GCE_MASTER_IMAGE:-}
+ export MASTER_IMAGE_FAMILY=${KUBE_GCE_MASTER_IMAGE_FAMILY:-${IMAGE_FAMILY}}
+diff --git a/cluster/gce/config-test.sh b/cluster/gce/config-test.sh
+index 6ce5d6920c1d2..fa7ef667ce518 100755
+--- a/cluster/gce/config-test.sh
++++ b/cluster/gce/config-test.sh
+@@ -101,7 +101,7 @@ ALLOWED_NOTREADY_NODES=${ALLOWED_NOTREADY_NODES:-$(($(get-num-nodes) / 100))}
+ # By default, the latest image from the image family will be used unless an
+ # explicit image will be set.
+ GCI_VERSION=${KUBE_GCI_VERSION:-}
+-IMAGE_FAMILY=${KUBE_GCE_IMAGE_FAMILY:-cos-125-lts}
++IMAGE_FAMILY=${KUBE_GCE_IMAGE_FAMILY:-cos-129-lts}
+ IMAGE_PROJECT=${KUBE_GCE_IMAGE_PROJECT:-cos-cloud}
+ export MASTER_IMAGE=${KUBE_GCE_MASTER_IMAGE:-}
+ export MASTER_IMAGE_FAMILY=${KUBE_GCE_MASTER_IMAGE_FAMILY:-${IMAGE_FAMILY}}
+diff --git a/test/e2e/testing-manifests/gpu/gce/nvidia-driver-installer.yaml b/test/e2e/testing-manifests/gpu/gce/nvidia-driver-installer.yaml
+index f4d1ab4c28d58..ee3196065de96 100644
+--- a/test/e2e/testing-manifests/gpu/gce/nvidia-driver-installer.yaml
++++ b/test/e2e/testing-manifests/gpu/gce/nvidia-driver-installer.yaml
+@@ -78,8 +78,8 @@ spec:
+           # Refer to details about the installer in https://cos.googlesource.com/cos/tools/+/refs/heads/master/src/cmd/cos_gpu_installer/
+           # and the COS release notes (https://cloud.google.com/container-optimized-os/docs/release-notes) to determine version COS GPU installer for a given version of COS.
+ 
+-          # Maps to gcr.io/cos-cloud/cos-gpu-installer:v2.5.8 - suitable for COS M125 as per https://cloud.google.com/container-optimized-os/docs/release-notes/m125
+-        - image: "gcr.io/cos-cloud/cos-gpu-installer:v2.5.8"
++          # Maps to gcr.io/cos-cloud/cos-gpu-installer:v2.6.8 - suitable for COS M129 as per https://cloud.google.com/container-optimized-os/docs/release-notes/m129
++        - image: "gcr.io/cos-cloud/cos-gpu-installer:v2.6.8"
+           name: nvidia-driver-installer
+           resources:
+             requests:

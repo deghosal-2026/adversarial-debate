@@ -1,0 +1,258 @@
+{
+  "additions": 13,
+  "author": {
+    "id": "MDQ6VXNlcjYzMDM4MDA0",
+    "is_bot": false,
+    "login": "Rajalakshmi-Girish",
+    "name": "Rajalakshmi Girish"
+  },
+  "body": "The Unit test `TestPreQueueingHint_Metrics` flakes when run with stress:\r\n```\r\nRajalakshmis-MacBook-Air:~ rajalakshmigirish$ git clone https://github.com/kubernetes/kubernetes\r\nCloning into 'kubernetes'...\r\nremote: Enumerating objects: 1791880, done.\r\nremote: Counting objects: 100% (47/47), done.\r\nremote: Compressing objects: 100% (41/41), done.\r\nremote: Total 1791880 (delta 18), reused 6 (delta 6), pack-reused 1791833 (from 3)\r\nReceiving objects: 100% (1791880/1791880), 1.23 GiB | 9.29 MiB/s, done.\r\nResolving deltas: 100% (1308096/1308096), done.\r\nUpdating files: 100% (31299/31299), done.\r\nRajalakshmis-MacBook-Air:~ rajalakshmigirish$ cd kubernetes/\r\nRajalakshmis-MacBook-Air:kubernetes rajalakshmigirish$ go test ./pkg/scheduler/backend/queue/ -c -count=1\r\nRajalakshmis-MacBook-Air:kubernetes rajalakshmigirish$ go install golang.org/x/tools/cmd/stress@latest\r\ngo: downloading golang.org/x/tools v0.48.0\r\n```\r\n\r\n**Stress command before fix:**\r\n```\r\nRajalakshmis-MacBook-Air:kubernetes rajalakshmigirish$ ~/go/bin/stress ./queue.test -test.run TestPreQueueingHint_Metrics\r\n\r\n/var/folders/93/0l_9wj5965dfbh89wb86ywp00000gn/T/go-stress-20260812T143357-4055101494\r\n--- FAIL: TestPreQueueingHint_Metrics (0.07s)\r\n    feature_gate.go:170: I0812 14:34:01.275976] Updated featureGates={\"SchedulerPreQueueingHints\":true}\r\n    scheduling_queue_test.go:9907: Expected narrowed count = 1, got 0\r\n    feature_gate.go:170: I0812 14:34:01.344730] Updated featureGates={\"SchedulerPreQueueingHints\":false}\r\nFAIL\r\n\r\n\r\nERROR: exit status 1\r\n\r\n5s: 303 runs so far, 1 failures (0.33%), 10 active\r\n\r\n/var/folders/93/0l_9wj5965dfbh89wb86ywp00000gn/T/go-stress-20260812T143357-1879025174\r\n--- FAIL: TestPreQueueingHint_Metrics (0.11s)\r\n    feature_gate.go:170: I0812 14:34:05.683894] Updated featureGates={\"SchedulerPreQueueingHints\":true}\r\n    scheduling_queue_test.go:9907: Expected narrowed count = 1, got 0\r\n    feature_gate.go:170: I0812 14:34:05.795685] Updated featureGates={\"SchedulerPreQueueingHints\":false}\r\nFAIL\r\n\r\n\r\nERROR: exit status 1\r\n\r\n10s: 714 runs so far, 2 failures (0.28%), 10 active\r\n15s: 1114 runs so far, 2 failures (0.18%), 10 active\r\n20s: 1508 runs so far, 2 failures (0.13%), 10 active\r\n----\r\n----\r\n2m5s: 9207 runs so far, 17 failures (0.18%), 10 active\r\n^C\r\n\r\nINFO: canceling test context: received interrupt signal\r\nRajalakshmis-MacBook-Air:kubernetes rajalakshmigirish$ uname -a\r\nDarwin Rajalakshmis-MacBook-Air.local 25.5.0 Darwin Kernel Version 25.5.0: Tue Jun  9 22:26:22 PDT 2026; root:xnu-12377.121.10~1/RELEASE_ARM64_T8132 arm64\r\nRajalakshmis-MacBook-Air:queue rajalakshmigirish$\r\n```\r\n**Stress command after fix:**\r\n```\r\nRajalakshmis-MacBook-Air:queue rajalakshmigirish$ git diff\r\ndiff --git a/pkg/scheduler/backend/queue/scheduling_queue_test.go b/pkg/scheduler/backend/queue/scheduling_queue_test.go\r\nindex e54e2b2d9f6..d3d12be3298 100644\r\n--- a/pkg/scheduler/backend/queue/scheduling_queue_test.go\r\n+++ b/pkg/scheduler/backend/queue/scheduling_queue_test.go\r\n@@ -9884,7 +9884,9 @@ func TestPreQueueingHint_Metrics(t *testing.T) {\r\n                },\r\n        }\r\n \r\n-       q := NewTestQueue(ctx, newDefaultQueueSort(), WithQueueingHintMapPerProfile(m))\r\n+       recorderCtx, stopRecorder := context.WithCancel(ctx)\r\n+       recorder := metrics.NewMetricsAsyncRecorder(10, 20*time.Microsecond, recorderCtx.Done())\r\n+       q := NewTestQueue(ctx, newDefaultQueueSort(), WithQueueingHintMapPerProfile(m), WithMetricsRecorder(recorder))\r\n \r\n        pod := st.MakePod().Name(\"pod1\").Namespace(\"ns1\").UID(\"1\").Obj()\r\n        q.Add(ctx, pod)\r\n@@ -9896,7 +9898,12 @@ func TestPreQueueingHint_Metrics(t *testing.T) {\r\n        }\r\n \r\n        q.MoveAllToActiveOrBackoffQueue(logger, nodeAdd, nil, st.MakeNode().Name(\"node1\").Obj(), nil)\r\n-       q.metricsRecorder.FlushMetrics()\r\n+\r\n+       // Stop the background flush goroutine and wait for it to exit before\r\n+       // calling FlushMetrics, so there is no concurrent drain of the channels.\r\n+       stopRecorder()\r\n+       <-recorder.IsStoppedCh\r\n+       recorder.FlushMetrics()\r\n \r\n        // Verify metric was incremented with \"narrowed\" label\r\n        narrowedCount, err := testutil.GetCounterMetricValue(metrics.PreQueueingHintEvaluations.WithLabelValues(\"testPlugin\", \"narrowed\"))\r\nRajalakshmis-MacBook-Air:queue rajalakshmigirish$ \r\nRajalakshmis-MacBook-Air:kubernetes rajalakshmigirish$ ~/go/bin/stress ./queue.test -test.run TestPreQueueingHint_Metrics\r\n5s: 290 runs so far, 0 failures, 10 active\r\n10s: 681 runs so far, 0 failures, 10 active\r\n15s: 1062 runs so far, 0 failures, 10 active\r\n20s: 1435 runs so far, 0 failures, 10 active\r\n25s: 1798 runs so far, 0 failures, 10 active\r\n30s: 2167 runs so far, 0 failures, 10 active\r\n35s: 2521 runs so far, 0 failures, 10 active\r\n40s: 2855 runs so far, 0 failures, 10 active\r\n45s: 3174 runs so far, 0 failures, 10 active\r\n50s: 3484 runs so far, 0 failures, 10 active\r\n55s: 3812 runs so far, 0 failures, 10 active\r\n1m0s: 4099 runs so far, 0 failures, 10 active\r\n1m5s: 4409 runs so far, 0 failures, 10 active\r\n1m10s: 4734 runs so far, 0 failures, 10 active\r\n1m15s: 5049 runs so far, 0 failures, 10 active\r\n1m20s: 5362 runs so far, 0 failures, 10 active\r\n1m25s: 5676 runs so far, 0 failures, 10 active\r\n1m30s: 5985 runs so far, 0 failures, 10 active\r\n1m35s: 6314 runs so far, 0 failures, 10 active\r\n1m40s: 6628 runs so far, 0 failures, 10 active\r\n^C\r\nRajalakshmis-MacBook-Air:kubernetes rajalakshmigirish$\r\n\r\n```\r\n\r\nThe test `TestPreQueueingHint_Metrics` called FlushMetrics() while the recorder's background goroutine was also draining the same channel concurrently. The goroutine could grab the counter item from the channel but get preempted before writing to Prometheus, causing the test to read a stale zero.\r\n\r\nUse a dedicated recorder passed via WithMetricsRecorder, stop its background goroutine with a cancel context, and wait on IsStoppedCh before calling FlushMetrics(). This ensures the test is the sole drainer of the channel when it reads the metric, which is the pattern IsStoppedCh was designed for.\r\n\r\n#### What type of PR is this?\r\n/kind bug\r\n/kind flake",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABOg8wDA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-08-12T15:41:33Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5269041164",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOg8w9w",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: tag `@kubernetes/sig-release-leads` on this PR and ping the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) to request adding the `v1.37.0` milestone\n\n\n---\n\nWe're also in [Test Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#test-freeze) for the `release-1.37` branch. This means every merged PR will be automatically fast-forwarded via the periodic [ci-fast-forward](https://testgrid.k8s.io/sig-release-releng-blocking#git-repo-kubernetes-fast-forward) job to the release branch of the upcoming v1.37.0 release.\n\nFast forwards are scheduled to happen every 6 hours, whereas the most recent run was: Wed Aug 12 12:38:19 UTC 2026.\n",
+      "createdAt": "2026-08-12T15:41:34Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5269041399",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOpfJLA",
+      "author": {
+        "login": "macsko"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/remove-kind bug\r\n/kind cleanup\r\n/release-note-none",
+      "createdAt": "2026-08-13T08:35:49Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5277993260",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOpia6g",
+      "author": {
+        "login": "Rajalakshmi-Girish"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/test pull-kubernetes-e2e-gce",
+      "createdAt": "2026-08-13T08:41:31Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5278046954",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPj3VjQ",
+      "author": {
+        "login": "macsko"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm\r\n/approve",
+      "createdAt": "2026-08-19T07:58:13Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "HEART",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5339207053",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPj3atQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: b2dfeadcf6abf1231a0c4fd01714cc3fe03086a3</details>",
+      "createdAt": "2026-08-19T07:58:21Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5339208373",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPj3oig",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5339207053\" title=\"Approved\">macsko</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141336#\" title=\"Author self-approved\">Rajalakshmi-Girish</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[pkg/scheduler/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/pkg/scheduler/OWNERS)~~ [macsko]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-19T07:58:41Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5339211914",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPm2GIQ",
+      "author": {
+        "login": "Rajalakshmi-Girish"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@kubernetes/sig-release-leads",
+      "createdAt": "2026-08-19T12:49:40Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5342332449",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPnlktg",
+      "author": {
+        "login": "Verolop"
+      },
+      "authorAssociation": "NONE",
+      "body": "/milestone v1.37.0",
+      "createdAt": "2026-08-19T13:52:42Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5343110326",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPnlm3g",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@Verolop: The provided milestone is not valid for this repository. Milestones in this repository: [`v1.34`, `v1.35`, `v1.36`, `v1.37`, `v1.38`, `v1.39`, `v1.40`, `v1.41`, `v1.42`, `v1.43`]\n\nUse `/milestone clear` to clear the milestone.\n\n<details>\n\nIn response to [this](https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5343110326):\n\n>/milestone v1.37.0\n\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-08-19T13:52:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5343110878",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPnl0Cg",
+      "author": {
+        "login": "Verolop"
+      },
+      "authorAssociation": "NONE",
+      "body": "/milestone v1.37",
+      "createdAt": "2026-08-19T13:53:02Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "HEART",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141336#issuecomment-5343114250",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 3,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMjI3NzU2OTE=",
+      "name": "kind/cleanup",
+      "description": "Categorizes issue or PR as related to cleaning up code, process, or technical debt.",
+      "color": "c7def8"
+    },
+    {
+      "id": "MDU6TGFiZWwxMjU1NTAyMTE=",
+      "name": "sig/scheduling",
+      "description": "Categorizes an issue or PR as relevant to SIG Scheduling.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA4OTU=",
+      "name": "size/S",
+      "description": "Denotes a PR that changes 10-29 lines, ignoring generated files.",
+      "color": "77bb00"
+    },
+    {
+      "id": "MDU6TGFiZWwyNjQ3NDk5MTI=",
+      "name": "kind/flake",
+      "description": "Categorizes issue or PR as related to a flaky test.",
+      "color": "f7c6c7"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-08-19T14:41:14Z",
+  "state": "MERGED",
+  "title": "scheduler: fix TestPreQueueingHint_Metrics race on metric flush"
+}

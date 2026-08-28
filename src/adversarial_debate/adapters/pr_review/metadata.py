@@ -124,6 +124,13 @@ class PrMetadataExtractor:
         return out
 
     def _extract_github(self, url: str, names: list[str]) -> ExtractionResult:
+        if not self._gh.available():
+            msg = (
+                "GitHub PR URL given but the gh CLI is not installed. "
+                "Install gh (https://cli.github.com), authenticate with "
+                "'gh auth login', or pass a local diff file path instead."
+            )
+            raise MetadataExtractionError(msg)
         rc, out, err = self._gh.run(["pr", "view", url, "--json", _VIEW_FIELDS])
         if rc != 0:
             msg = f"gh pr view failed (exit {rc}): {_clean(err)}"

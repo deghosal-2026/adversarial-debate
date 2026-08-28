@@ -1,0 +1,233 @@
+{
+  "additions": 4,
+  "author": {
+    "id": "MDQ6VXNlcjIzMzA0",
+    "is_bot": false,
+    "login": "dims",
+    "name": "Davanum Srinivas"
+  },
+  "body": "#### What type of PR is this?\n\n/kind bug\n/kind failing-test\n/sig cluster-lifecycle\n\n#### What this PR does / why we need it:\n\n`kube-up` on GCE resolves the master/node boot image with `gcloud compute images list --filter=\"family:<family> ...\"`, which returns *every* non-deprecated image in the family. On 2026-07-31, `cos-cloud` briefly carried two active images in `cos-129-lts` (`cos-129-19506-299-61` was published at 00:14 UTC without deprecating `-60`, then rolled back ~6h later). The two newline-joined names produced an invalid `sourceImage` URL, and every GCE e2e job (~152 builds across 51 jobs) failed cluster bring-up with:\n\n```\nERROR: (gcloud.compute.instances.create) Could not fetch resource:\n - Invalid value for field 'resource.disks[0].initializeParams.sourceImage': '.../images/cos-129-19506-299-60\ncos-129-19506-299-61'. The referenced image resource cannot be found.\nFailed to create master instance due to non-retryable error\n```\n\nSort by creation timestamp (newest first) and take exactly one image, matching the image-family \"head\" semantics, so the next multi-active-image window in `cos-cloud` (or any image project) doesn't take down all GCE e2e jobs.\n\n#### Which issue(s) this PR fixes:\n\nFixes #141080\n\n#### Special notes for your reviewer:\n\n- gcloud applies `--sort-by` before `--limit` (verified empirically: descending sort with `--limit=1` over the two 299-60/-61 images returns `-61`; ascending returns the oldest).\n- Kept `images list` rather than switching to `describe-from-family` to preserve the existing `architecture:X86_64` filter needed for mixed-arch families.\n- Verified the exact modified command against `cos-cloud` returns a single line: `cos-129-19506-299-60`.\n\n#### Does this PR introduce a user-facing change?\n\n```release-note\nNONE\n```\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABMqXyFg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Skipping CI for Draft Pull Request.\nIf you want CI signal for your change, please convert it to an actual PR.\nYou can still manually trigger a test run with `/test all`",
+      "createdAt": "2026-07-31T15:40:59Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5144703510",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMqXyqQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-31T15:41:00Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5144703657",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMqX1Yg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-07-31T15:41:04Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5144704354",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMqYktw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/assign @upodroid @aojea @ameukam ",
+      "createdAt": "2026-07-31T15:42:25Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5144716471",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMrLP3w",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @SergeyKanzhelev ",
+      "createdAt": "2026-07-31T17:10:43Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5145546719",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMrWoSA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 00f2f2b79db081c43cb90383f6130a8b2bf2ce93</details>",
+      "createdAt": "2026-07-31T17:31:09Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5145733192",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMrZJXA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141082#\" title=\"Author self-approved\">dims</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141082#pullrequestreview-4830841850\" title=\"LGTM\">SergeyKanzhelev</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141082#pullrequestreview-4830813621\" title=\"LGTM\">upodroid</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[cluster/gce/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/OWNERS)~~ [dims]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-31T17:36:12Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5145774428",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMrZXdg",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "I think this may be useful to take for 1.37. @dims wdyt?",
+      "createdAt": "2026-07-31T17:36:38Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5145778038",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMriVSg",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Agree @SergeyKanzhelev \r\n\r\ncc @kubernetes/release-team-leads \r\n\r\nThis one is a test harness only fix .. a one liner! to make sure we pick only one image. we saw this last night and was auto-fixed by gcp changes, but we should make sure this does not happen again.\r\n\r\n/milestone v1.37",
+      "createdAt": "2026-07-31T17:54:25Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141082#issuecomment-5145924938",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 2,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNTg5MDc0MDg=",
+      "name": "area/provider/gcp",
+      "description": "Issues or PRs related to gcp provider",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTQyMjI=",
+      "name": "sig/cluster-lifecycle",
+      "description": "Categorizes an issue or PR as relevant to SIG Cluster Lifecycle.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA3OTM=",
+      "name": "size/XS",
+      "description": "Denotes a PR that changes 0-9 lines, ignoring generated files.",
+      "color": "009900"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw0OTY3NTI0Njg=",
+      "name": "kind/failing-test",
+      "description": "Categorizes issue or PR as related to a consistently or frequently failing test.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWw5NTgxNzgyODY=",
+      "name": "sig/cloud-provider",
+      "description": "Categorizes an issue or PR as relevant to SIG Cloud Provider.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-07-31T18:49:43Z",
+  "state": "MERGED",
+  "title": "cluster/gce: pick exactly one image when the family lists multiple"
+}

@@ -18,7 +18,10 @@ from adversarial_debate.engine.debate_controller import (
     DebateEvent,
 )
 from adversarial_debate.schemas import Claim, ContentBlock
-from adversarial_debate.schemas.debate import ClaimStatus, Concession, Severity
+from adversarial_debate.schemas.debate import ClaimStatus, Concession, Objection, Severity
+
+CANARY_TOKEN = "CANARY_ISOLATION_CHECK_8f3a2b"
+"""Token injected into side A's output to detect isolation leaks to side B."""
 
 
 @dataclass(frozen=True)
@@ -61,6 +64,7 @@ class EvidenceContext:
     ``convergence_score`` is resolved / total (T6.2).
     ``theater`` is true when no state changes occurred (T6.3).
     ``capitulation_cascade`` is true when >=80% of round-1 concessions with no rebuttals.
+    ``canary_leak`` is true if a canary token from side A was detected in side B's output.
     """
 
     convergence_score: float
@@ -72,6 +76,7 @@ class EvidenceContext:
     claims: list[ClaimSnapshot]
     transitions: list[ResolutionEvent]
     unverified_claims: list[str]
+    canary_leak: bool = False
 
 
 # ── T6.1 (#27) EvidenceTracker ───────────────────────────────────────────────
@@ -91,11 +96,13 @@ class EvidenceTracker:
         claims: list[Claim],
         concessions: list[Concession],
         events: list[DebateEvent],
+        objections: list[Objection] | None = None,
     ) -> None:
-        """Initialize tracker with initial claims, concessions, and debate events."""
+        """Initialize tracker with initial claims, concessions, events, and objections."""
         self._initial_claims = {c.id: c for c in claims}
         self._concessions = list(concessions)
         self._events = list(events)
+        self._objections = list(objections) if objections else []
 
         # Internal accumulators
         self._transitions: list[ResolutionEvent] = []
@@ -121,6 +128,7 @@ class EvidenceTracker:
         theater = self._detect_theater()
         cascade = self._detect_capitulation_cascade()
         unverified = self._find_unverified_claims()
+        leak = self._detect_leak()
 
         return EvidenceContext(
             convergence_score=score,
@@ -132,6 +140,7 @@ class EvidenceTracker:
             claims=snapshots,
             transitions=list(self._transitions),
             unverified_claims=unverified,
+            canary_leak=leak,
         )
 
     def _apply_concessions(self) -> None:
@@ -193,11 +202,10 @@ class EvidenceTracker:
             final_status: ClaimStatus = claim.status
             t_count = sum(1 for t in self._transitions if t.claim_id == claim.id)
             if claim.id in self._resolved_ids and claim.status == "open":
-                # Check if any transition updated us
+                # Use the last transition for the final status
                 for t in self._transitions:
                     if t.claim_id == claim.id:
                         final_status = cast("ClaimStatus", t.to_status)
-                        break
 
             snapshots.append(
                 ClaimSnapshot(
@@ -229,10 +237,10 @@ class EvidenceTracker:
             # No defense, no concessions, no transitions = theater
             return all(claim.status == "open" for claim in self._initial_claims.values())
 
-        # If we have only the seeding transitions (concessions we applied)
-        # and no actual debate-driven changes
+        # If we have only seeding transitions (concessions we applied)
+        # and no actual debate-driven changes, it's still theater
         debate_transitions = self._count_debate_transitions()
-        return debate_transitions == 0 and len(self._concessions) == 0
+        return debate_transitions == 0
 
     def _detect_capitulation_cascade(self) -> bool:
         """True when >=80% of round-1 concessions with zero rebuttals (FM-2)."""
@@ -247,7 +255,9 @@ class EvidenceTracker:
         if total_round_1 < 1:
             return False
 
-        cap_ratio = total_round_1 / max(len(self._initial_claims), 1)
+        round_1_objections = [o for o in self._objections if o.round == 1]
+        denominator = max(len(round_1_objections), 1)
+        cap_ratio = total_round_1 / denominator
         has_rebuttals = any(
             e.kind == "defense"
             and e.message is not None
@@ -318,12 +328,26 @@ class EvidenceTracker:
         for claim in self._initial_claims.values():
             for ref in claim.evidence_refs:
                 # Extract block id from ref (before the colon if present)
-                block_candidate = ref.split(":")[0].strip("/.")
+                # Preserve the exact block ID — do not strip leading ./ or /
+                block_candidate = ref.split(":")[0]
                 if block_candidate not in block_ids:
                     unresolved.append(claim.id)
                     break
 
         return unresolved
+
+    def _detect_leak(self) -> bool:
+        """Detect whether side B's output contains side A's canary token.
+
+        If the canary injected into A's debate response appears in any of B's
+        defense messages, isolation has been violated. Returns True on leak.
+        """
+        for event in self._events:
+            if event.side != "B":
+                continue
+            if event.message is not None and CANARY_TOKEN in event.message.content:
+                return True
+        return False
 
 
 __all__ = [

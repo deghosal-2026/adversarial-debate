@@ -56,7 +56,7 @@ def _factory_scripted(cfg: ProviderConfig, _api_key: str) -> ScriptedReviewer:
 
 def _factory_pydantic_ai(cfg: ProviderConfig, api_key: str) -> object:
     try:
-        from adversarial_debate.providers.pydanticai_adapter import (  # noqa: PLC0415
+        from adversarial_debate.providers.pydanticai_adapter import (
             PydanticAIAdapter,
         )
 
@@ -71,7 +71,7 @@ def _factory_pydantic_ai(cfg: ProviderConfig, api_key: str) -> object:
 
 def _factory_langgraph(cfg: ProviderConfig, api_key: str) -> object:
     try:
-        from adversarial_debate.providers.langgraph_adapter import (  # noqa: PLC0415
+        from adversarial_debate.providers.langgraph_adapter import (
             LangGraphAdapter,
         )
 

@@ -14,6 +14,7 @@ import time
 import urllib.error
 import urllib.request
 from typing import Any
+from urllib.parse import urlparse, urlunparse
 
 from adversarial_debate.config import ProviderConfig  # noqa: F401
 from adversarial_debate.providers.contract import (
@@ -138,7 +139,8 @@ class OpenAITransport:
                 if exc.code in (429, 500, 502, 503, 504) and attempt < _MAX_RETRIES:
                     self._backoff(attempt)
                     continue
-                msg = f"HTTP {exc.code} from {url}: {exc.reason}"
+                safe_url = urlunparse(urlparse(url)._replace(query=""))
+                msg = f"HTTP {exc.code} from {safe_url}: {exc.reason}"
                 raise RuntimeError(msg) from exc
             except urllib.error.URLError as exc:
                 if attempt < _MAX_RETRIES:
@@ -189,6 +191,18 @@ class OpenAITransport:
             )
 
         content = (choices[0] or {}).get("message", {}).get("content", "")
+
+        # Normalize list-shaped content (OpenAI API may return list of parts)
+        if isinstance(content, list):
+            text_parts = []
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    text_parts.append(part.get("text", ""))
+                elif isinstance(part, str):
+                    text_parts.append(part)
+            content = "\n".join(text_parts) if text_parts else str(content)
+        elif not isinstance(content, str):
+            content = str(content)
 
         # Attempt structured parsing
         try:

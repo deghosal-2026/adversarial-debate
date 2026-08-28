@@ -1,0 +1,226 @@
+{
+  "additions": 53,
+  "author": {
+    "id": "MDQ6VXNlcjEzNjc3NTE5",
+    "is_bot": false,
+    "login": "bart0sh",
+    "name": "Ed Bartosh"
+  },
+  "body": "Cherry pick of #140274 on release-1.36.\n\n#140274: kubelet/dra: reset devices before processing gRPC response\n\nFor details on the cherry pick process, see the [cherry pick requests](https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md) page.\n\n#### What type of PR is this?\n/kind bug\n\n\n```release-note\nkubelet/DRA: fixed a bug where retrying a partially-failed PrepareResources caused duplicate CDI device IDs to be passed to the CRI runtime, which could cause container start to fail.\r\n```",
+  "changedFiles": 3,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABL1H97A",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-07-27T08:10:08Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5088869868",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL1IYWQ",
+      "author": {
+        "login": "bart0sh"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/assign @shivamerla @thc1006\r\nfor review",
+      "createdAt": "2026-07-27T08:10:48Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5088876633",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL1KZcg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/140955#\" title=\"Author self-approved\">bart0sh</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[pkg/kubelet/cm/dra/OWNERS](https://github.com/kubernetes/kubernetes/blob/release-1.36/pkg/kubelet/cm/dra/OWNERS)~~ [bart0sh]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-27T08:13:54Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5088909682",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL1fQlQ",
+      "author": {
+        "login": "bart0sh"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/test pull-kubernetes-integration-go-compatibility\r\n",
+      "createdAt": "2026-07-27T08:51:52Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5089251477",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL1n-6Q",
+      "author": {
+        "login": "bart0sh"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/retest",
+      "createdAt": "2026-07-27T09:05:30Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5089394409",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMdmvgw",
+      "author": {
+        "login": "bart0sh"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@thc1006 \r\n> so I'll /lgtm once they clear or are confirmed as infra.\r\n\r\nCI is green now, PTAL.",
+      "createdAt": "2026-07-30T13:17:01Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5131317123",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMgkbVg",
+      "author": {
+        "login": "thc1006"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm\n\nGreen now \u2014 the earlier unit and integration reds were infra flakes and cleared on retest. Thanks.",
+      "createdAt": "2026-07-30T17:57:11Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5134424918",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMgkgsg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 3cba58b5946f913335825be96241eb60f8a87ccd</details>",
+      "createdAt": "2026-07-30T17:57:19Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5134426290",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNMBA7w",
+      "author": {
+        "login": "bart0sh"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/assign @SergeyKanzhelev \r\nfor approval",
+      "createdAt": "2026-08-04T13:49:19Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140955#issuecomment-5179982063",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 1,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTY3MTk4Mjk=",
+      "name": "area/kubelet",
+      "description": "",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTM2NjU=",
+      "name": "sig/node",
+      "description": "Categorizes an issue or PR as relevant to SIG Node.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyMDAxNDk4MzM=",
+      "name": "release-note",
+      "description": "Denotes a PR that will be considered when it comes time to generate release notes.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA5MzQ=",
+      "name": "size/M",
+      "description": "Denotes a PR that changes 30-99 lines, ignoring generated files.",
+      "color": "eebb00"
+    },
+    {
+      "id": "MDU6TGFiZWwzMzk1MDI5MDM=",
+      "name": "cherry-pick-approved",
+      "description": "Indicates a cherry-pick PR into a release branch has been approved by the release branch manager.",
+      "color": "fef2c0"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "LA_kwDOAToIks8AAAABw96EKA",
+      "name": "wg/device-management",
+      "description": "Categorizes an issue or PR as relevant to WG Device Management.",
+      "color": "d2b48c"
+    }
+  ],
+  "mergedAt": "2026-08-08T01:02:13Z",
+  "state": "MERGED",
+  "title": "Automated cherry pick of #140274: kubelet/dra: reset devices before processing gRPC response"
+}

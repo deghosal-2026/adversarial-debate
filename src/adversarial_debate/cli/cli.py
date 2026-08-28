@@ -289,10 +289,17 @@ def cmd_report(args: argparse.Namespace) -> int:
         parsed["convergence_score"] = report_data["convergence_score"]
         parsed["resolved_count"] = report_data["resolved_count"]
         parsed["total_claims"] = report_data["total_claims"]
-        parsed["flags"] = {
-            "partial": report_data.get("partial", False),
-            "partial_reason": report_data.get("partial_reason"),
-        }
+        # Merge partial metadata into stored flags instead of overwriting
+        stored_flags = (
+            parsed.get("flags", {}).copy() if isinstance(parsed.get("flags"), dict) else {}
+        )
+        stored_flags.update(
+            {
+                "partial": report_data.get("partial", False),
+                "partial_reason": report_data.get("partial_reason"),
+            }
+        )
+        parsed["flags"] = stored_flags
         print(_format_report(parsed))
     else:
         _print_warning("report has no stored data")
@@ -324,7 +331,7 @@ def cmd_transcript(args: argparse.Namespace) -> int:
                 if event.get("content"):
                     event["content"] = "[REDACTED]"
 
-        out_path = Path(f"transcript_{args.run_id}.jsonl")
+        out_path = store_path.parent / f"transcript_{args.run_id}.jsonl"
         with out_path.open("w") as f:
             header = {
                 "type": "header",

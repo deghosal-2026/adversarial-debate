@@ -1,0 +1,178 @@
+{
+  "additions": 1,
+  "author": {
+    "id": "MDQ6VXNlcjkxNzkzMQ==",
+    "is_bot": false,
+    "login": "BenTheElder",
+    "name": "Benjamin Elder"
+  },
+  "body": "<!--  Thanks for sending a pull request!  Here are some tips for you:\r\n\r\n1. If this is your first time, please read our contributor guidelines: https://git.k8s.io/community/contributors/guide/first-contribution.md#your-first-contribution and developer guide https://git.k8s.io/community/contributors/devel/development.md#development-guide\r\n2. Please label this pull request according to what type of issue you are addressing, especially if this is a release targeted pull request. For reference on required PR/issue labels, read here:\r\nhttps://git.k8s.io/community/contributors/devel/sig-release/release.md#issuepr-kind-label\r\n3. Ensure you have added or ran the appropriate tests for your PR: https://git.k8s.io/community/contributors/devel/sig-testing/testing.md\r\n4. If you want *faster* PR reviews, read how: https://git.k8s.io/community/contributors/guide/pull-requests.md#best-practices-for-faster-reviews\r\n5. If the PR is unfinished, see how to mark it: https://git.k8s.io/community/contributors/guide/pull-requests.md#marking-unfinished-pull-requests\r\n-->\r\n\r\n#### What type of PR is this?\r\n\r\n<!--\r\nAdd one of the following kinds:\r\n/kind bug\r\n/kind dependency\r\n/kind cleanup\r\n/kind documentation\r\n/kind feature\r\n\r\nOptionally add one or more of the following kinds if applicable:\r\n/kind api-change\r\n/kind deprecation\r\n/kind failing-test\r\n/kind flake\r\n/kind regression\r\n-->\r\n/kind bug\r\n/priority critical-urgent\r\n\r\n#### What this PR does / why we need it:\r\n\r\nThis ensures all *production* binaries (not e2e test images) shipped with the release are compiled with 1.26.6, which contains CVE fixes\r\n\r\nhttps://groups.google.com/d/msgid/golang-announce/4f84cf61.EAAACRzWXsgAAAAAAAAAA-p9MGAAAYKKSQYAAAAAADE8OwBqfhLk%40mailjet.com\r\n\r\n#### Which issue(s) this PR is related to:\r\n<!--\r\nPlease link relevant issues to help with tracking.\r\n\r\nTo automatically close the linked issue(s) when this PR is merged,\r\nadd the word \"Fixes\" before the issue number or link.\r\nDo not use \"Fixes\" if the PR is of kind `failing-test` or `flake`.\r\n\r\nReference KEPs when applicable in addition to specific issues.\r\n\r\nExamples:\r\nFixes #<issue number>\r\n<issue link> (issue in a different repository)\r\nKEP: https://github.com/kubernetes/enhancements/issues/<kep-issue-number>\r\n\r\nIf there is no associated issue, then write \"N/A\".\r\n-->\r\n\r\n#### Special notes for your reviewer:\r\n\r\nNote: It's OK that we do not yet bump e.g. the kube-cross image, it will dynamically fetch 1.26.6 via GOTOOLCHAIN support.\r\nSimilary, the go-runner image we replace the binary with the canonical version built in this repo since Kubernetes 1.36. This is not true for 1.35 and back.\r\n\r\nSee also: https://github.com/kubernetes/release/issues/4270\r\n\r\n#### Does this PR introduce a user-facing change?\r\n<!--\r\nIf no, just write \"NONE\" in the release-note block below.\r\nIf yes, a release note is required:\r\nEnter your extended release note in the block below. If the PR requires additional action from users switching to the new release, include the string \"action required\".\r\n\r\nFor more information on release notes see: https://git.k8s.io/community/contributors/guide/release-notes.md\r\n-->\r\n```release-note\r\nKubernetes is now built with Go 1.26.6\r\n```\r\n\r\n#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:\r\n\r\n<!--\r\nThis section can be blank if this pull request does not require a release note.\r\n\r\nWhen adding links which point to resources within git repositories, like\r\nKEPs or supporting documentation, please reference a specific commit and avoid\r\nlinking directly to the master branch. This ensures that links reference a\r\nspecific point in time, rather than a document that may change over time.\r\n\r\nSee here for guidance on getting permanent links to files: https://help.github.com/en/articles/getting-permanent-links-to-files\r\n\r\nPlease use the following format for linking documentation:\r\n- [KEP]: <link>\r\n- [Usage]: <link>\r\n- [Other doc]: <link>\r\n-->\r\n```docs\r\n\r\n```\r\n\r\n/sig release",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABOwaZww",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: tag `@kubernetes/sig-release-leads` on this PR and ping the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) to request adding the `v1.37.0` milestone\n\n\n---\n\nWe're also in [Test Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#test-freeze) for the `release-1.37` branch. This means every merged PR will be automatically fast-forwarded via the periodic [ci-fast-forward](https://testgrid.k8s.io/sig-release-releng-blocking#git-repo-kubernetes-fast-forward) job to the release branch of the upcoming v1.37.0 release.\n\nFast forwards are scheduled to happen every 6 hours, whereas the most recent run was: Thu Aug 13 18:41:19 UTC 2026.\n",
+      "createdAt": "2026-08-13T19:12:34Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285255619",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOwkjIQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/approve\r\n/lgtm\r\n\r\ncc @kubernetes/release-team-leads \r\n\r\nI don't think this is negotiable :) we gotta go with the latest because of the number of CVE(s). Full list of things fixed is here:\r\nhttps://github.com/golang/go/milestone/441?closed=1",
+      "createdAt": "2026-08-13T19:28:15Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285421857",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOwkodQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: b17f59c616e0b5fb9103d61bcea404b2fbc24fbb</details>",
+      "createdAt": "2026-08-13T19:28:23Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285423221",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOwlIMw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @liggitt \r\n\r\n/milestone v1.37\r\n",
+      "createdAt": "2026-08-13T19:29:14Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285431347",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOwmYxw",
+      "author": {
+        "login": "BenTheElder"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/triage accepted",
+      "createdAt": "2026-08-13T19:31:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285451975",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOwnLSA",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm\r\n/approve",
+      "createdAt": "2026-08-13T19:32:34Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285464904",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABOwnRZA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141363#\" title=\"Author self-approved\">BenTheElder</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285421857\" title=\"LGTM\">dims</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285464904\" title=\"Approved\">liggitt</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[OWNERS](https://github.com/kubernetes/kubernetes/blob/master/OWNERS)~~ [BenTheElder,dims,liggitt]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-13T19:32:43Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141363#issuecomment-5285466468",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 1,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTQ1MjgwNjg=",
+      "name": "priority/critical-urgent",
+      "description": "Highest priority. Must be actively worked on as someone's top priority right now.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwyMDAxNDk4MzM=",
+      "name": "release-note",
+      "description": "Denotes a PR that will be considered when it comes time to generate release notes.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA3OTM=",
+      "name": "size/XS",
+      "description": "Denotes a PR that changes 0-9 lines, ignoring generated files.",
+      "color": "009900"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw2MTQwMjM5ODk=",
+      "name": "sig/release",
+      "description": "Categorizes an issue or PR as relevant to SIG Release.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODU2NjU2",
+      "name": "triage/accepted",
+      "description": "Indicates an issue or PR is ready to be actively worked on.",
+      "color": "8fc951"
+    }
+  ],
+  "mergedAt": "2026-08-13T20:01:37Z",
+  "state": "MERGED",
+  "title": "upgrade .go-version to 1.26.6"
+}

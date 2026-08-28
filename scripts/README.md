@@ -1,198 +1,203 @@
-# Field Test Scripts — v0.1.0
+# Field Test Scripts — v0.2.0
 
-Scripts to run the AdversarialDebate field test. Run in order.
+Scripts to run the field test. Run in order.
 
 ## Prerequisites
 
 ```bash
-# 1. gh CLI authenticated (for downloading PRs)
 gh auth login
-
-# 2. OpenRouter API key (same key for all LLMs)
 export OPENROUTER_API_KEY=sk-or-...
-
-# 3. corpus.csv at results/field-test/v0.1.0/corpus.csv
-#    Generate with: python3 scripts/gen_corpus.py --out results/field-test/v0.1.0/corpus.csv
 ```
 
 ## Workflow
 
-### Step 0 — Generate corpus (one-time)
+## Pair Roles
+
+- **Primary / positive pair:** `pair3_gpt_mistral`
+- **Validation pair:** `pair5_deepseek_mistral`
+- **Negative control:** `pair1_gpt_gemini`
+- **Homogeneous control:** `homogeneous_gpt`
+
+### Step 0 — Download corpus
+
+PR artifacts are already copied from v0.1.0. For non-PR artifacts:
 
 ```bash
-python3 scripts/gen_corpus.py --out results/field-test/v0.1.0/corpus.csv
+python3 scripts/01_download_corpus_v2.py
 ```
 
-Creates `corpus.csv` with 150 PRs from 45+ repos across 12+ languages. Fetches real PR data via `gh` CLI.
+Output: `results/field-test/v0.2.0/corpus/<domain>/<artifact_id>/`
 
-### Step 1 — Download corpus diffs (one-time)
+### Step 1 — Run LLM reviewers
+
+Run only the two full-corpus models for the primary sweep.
 
 ```bash
-python3 scripts/01_download_corpus.py --corpus results/field-test/v0.1.0/corpus.csv
-
-# Re-download everything
-python3 scripts/01_download_corpus.py --corpus results/field-test/v0.1.0/corpus.csv --force
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv
+python3 scripts/02_run_reviewer.py --model mistralai/mistral-small-3.2-24b-instruct --corpus results/field-test/v0.2.0/corpus.csv
 ```
 
-Downloads PR diffs + metadata from GitHub. Stores under `results/field-test/v0.1.0/corpus/`. Skips already-downloaded PRs.
+Do **not** run DeepSeek or Gemini against the full corpus. They are subset-only.
 
-### Step 2 — Run LLM reviewers (one model at a time)
+Resume is automatic via CHECKPOINT files.
+
+Subset corpus files:
+
+- `results/field-test/v0.2.0/validation_subset.csv` — 36 artifacts for `DeepSeek + Mistral`
+- `results/field-test/v0.2.0/negative_control_subset.csv` — 24 artifacts for `GPT + Gemini`
+
+### Step 2 — Combine into pairs
 
 ```bash
-# GPT-4o-mini (run independently, resumes from checkpoint)
-python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv
-
-# Gemini 2.5 Flash
-python3 scripts/02_run_reviewer.py --model google/gemini-2.5-flash --corpus results/field-test/v0.1.0/corpus.csv
-
-# DeepSeek
-python3 scripts/02_run_reviewer.py --model deepseek/deepseek-chat --corpus results/field-test/v0.1.0/corpus.csv
-
-# Mistral Small 3.2
-python3 scripts/02_run_reviewer.py --model mistralai/mistral-small-3.2-24b-instruct --corpus results/field-test/v0.1.0/corpus.csv
+python3 scripts/03_combine_results.py --corpus results/field-test/v0.2.0/corpus.csv
 ```
 
-Each model runs independently. If one fails, re-run that model — it skips completed PRs via a `CHECKPOINT` file.
+Pairs produced:
 
-**Useful flags:**
-```bash
-# Test on 5 PRs first (cost control)
-python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --limit 5
+| Pair | Slot A | Slot B | Coverage |
+|------|--------|--------|----------|
+| `pair3_gpt_mistral` | GPT-4o-mini | Mistral Small 3.2 | All 150 artifacts |
+| `pair5_deepseek_mistral` | DeepSeek-V3 | Mistral Small 3.2 | 30-40 validation subset |
+| `pair1_gpt_gemini` | GPT-4o-mini | Gemini 2.5 Flash | Optional 20-30 negative control |
+| `homogeneous_gpt` | GPT-4o-mini | GPT-4o-mini | 30-40 control subset |
+| `baseline_gpt` | GPT-4o-mini | — | Single pass baseline |
 
-# Use mini test corpus
-python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus_test.csv
-
-# Dry run (no API calls, shows cost estimate)
-python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --dry-run
-
-# Run a single PR (debugging)
-python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.1.0/corpus.csv --pr kubernetes_kubernetes_PR12345
-```
-
-**Output:** `results/field-test/v0.1.0/results/<model_slug>/<pr_id>.json` — raw LLM response, latency, token counts, computed cost.
-
-### Step 3 — Combine into pairs
+### Step 3 — Run debate engine
 
 ```bash
-python3 scripts/03_combine_results.py --corpus results/field-test/v0.1.0/corpus.csv
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv
 ```
 
-Maps individual model outputs into pair configurations:
-- `pair1_gpt_gemini` — GPT-4o-mini + Gemini 2.5 Flash
-- `pair2_gemini_deepseek` — Gemini 2.5 Flash + DeepSeek
-- `pair3_gpt_mistral` — GPT-4o-mini + Mistral Small
-- `pair4_gemini_mistral` — Gemini 2.5 Flash + Mistral Small
-- `pair5_deepseek_mistral` — DeepSeek + Mistral Small
-- `homogeneous_gpt` — GPT-4o-mini both sides
-- `baseline_gpt` — GPT-4o-mini single pass (no debate)
-
-### Step 4 — Run debate engine
+If the full run is too slow, keep `corpus.csv` as the canonical full corpus and run debate in parallel across these deterministic splits:
 
 ```bash
-python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv
-
-# Run a specific pair only
-python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pair pair1_gpt_gemini
-
-# Run a single PR (debugging)
-python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pr kubernetes_kubernetes_PR141554
-
-# Limit PRs (testing)
-python3 scripts/04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --limit 5
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/corpus_part1.csv
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/corpus_part2.csv
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/corpus_part3.csv
 ```
 
-Runs the full engine pipeline on paired reviews:
-- M5 DebateController (bounded rounds, point-by-point enforcement)
-- M6 EvidenceTracker (claim lifecycle, convergence score, theater detection)
-- M7 SynthesisReport (verdict/disputed, `would_resolve_if`, flags)
+Each split contains 50 artifacts. Together they cover the full `corpus.csv`.
 
-**Output:** `results/field-test/v0.1.0/debates/<pair_name>/<pr_id>/`
-- `report.json` — termination reason, convergence score, concessions, unresolved points, theater/capitulation flags, full event log
-- `transcript.jsonl` — one JSON line per debate event
+Output: `results/field-test/v0.2.0/debates/<pair_name>/<artifact_id>/`
 
-### Step 5 — Analyze and compare
+### Step 4 — Analyze
 
 ```bash
 python3 scripts/05_analyze.py
 ```
 
-Produces:
-- `results/field-test/v0.1.0/analysis/cross-model-overlap.csv` — overlap similarity per PR per model pair (substring containment)
-- `results/field-test/v0.1.0/analysis/distinctness-ratings.csv` — Issue counts per model per PR
-- `results/field-test/v0.1.0/analysis/cost-latency.csv` — Cost, latency, token totals per model
-- `results/field-test/v0.1.0/analysis/debate-summary.csv` — Per-PR debate outcomes (verdict, score, theater, concessions)
-
-Prints summary tables to stdout.
-
-### Step 6 — Ground-truth verification (LLM judge)
+### Step 5 — Ground-truth verification (PR review domain only)
 
 ```bash
-# Export comparison rows per corpus (use separate output files)
-python3 scripts/06_ground_truth.py --corpus results/field-test/v0.1.0/corpus0.csv --output analysis/ground-truth-comparison-c0.csv
-python3 scripts/06_ground_truth.py --corpus results/field-test/v0.1.0/corpus1.csv --output analysis/ground-truth-comparison.csv
-
-# Judge with LLM (parallel, resume-safe, ~$1.50 for 7,600 rows)
-python3 scripts/07_llm_judge.py --model openai/gpt-4o-mini --workers 10 --input analysis/ground-truth-comparison-c0.csv --output analysis/ground-truth-judged-c0.csv
+python3 scripts/06_ground_truth.py --corpus results/field-test/v0.2.0/corpus.csv --output analysis/ground-truth-comparison.csv
 python3 scripts/07_llm_judge.py --model openai/gpt-4o-mini --workers 10 --input analysis/ground-truth-comparison.csv --output analysis/ground-truth-judged.csv
 ```
 
-Classifies each debate claim against the known revert/advisory reason: MATCH / PARTIAL / NO_MATCH. This is the binary bar evidence (PRD §7.1). Spot-check 20 random rows before trusting.
-
-### Step 7 — Flakiness sweep
+### Step 6 — Flakiness sweep
 
 ```bash
-python3 scripts/08_flakiness.py --corpus results/field-test/v0.1.0/corpus0.csv --runs 5 --limit 10
+python3 scripts/08_flakiness.py --corpus results/field-test/v0.2.0/corpus.csv --runs 5 --limit 12
 ```
 
-Runs pair5 on N PRs × N runs, computes verdict stability per PR. A PR is flaky if <80% of runs agree on the verdict. Output: `analysis/flakiness-summary.csv`.
+### Step 7 — Expert ratings (non-PR domains only)
+
+Rate incident response, change management, and security incidents on the expert-rater triad:
+
+1. **Distinctness** — is the second side's concern materially different?
+2. **Actionability** — is the `would_resolve_if` path specific enough?
+3. **Decision impact** — would this change or delay your conclusion?
+
+## Optional Commands
+
+These are for debugging, spot checks, or subset work.
+
+```bash
+# Single domain download
+python3 scripts/01_download_corpus_v2.py --domain incident_response
+
+# Test download 5 artifacts
+python3 scripts/01_download_corpus_v2.py --limit 5
+
+# Dry-run reviewer
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --dry-run
+
+# Limited reviewer sample
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --limit 5
+
+# Single artifact reviewer
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --artifact etcd-io_etcd_PR22178
+
+# Single pair debate
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --pair pair3_gpt_mistral
+
+# Limited debate sample
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --limit 5
+
+# Validation subset: DeepSeek + Mistral
+python3 scripts/02_run_reviewer.py --model deepseek/deepseek-chat --corpus results/field-test/v0.2.0/validation_subset.csv
+python3 scripts/02_run_reviewer.py --model mistralai/mistral-small-3.2-24b-instruct --corpus results/field-test/v0.2.0/validation_subset.csv
+python3 scripts/03_combine_results.py --corpus results/field-test/v0.2.0/validation_subset.csv --pair pair5_deepseek_mistral
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/validation_subset.csv --pair pair5_deepseek_mistral
+
+# Optional negative control: GPT + Gemini
+python3 scripts/02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/negative_control_subset.csv
+python3 scripts/02_run_reviewer.py --model google/gemini-2.5-flash --corpus results/field-test/v0.2.0/negative_control_subset.csv
+python3 scripts/03_combine_results.py --corpus results/field-test/v0.2.0/negative_control_subset.csv --pair pair1_gpt_gemini
+python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/negative_control_subset.csv --pair pair1_gpt_gemini
+```
 
 ## Output Structure
 
 ```
-results/field-test/v0.1.0/
-├── corpus.csv                # input: 150 PRs
-├── corpus/                   # downloaded diffs + metadata
-├── results/                  # raw LLM outputs (per model, from step 2)
-│   ├── openai_gpt-4o-mini/
-│   ├── google_gemini-2-5-flash/
-│   ├── deepseek_deepseek-chat/
-│   └── mistralai_mistral-small-3-2-24b-instruct/
-├── pairs/                    # combined pair data (from step 3)
-│   ├── pair1_gpt_gemini/
-│   ├── pair2_gemini_deepseek/
+results/field-test/v0.2.0/
+├── corpus.csv
+├── corpus_part1.csv
+├── corpus_part2.csv
+├── corpus_part3.csv
+├── corpus/
+│   ├── pr_review/
+│   ├── incident_response/
+│   ├── change_management/
+│   └── security_incidents/
+├── results/
+│   └── <model_slug>/<artifact_id>.json
+├── pairs/
 │   ├── pair3_gpt_mistral/
-│   ├── pair4_gemini_mistral/
 │   ├── pair5_deepseek_mistral/
+│   ├── pair1_gpt_gemini/
 │   ├── homogeneous_gpt/
 │   └── baseline_gpt/
-├── debates/                  # debate engine output (from step 4)
-│   └── <pair_name>/
-│       └── <pr_id>/
-│           ├── report.json
-│           └── transcript.jsonl
-├── flakiness/                # sweep runs (from step 7)
-│   └── <pair_name>/
-│       └── <pr_id>/
-│           ├── run1/
-│           ├── run2/
-│           └── ...
-├── analysis/                 # analysis CSVs (from steps 5-7)
-│   ├── cross-model-overlap.csv
-│   ├── distinctness-ratings.csv
-│   ├── cost-latency.csv
-│   ├── debate-summary.csv
-│   ├── ground-truth-comparison[-c0].csv   # pre-judge export
-│   ├── ground-truth-judged[-c0].csv       # post-judge
-│   ├── ground-truth-final.csv             # merged both corpora
-│   └── flakiness-summary.csv
-│   └── debate-summary.csv
-└── FIELD_TEST_REPORT.md      # final report (written manually)
+├── debates/
+│   └── <pair_name>/<artifact_id>/
+│       ├── report.json
+│       └── transcript.jsonl
+├── flakiness/
+│   └── <pair_name>/<artifact_id>/
+│       ├── run1/ ... runN/
+└── analysis/
+    ├── cross-model-overlap.csv
+    ├── distinctness-ratings.csv
+    ├── cost-latency.csv
+    ├── debate-summary.csv
+    ├── ground-truth-comparison.csv
+    ├── ground-truth-judged.csv
+    └── flakiness-summary.csv
 ```
+
+## Model Strategy
+
+v0.2.0 uses a 2-model primary strategy instead of a full 4-model matrix:
+
+- **Primary pair:** GPT-4o-mini + Mistral Small 3.2 on all 150 artifacts
+- **Validation subsets:** DeepSeek-V3 + Mistral Small 3.2, GPT-4o-mini + GPT-4o-mini
+- **Optional negative control:** GPT-4o-mini + Gemini 2.5 Flash
+
+See `docs/field-test/v0.2.0/field-test-plan.md` for the rationale.
 
 ## Notes
 
-- **Keys are never saved or logged.** `OPENROUTER_API_KEY` is read from env var only.
-- **Cost is computed per PR** from token counts using the pricing table in `02_run_reviewer.py`.
-- **Resume is automatic.** Steps 2 and 4 skip already-completed PRs.
-- **Rate limiting:** 1 second sleep between API calls, 3 retries with backoff on failure.
-- **All LLM calls go through OpenRouter** (`openrouter.ai/api/v1`) with a single API key.
+- Keys are never saved or logged.
+- Cost is computed per artifact from token counts.
+- Resume is automatic via CHECKPOINT.
+- Rate limit: 1s sleep between API calls, 3 retries with backoff.
+- All LLM calls go through OpenRouter with a single API key.

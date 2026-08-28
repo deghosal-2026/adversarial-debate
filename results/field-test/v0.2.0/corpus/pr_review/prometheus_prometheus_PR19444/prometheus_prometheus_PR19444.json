@@ -1,0 +1,17 @@
+{
+  "additions": 5,
+  "author": {
+    "id": "MDQ6VXNlcjE5NTM3MQ==",
+    "is_bot": false,
+    "login": "replay",
+    "name": "Mauro Stettler"
+  },
+  "body": "Two bugs prevented the following alerts from working correctly:\n\n1. **PrometheusHAGroupNotIngestingSamples**: The `rate()` of `prometheus_tsdb_head_samples_appended_total` needs `sum without(type)` to strip the `type` label (added in Prometheus 3.x), otherwise the `and` with metadata/rules metrics fails to match and the alert never fires. The non-HA version of this alert already strips the type label correctly.\n\n2. **PrometheusHAGroupCrashlooping**: The unclean restart branch tried to and an instance-level `prometheus_tsdb_clean_start` metric with a group-level restart ratio. These have different label sets so the and was always empty. Fixed by aggregating the clean_start check by HA group labels first.\n\n```release-notes\n[BUGFIX] Mixins: Fix label mismatches that prevented PrometheusHAGroupNotIngestingSamples and PrometheusHAGroupCrashlooping from firing.\n```",
+  "changedFiles": 1,
+  "comments": [],
+  "deletions": 5,
+  "labels": [],
+  "mergedAt": "2026-08-18T07:14:06Z",
+  "state": "MERGED",
+  "title": "Fix label mismatches in HA group alerts"
+}

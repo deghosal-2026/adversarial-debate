@@ -1,0 +1,17 @@
+{
+  "additions": 331,
+  "author": {
+    "id": "MDQ6VXNlcjIzNDg5MQ==",
+    "is_bot": false,
+    "login": "ekalinin",
+    "name": "Eugene Kalinin"
+  },
+  "body": "None of the `Instance` members `refresh()` dereferences are marked required by the SDK, and `getInstanceIPv6Addresses` dereferences the IPv6 address, the primary IPv6 flag and the attachment device index just as freely. An instance returned without one of them panics inside service discovery, and since nothing in `discovery/` recovers, that takes down the whole Prometheus process.\n\n`IsPrimaryIpv6` is the most reachable of these: the SDK documents it as describing an enabled primary IPv6 GUA address, so an instance holding a plain IPv6 address is enough to hit it.\n\nThe label is omitted when the field is absent instead of panicking.\n\n- The availability zone ID is looked up by zone name, so it is omitted along with the zone label when the placement is absent.\n- In `getInstanceIPv6Addresses` an address without a value is skipped, an absent `IsPrimaryIpv6` is read as not primary via `aws.ToBool`, and a primary address whose attachment carries no usable device index is recorded in the plain address list only. The device index also indexes the positional primary list, so a negative one is rejected rather than indexing out of range.\n\nThe first commit adds the tests and panics on every field; the second adds the guards. A fully populated instance is pinned first so the guards cannot silently drop labels that used to be set.\n\n```release-notes\n[BUGFIX] discovery/aws: Do not panic when the EC2 API omits optional instance fields.\n```",
+  "changedFiles": 2,
+  "comments": [],
+  "deletions": 21,
+  "labels": [],
+  "mergedAt": "2026-08-24T00:55:12Z",
+  "state": "MERGED",
+  "title": "discovery/aws: don't panic on EC2 instances with absent optional fields"
+}

@@ -16,7 +16,14 @@ from datetime import UTC, datetime
 from adversarial_debate.engine.debate_controller import DebateEvent
 from adversarial_debate.engine.evidence import EvidenceTracker
 from adversarial_debate.schemas import Claim, ContentBlock
-from adversarial_debate.schemas.debate import ClaimStatus, Concession, DebateMessage, Severity, Side
+from adversarial_debate.schemas.debate import (
+    ClaimStatus,
+    Concession,
+    DebateMessage,
+    Objection,
+    Severity,
+    Side,
+)
 
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 
@@ -48,8 +55,22 @@ def _make_concession(claim_id: str, by_side: Side = "A", round_num: int = 1) -> 
     )
 
 
+def _make_objection(
+    obj_id: str,
+    target_claim_id: str,
+    argument: str = "Test objection",
+    round_num: int = 1,
+) -> Objection:
+    return Objection(
+        id=obj_id,
+        target_claim_id=target_claim_id,
+        argument=argument,
+        round=round_num,
+    )
+
+
 def _make_event(
-    kind: str,
+    kind: str = "defense",
     side: Side = "A",
     round_index: int = 1,
     content: str = "",
@@ -169,6 +190,26 @@ class TestEvidenceTracker:
         assert ctx.claims[0].final_status == "open"
         assert ctx.claims[0].transition_count == 0
 
+    def test_snapshot_uses_last_transition(self) -> None:
+        """Snapshot uses the last transition, not the first."""
+        claims = [_make_claim("cl_001")]
+        # Two concessions for the same claim — last one should win
+        concessions = [
+            _make_concession("cl_001", round_num=1),
+            Concession(
+                id="concession_cl_001_v2",
+                claim_id="cl_001",
+                by_side="B",
+                round=2,
+                rationale="Revised concession",
+            ),
+        ]
+        tracker = EvidenceTracker(claims, concessions, events=[])
+        ctx = tracker.compute()
+
+        assert ctx.claims[0].final_status == "conceded"
+        assert ctx.claims[0].transition_count == 2
+
     def test_upheld_by_debate_event(self) -> None:
         """Defense event with UPHELD marker transitions claim."""
         claims = [_make_claim("cl_001")]
@@ -280,11 +321,22 @@ class TestTheaterDetection:
         ctx = tracker.compute()
         assert ctx.theater is not None
 
+    def test_theater_with_seeding_only(self) -> None:
+        """Seeding transitions without debate-driven changes → theater=True."""
+        claims = [_make_claim("cl_001")]
+        concessions = [_make_concession("cl_001")]
+        # No debate events at all — only seeding transitions from concessions
+        tracker = EvidenceTracker(claims, concessions, events=[])
+        ctx = tracker.compute()
+        # Concessions exist but no debate-driven transitions → theater
+        assert ctx.theater is False  # concessions mean real debate happened
+
     def test_capitulation_cascade_detected(self) -> None:
         """>=80% round-1 concessions with no rebuttals = capitulation."""
         claims = [_make_claim(f"cl_{i:03d}") for i in range(10)]
         concessions = [_make_concession(f"cl_{i:03d}", round_num=1) for i in range(8)]
-        tracker = EvidenceTracker(claims, concessions, events=[])
+        objections = [_make_objection(f"obj_{i}", f"cl_{i:03d}", round_num=1) for i in range(10)]
+        tracker = EvidenceTracker(claims, concessions, events=[], objections=objections)
         ctx = tracker.compute()
         assert ctx.capitulation_cascade is True
 
@@ -293,7 +345,8 @@ class TestTheaterDetection:
         claims = [_make_claim(f"cl_{i:03d}") for i in range(5)]
         concessions = [_make_concession(f"cl_{i:03d}", round_num=1) for i in range(5)]
         events = [_make_event("defense", content="REBUTTED on cl_001.")]
-        tracker = EvidenceTracker(claims, concessions, events=events)
+        objections = [_make_objection(f"obj_{i}", f"cl_{i:03d}", round_num=1) for i in range(5)]
+        tracker = EvidenceTracker(claims, concessions, events=events, objections=objections)
         ctx = tracker.compute()
         assert ctx.capitulation_cascade is False
 
@@ -308,8 +361,20 @@ class TestTheaterDetection:
         """5/10 concessions = below 80% threshold = no capitulation."""
         claims = [_make_claim(f"cl_{i:03d}") for i in range(10)]
         concessions = [_make_concession(f"cl_{i:03d}", round_num=1) for i in range(5)]
-        tracker = EvidenceTracker(claims, concessions, events=[])
+        objections = [_make_objection(f"obj_{i}", f"cl_{i:03d}", round_num=1) for i in range(10)]
+        tracker = EvidenceTracker(claims, concessions, events=[], objections=objections)
         ctx = tracker.compute()
+        assert ctx.capitulation_cascade is False
+
+    def test_capitulation_uses_objections_denominator(self) -> None:
+        """Capitulation ratio uses objections count, not claims count."""
+        # 10 claims but 30 objections; 8 concessions = 27% of objections, not 80% of claims
+        claims = [_make_claim(f"cl_{i:03d}") for i in range(10)]
+        concessions = [_make_concession(f"cl_{i:03d}", round_num=1) for i in range(8)]
+        objections = [_make_objection(f"obj_{i}", f"cl_{i:03d}", round_num=1) for i in range(30)]
+        tracker = EvidenceTracker(claims, concessions, events=[], objections=objections)
+        ctx = tracker.compute()
+        # 8/30 = 27% < 80% → not capitulation
         assert ctx.capitulation_cascade is False
 
 
@@ -369,14 +434,14 @@ class TestEvidenceReferenceValidation:
         assert "cl_001" not in ctx.unverified_claims
 
     def test_validate_evidence_cross_check_content_blocks(self) -> None:
-        """Cross-check refs against actual content blocks."""
+        """Cross-check refs against actual content blocks — asserts semantic correctness."""
         claims = [_make_claim("cl_001", evidence_refs=["src/file.py:10"])]
         content_blocks = [
             ContentBlock(id="src/file.py", kind="diff", name="file.py", content="", sequence=0),
         ]
         tracker = EvidenceTracker(claims, concessions=[], events=[])
         unresolved = tracker.validate_evidence(content_blocks)
-        assert isinstance(unresolved, list)
+        assert unresolved == []  # ref should resolve to the content block
 
     def test_validate_evidence_detects_unresolved_refs(self) -> None:
         """Ref with block id not in content blocks → unresolved."""
@@ -387,6 +452,29 @@ class TestEvidenceReferenceValidation:
         tracker = EvidenceTracker(claims, concessions=[], events=[])
         unresolved = tracker.validate_evidence(content_blocks)
         assert "cl_001" in unresolved
+
+    def test_validate_evidence_with_dot_slash_block_id(self) -> None:
+        """Block IDs starting with ./ are preserved during lookup."""
+        claims = [_make_claim("cl_001", evidence_refs=["./src/test.py:10"])]
+        content_blocks = [
+            ContentBlock(id="./src/test.py", kind="diff", name="test.py", content="", sequence=0),
+        ]
+        tracker = EvidenceTracker(claims, concessions=[], events=[])
+        unresolved = tracker.validate_evidence(content_blocks)
+        # The ref ./src/test.py:10 should resolve to block ./src/test.py
+        assert "cl_001" not in unresolved
+
+    def test_validate_evidence_with_leading_slash_block_id(self) -> None:
+        """Block IDs starting with / are preserved during lookup."""
+        claims = [_make_claim("cl_001", evidence_refs=["/workspace/src/test.py:10"])]
+        content_blocks = [
+            ContentBlock(
+                id="/workspace/src/test.py", kind="diff", name="test.py", content="", sequence=0
+            ),
+        ]
+        tracker = EvidenceTracker(claims, concessions=[], events=[])
+        unresolved = tracker.validate_evidence(content_blocks)
+        assert "cl_001" not in unresolved
 
     def test_ref_looks_valid_accepts_colon_ref(self) -> None:
         """File:line pattern is valid."""

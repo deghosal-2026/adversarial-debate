@@ -127,7 +127,8 @@ def _consume_metadata_line(section: _Section, line: str) -> bool:
         section.lines.append(line)
         section.binary_mode = True
         return True
-    if line.startswith(_BINARY_NOTE_PREFIX):
+    # Normalize leading whitespace before checking for binary-note prefix
+    if line.strip().startswith(_BINARY_NOTE_PREFIX):
         section.lines.append(line)
         return True
     if section.hunk_counters is None and line.startswith(("--- ", "+++ ")):

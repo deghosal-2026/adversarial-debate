@@ -13,10 +13,10 @@ Usage:
     python3 04_analyze.py
 
 Output:
-    docs/field-test/v0.1.0/analysis/distinctness-ratings.csv
-    docs/field-test/v0.1.0/analysis/cross-model-overlap.csv
-    docs/field-test/v0.1.0/analysis/cost-latency.csv
-    docs/field-test/v0.1.0/FIELD_TEST_REPORT.md  (placeholder — written manually)
+    results/field-test/v0.2.0/analysis/distinctness-ratings.csv
+    results/field-test/v0.2.0/analysis/cross-model-overlap.csv
+    results/field-test/v0.2.0/analysis/cost-latency.csv
+    results/field-test/v0.2.0/FIELD_TEST_REPORT.md  (placeholder — written manually)
 """
 
 from __future__ import annotations
@@ -24,16 +24,15 @@ from __future__ import annotations
 import csv
 import json
 import re
-import sys
 from collections import Counter
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "results"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
-DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
-OUT_DIR = BASE / "results" / "field-test" / "v0.1.0"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
+OUT_DIR = BASE / "results" / "field-test" / "v0.2.0"
 
 MODEL_NAMES = [
     "openai_gpt-4o-mini",
@@ -49,29 +48,27 @@ def extract_issues(raw_text: str) -> list[str]:
     Simple heuristic: look for bullet points, numbered items, or
     severity-marked lines. Normalizes text before comparison.
     """
-    import re as _re
-
     issues = []
     for line in raw_text.split("\n"):
         line = line.strip()
         if not line:
             continue
-        if _re.match(r"^[\*\-]\s", line) or _re.match(r"^\d+[\.\)]\s", line):
-            issues.append(_normalize_issue(line))
-        elif _re.search(r"\b(high|medium|low)\b", line, _re.IGNORECASE):
+        if (
+            re.match(r"^[\*\-]\s", line)
+            or re.match(r"^\d+[\.\)]\s", line)
+            or re.search(r"\b(high|medium|low)\b", line, re.IGNORECASE)
+        ):
             issues.append(_normalize_issue(line))
     return issues
 
 
 def _normalize_issue(text: str) -> str:
     """Normalize issue text for comparison: lowercase, strip formatting, first sentence."""
-    import re as _re
-
     text = text.lower().strip()
-    text = _re.sub(r"^[\*\\-]\s*", "", text)  # strip bullet
-    text = _re.sub(r"^\d+[\.\)]\s*", "", text)  # strip number
-    text = _re.sub(r"^(severity:?\s*)?(high|medium|low):?\s*", "", text)  # strip severity prefix
-    text = _re.sub(r"\s+", " ", text)  # collapse whitespace
+    text = re.sub(r"^[\*\\-]\s*", "", text)  # strip bullet
+    text = re.sub(r"^\d+[\.\)]\s*", "", text)  # strip number
+    text = re.sub(r"^(severity:?\s*)?(high|medium|low):?\s*", "", text)  # strip severity prefix
+    text = re.sub(r"\s+", " ", text)  # collapse whitespace
     # Take first sentence only
     text = text.split(".")[0].strip()
     return text if len(text) > 5 else text
@@ -122,10 +119,12 @@ def main() -> None:
             if f.name == "CHECKPOINT":
                 continue
             data = json.loads(f.read_text())
-            all_results[model][data["pr_id"]] = data
+            artifact_id = data.get("artifact_id", data.get("pr_id", ""))
+            if artifact_id:
+                all_results[model][artifact_id] = data
 
-    pr_ids = list(all_results[MODEL_NAMES[0]])
-    print(f"Loaded results for {len(pr_ids)} PRs across {len(MODEL_NAMES)} models")
+    pr_ids = list({pid for m in MODEL_NAMES for pid in all_results[m]})
+    print(f"Loaded results for {len(pr_ids)} artifacts across {len(MODEL_NAMES)} models")
 
     # 1. Cross-model overlap
     overlap_rows = []
@@ -135,7 +134,7 @@ def main() -> None:
             data = all_results[model].get(pr_id)
             issues_by_model[model] = set(extract_issues(data["raw_text"])) if data else set()
 
-        row = {"pr_id": pr_id}
+        row = {"artifact_id": pr_id}
         for a in MODEL_NAMES:
             for b in MODEL_NAMES:
                 if a < b:
@@ -154,10 +153,12 @@ def main() -> None:
     # 2. Distinctness counts per model
     distinct_rows = []
     for pr_id in pr_ids:
-        row = {"pr_id": pr_id}
+        row = {"artifact_id": pr_id}
         for model in MODEL_NAMES:
             data = all_results[model].get(pr_id)
-            row[f"{model}_total_issues"] = str(len(extract_issues(data["raw_text"]))) if data else "0"
+            row[f"{model}_total_issues"] = (
+                str(len(extract_issues(data["raw_text"]))) if data else "0"
+            )
             row[f"{model}_latency_ms"] = str(data["latency_ms"]) if data else "0"
             row[f"{model}_cost"] = str(data.get("cost", 0)) if data else "0"
         distinct_rows.append(row)
@@ -200,26 +201,49 @@ def main() -> None:
         w = csv.writer(f)
         w.writerow(["model", "total_cost", "avg_latency_ms", "total_tokens", "pr_count"])
         for model, stats in model_stats.items():
-            w.writerow([model, stats["total_cost"], stats["avg_latency_ms"],
-                       stats["total_tokens"], stats["pr_count"]])
-        w.writerow(["TOTAL", round(total_cost, 4), total_latency, total_tokens,
-                   sum(s["pr_count"] for s in model_stats.values())])
+            w.writerow(
+                [
+                    model,
+                    stats["total_cost"],
+                    stats["avg_latency_ms"],
+                    stats["total_tokens"],
+                    stats["pr_count"],
+                ]
+            )
+        w.writerow(
+            [
+                "TOTAL",
+                round(total_cost, 4),
+                total_latency,
+                total_tokens,
+                sum(s["pr_count"] for s in model_stats.values()),
+            ]
+        )
     print(f"Wrote {cost_path}")
 
     # 4. Print summary
     print("\n=== COST & LATENCY SUMMARY ===")
     for model, stats in model_stats.items():
-        print(f"  {model}: {stats['total_cost']} USD, "
-              f"{stats['avg_latency_ms']}ms avg, "
-              f"{stats['total_tokens']} tokens, "
-              f"{stats['pr_count']} PRs")
+        print(
+            f"  {model}: {stats['total_cost']} USD, "
+            f"{stats['avg_latency_ms']}ms avg, "
+            f"{stats['total_tokens']} tokens, "
+            f"{stats['pr_count']} PRs"
+        )
     print(f"  TOTAL: {round(total_cost, 4)} USD")
 
-    avg_overlap = sum(float(r.get("overlap_openai_gpt-4o-mini_vs_google_gemini-2-5-flash", 0))
-                       for r in overlap_rows) / len(overlap_rows) if overlap_rows else 0
-    print(f"\n=== CROSS-MODEL OVERLAP ===")
+    avg_overlap = (
+        sum(
+            float(r.get("overlap_openai_gpt-4o-mini_vs_google_gemini-2-5-flash", 0))
+            for r in overlap_rows
+        )
+        / len(overlap_rows)
+        if overlap_rows
+        else 0
+    )
+    print("\n=== CROSS-MODEL OVERLAP ===")
     print(f"  Avg overlap (GPT-4o-mini vs Gemini): {avg_overlap:.3f}")
-    print(f"  (0 = completely different, 1 = identical)")
+    print("  (0 = completely different, 1 = identical)")
 
     # 5. Debate summary
     debate_rows = []
@@ -232,20 +256,25 @@ def main() -> None:
                 if not report_path.is_file():
                     continue
                 data = json.loads(report_path.read_text())
-                debate_rows.append({
-                    "pair": data.get("pair", ""),
-                    "pr_id": data.get("pr_id", ""),
-                    "termination": data.get("termination_reason", ""),
-                    "rounds": str(data.get("rounds_completed", 0)),
-                    "verdict_kind": data.get("verdict_kind", ""),
-                    "convergence_score": str(round(data.get("convergence_score", 0), 3)),
-                    "theater": str(data.get("theater", False)),
-                    "capitulation": str(data.get("capitulation_cascade", False)),
-                    "resolved_count": str(data.get("resolved_count", 0)),
-                    "total_claims": str(data.get("total_claims", 0)),
-                    "concessions": str(data.get("concessions_count", 0)),
-                    "unresolved": str(len(data.get("report", {}).get("unresolved", []))),
-                })
+                # Exclude zero-claim no-op rows (data integrity failures)
+                if data.get("total_claims", 0) == 0 and data.get("events_count", 0) == 0:
+                    continue
+                debate_rows.append(
+                    {
+                        "pair": data.get("pair", ""),
+                        "artifact_id": data.get("artifact_id", data.get("pr_id", "")),
+                        "termination": data.get("termination_reason", ""),
+                        "rounds": str(data.get("rounds_completed", 0)),
+                        "verdict_kind": data.get("verdict_kind", ""),
+                        "convergence_score": str(round(data.get("convergence_score", 0), 3)),
+                        "theater": str(data.get("theater", False)),
+                        "capitulation": str(data.get("capitulation_cascade", False)),
+                        "resolved_count": str(data.get("resolved_count", 0)),
+                        "total_claims": str(data.get("total_claims", 0)),
+                        "concessions": str(data.get("concessions_count", 0)),
+                        "unresolved": str(len(data.get("report", {}).get("unresolved", []))),
+                    }
+                )
 
     if debate_rows:
         debate_path = ANALYSIS_DIR / "debate-summary.csv"
@@ -253,7 +282,7 @@ def main() -> None:
             w = csv.DictWriter(f, fieldnames=debate_rows[0].keys())
             w.writeheader()
             w.writerows(debate_rows)
-        print(f"\n=== DEBATE SUMMARY ===")
+        print("\n=== DEBATE SUMMARY ===")
         print(f"  {len(debate_rows)} debates analyzed")
         verdicts = Counter(r["verdict_kind"] for r in debate_rows)
         print(f"  Verdicts: {dict(verdicts)}")

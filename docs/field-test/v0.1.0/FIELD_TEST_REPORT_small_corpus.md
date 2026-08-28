@@ -103,7 +103,7 @@ $0.45 for 18 debates + 12 single-pass reviews. Scaled to 150 PRs: ~$2.50. The ch
 
 ### 6. Cross-model overlap needs investigation
 
-0.000 overlap across all pairs is suspicious. Either models genuinely find completely different issues (strong independence signal) or the issue extraction heuristic is too crude. Manual inspection of 10 PRs on the full corpus will determine which.
+Non-zero overlap on django#18333 is suspicious. The overlap values (0.2-0.381) suggest models do surface similar issues on some PRs. The 0.000 values on other PRs may reflect extraction limitations. Manual inspection of 10 PRs on the full corpus will determine which.
 
 ---
 
@@ -234,11 +234,11 @@ No debates hit budget_exhausted or error. The 50,000 token budget was never reac
 
 | PR | GPT vs Gemini | GPT vs DeepSeek | GPT vs Mistral | Gemini vs DeepSeek | Gemini vs Mistral | DeepSeek vs Mistral |
 |----|--------------|-----------------|----------------|--------------------|--------------------|---------------------|
-| django#18333 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| django#18333 | 0.200 | 0.190 | 0.000 | 0.381 | 0.000 | 0.000 |
 | kubernetes#141554 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
 | rails#52531 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
 
-**Overlap is 0.000 across all pairs on all PRs.** Models genuinely find different issues. This is either the independence thesis working (different models surface different problems) or a limitation of the issue extraction heuristic (bullet-point parsing may miss issues not formatted as bullets). Needs validation on larger corpus with manual inspection.
+**Overlap is near-zero on most pairs but non-zero on django#18333** (e.g., 0.381 between Gemini and DeepSeek). This contradicts the prior claim of universal zero overlap. The non-zero values suggest models do occasionally surface similar issues; the 0.000 values on other PRs may reflect extraction limitations rather than true independence. Needs validation on larger corpus with manual inspection.
 
 ---
 

@@ -1,0 +1,223 @@
+{
+  "additions": 7,
+  "author": {
+    "id": "MDQ6VXNlcjIzMzA0",
+    "is_bot": false,
+    "login": "dims",
+    "name": "Davanum Srinivas"
+  },
+  "body": "**What type of PR is this?**\r\n\r\nFix for `ci-kubernetes-coverage-unit`:\r\n  - https://testgrid.k8s.io/sig-testing-canaries#ci-kubernetes-coverage-unit\r\n  - https://prow.k8s.io/?job=ci-kubernetes-coverage-unit\r\n  - https://prow.k8s.io/job-history/gs/kubernetes-ci-logs/logs/ci-kubernetes-coverage-unit\r\n\r\n/kind failing-test\r\n/sig testing\r\n\r\n**What this PR does / why we need it:**\r\n\r\n`make test KUBE_COVER=y` runs `go test` several times: once for the main workspace, once for the vendored upstream tests, and once for each module under `hack/tools`. All of the runs write to the same `-coverprofile` file, so each run overwrites the one before it. The combined profile ends up holding only the coverage of the last module, which is `hack/tools/instrumentation`.\r\n\r\nAfter the tests, `go tool cover -html` runs from the repository root and fails, because the instrumentation module is not part of the workspace there:\r\n\r\n    cover: cannot find module providing package k8s.io/kubernetes/hack/tools/instrumentation: import lookup disabled by -mod=vendor\r\n        (Go version in go.work is at least 1.14 and vendor directory exists.)\r\n\r\nThe failure has kept [ci-kubernetes-coverage-unit](https://testgrid.k8s.io/sig-testing-canaries#ci-kubernetes-coverage-unit) red on every run for at least the last 90 days ([job history](https://prow.k8s.io/job-history/gs/kubernetes-ci-logs/logs/ci-kubernetes-coverage-unit)), and the coverage data on testgrid covers only the instrumentation tool instead of the whole repository.\r\n\r\nThe fix passes the coverage flags only to the main workspace invocation. The other invocations no longer write a profile, the combined profile holds the workspace coverage again, and `go tool cover -html` works.\r\n\r\n**Which issue(s) this PR fixes:**\r\n\r\nNone\r\n\r\n**Special notes for your reviewer:**\r\n\r\nThe extra `go test` invocations came from #137105. The coverage presubmit could not catch the breakage because it always exits 0.\r\n\r\nI reproduced the failure locally at a818af18fe2 by replaying the invocations: two `go test` runs sharing one profile file produce the exact error above. With the fix, `make test KUBE_COVER=y WHAT=./pkg/util/parsers` writes a profile with the workspace coverage and the html step succeeds. `pull-kubernetes-coverage-unit` can run the full flow on this PR, but it hides failures, so please check its log rather than its result.\r\n\r\n**Does this PR introduce a user-facing change?**\r\n\r\n```release-note\r\nNONE\r\n```\r\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABM6q51w",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-08-03T02:49:41Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5161794007",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM6q7Cw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-08-03T02:49:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5161794315",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM6rTxA",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/assign @pohly @aojea @upodroid ",
+      "createdAt": "2026-08-03T02:51:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5161800644",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM6sByQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-coverage-unit ",
+      "createdAt": "2026-08-03T02:53:53Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5161812425",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM-WiXA",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-08-03T11:19:35Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5165654620",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM-p3kw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/assign @liggitt ",
+      "createdAt": "2026-08-03T11:54:24Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5165971347",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM-2qxA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: ed57c70334419dadfed1c2e789a68fd5c09ad5f5</details>",
+      "createdAt": "2026-08-03T12:15:28Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5166181060",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM-250Q",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141131#\" title=\"Author self-approved\">dims</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141131#pullrequestreview-4843886150\" title=\"LGTM\">upodroid</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[hack/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/hack/OWNERS)~~ [dims]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-03T12:15:52Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5166184913",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM_O_7A",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @kubernetes/release-team-leads \r\n\r\nfixing a CI job. no logic change in shipping code.",
+      "createdAt": "2026-08-03T12:57:12Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5166579692",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABM_PIIA",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/milestone v1.37",
+      "createdAt": "2026-08-03T12:57:24Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141131#issuecomment-5166581792",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 1,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA3OTM=",
+      "name": "size/XS",
+      "description": "Denotes a PR that changes 0-9 lines, ignoring generated files.",
+      "color": "009900"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw0ODMwNjk3NjQ=",
+      "name": "sig/testing",
+      "description": "Categorizes an issue or PR as relevant to SIG Testing.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWw0OTY3NTI0Njg=",
+      "name": "kind/failing-test",
+      "description": "Categorizes issue or PR as related to a consistently or frequently failing test.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-08-03T13:47:16Z",
+  "state": "MERGED",
+  "title": "make test: collect coverage only for the main workspace"
+}

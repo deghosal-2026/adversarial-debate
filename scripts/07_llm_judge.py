@@ -16,14 +16,13 @@ from __future__ import annotations
 import csv
 import json
 import os
-import re
 import sys
 import time
 import urllib.request
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MAX_RETRIES = 3
@@ -40,20 +39,56 @@ Rules:
 Answer with exactly one word: MATCH, PARTIAL, or NO_MATCH."""
 
 
+def _row_key(row: dict[str, str]) -> tuple[str, str, str, str]:
+    artifact_id = row.get("artifact_id", row.get("pr_id", ""))
+    return (
+        artifact_id,
+        row.get("pair", ""),
+        row.get("claim_id", ""),
+        row.get("claim_source", ""),
+    )
+
+
+def _merge_chunk_outputs(chunk_dir: Path, rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    merged_dict: dict[tuple[str, str, str, str], dict[str, str]] = {}
+    for cf in sorted(chunk_dir.glob("chunk_*.csv")):
+        with open(cf, newline="") as f:
+            for r in csv.DictReader(f):
+                key = _row_key(r)
+                existing = merged_dict.get(key)
+                if existing is None or (
+                    not existing.get("human_judgment") and r.get("human_judgment")
+                ):
+                    merged_dict[key] = r
+
+    merged = list(merged_dict.values())
+    judged_keys = {_row_key(r) for r in merged}
+    for r in rows:
+        key = _row_key(r)
+        if key not in judged_keys:
+            merged.append(r)
+    return merged
+
+
 def call_llm(model: str, known_reason: str, claim_text: str, api_key: str) -> str:
-    body = json.dumps({
-        "model": model,
-        "messages": [
-            {"role": "system", "content": JUDGE_PROMPT},
-            {"role": "user", "content": (
-                f"KNOWN REASON:\n{known_reason}\n\n"
-                f"CLAIM:\n{claim_text}\n\n"
-                f"Verdict (MATCH/PARTIAL/NO_MATCH):"
-            )},
-        ],
-        "temperature": 0.0,
-        "max_tokens": 10,
-    }).encode()
+    body = json.dumps(
+        {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": JUDGE_PROMPT},
+                {
+                    "role": "user",
+                    "content": (
+                        f"KNOWN REASON:\n{known_reason}\n\n"
+                        f"CLAIM:\n{claim_text}\n\n"
+                        f"Verdict (MATCH/PARTIAL/NO_MATCH):"
+                    ),
+                },
+            ],
+            "temperature": 0.0,
+            "max_tokens": 10,
+        }
+    ).encode()
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -77,8 +112,9 @@ def call_llm(model: str, known_reason: str, claim_text: str, api_key: str) -> st
     return "ERROR"  # unreachable
 
 
-def judge_chunk(chunk: list[dict], model: str,
-                api_key: str, chunk_path: Path, worker_id: int) -> dict:
+def judge_chunk(
+    chunk: list[dict], model: str, api_key: str, chunk_path: Path, worker_id: int
+) -> dict:
     """Judge a chunk of rows and save to its own file."""
     counts = {"MATCH": 0, "PARTIAL": 0, "NO_MATCH": 0, "ERROR": 0}
     for i, row in enumerate(chunk):
@@ -100,13 +136,11 @@ def main() -> None:
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     parser = argparse.ArgumentParser(description="LLM judge for ground truth")
-    parser.add_argument("--model", default="openai/gpt-4o-mini",
-                        help="Judge model")
+    parser.add_argument("--model", default="openai/gpt-4o-mini", help="Judge model")
     parser.add_argument("--input", default=str(ANALYSIS_DIR / "ground-truth-comparison.csv"))
     parser.add_argument("--output", default=str(ANALYSIS_DIR / "ground-truth-judged.csv"))
     parser.add_argument("--limit", type=int, default=None, help="Max rows to judge")
-    parser.add_argument("--workers", type=int, default=6,
-                        help="Parallel workers (default 6)")
+    parser.add_argument("--workers", type=int, default=6, help="Parallel workers (default 6)")
     args = parser.parse_args()
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -126,7 +160,7 @@ def main() -> None:
     # Skip already-judged rows on resume
     pending = [r for r in rows if not r.get("human_judgment")]
     if args.limit:
-        pending = pending[:args.limit]
+        pending = pending[: args.limit]
 
     total_workers = args.workers
     print(f"Judging {len(pending)}/{len(rows)} rows with {args.model} ({total_workers} workers)")
@@ -140,7 +174,7 @@ def main() -> None:
     chunk_dir.mkdir(parents=True, exist_ok=True)
 
     chunk_size = max(1, len(pending) // total_workers + 1)
-    chunks = [pending[i:i + chunk_size] for i in range(0, len(pending), chunk_size)]
+    chunks = [pending[i : i + chunk_size] for i in range(0, len(pending), chunk_size)]
 
     total_counts = {"MATCH": 0, "PARTIAL": 0, "NO_MATCH": 0, "ERROR": 0}
 
@@ -150,13 +184,29 @@ def main() -> None:
             chunk_path = chunk_dir / f"chunk_{w:02d}.csv"
             # Resume: load existing chunk progress if present
             if chunk_path.is_file():
-                judged = {r.get("claim_id", i): r.get("human_judgment", "")
-                          for i, r in enumerate(csv.DictReader(open(chunk_path)))}
+                with open(chunk_path, newline="") as f:
+                    judged = {
+                        (
+                            r.get("pr_id", ""),
+                            r.get("pair", ""),
+                            r.get("claim_id", ""),
+                            r.get("claim_source", ""),
+                        ): r.get("human_judgment", "")
+                        for r in csv.DictReader(f)
+                    }
                 for r in chunk:
-                    key = r.get("claim_id", "")
+                    key = (
+                        r.get("pr_id", ""),
+                        r.get("pair", ""),
+                        r.get("claim_id", ""),
+                        r.get("claim_source", ""),
+                    )
                     if not r.get("human_judgment") and key in judged and judged[key]:
                         r["human_judgment"] = judged[key]
-            futures[pool.submit(judge_chunk, chunk, args.model, api_key, chunk_path, w)] = (w, chunk)
+            futures[pool.submit(judge_chunk, chunk, args.model, api_key, chunk_path, w)] = (
+                w,
+                chunk,
+            )
 
         for future in as_completed(futures):
             worker_id, chunk = futures[future]
@@ -168,26 +218,7 @@ def main() -> None:
             except Exception as e:
                 print(f"  worker {worker_id}: ERROR {e}")
 
-    # Merge all chunk files into the final output
-    merged = []
-    seen_keys = set()
-    for cf in sorted(chunk_dir.glob("chunk_*.csv")):
-        for r in csv.DictReader(open(cf)):
-            key = (r.get("pr_id", ""), r.get("pair", ""), r.get("claim_id", ""),
-                   r.get("claim_source", ""))
-            if key not in seen_keys or r.get("human_judgment"):
-                if key in seen_keys:
-                    # replace un-judged duplicate with judged version
-                    merged = [m for m in merged if (m.get("pr_id",""), m.get("pair",""), m.get("claim_id",""), m.get("claim_source","")) != key or m.get("human_judgment")]
-                seen_keys.add(key)
-                merged.append(r)
-
-    # Include never-pending original rows too
-    judged_keys = {(r.get("pr_id",""), r.get("pair",""), r.get("claim_id",""), r.get("claim_source","")) for r in merged}
-    for r in rows:
-        key = (r.get("pr_id",""), r.get("pair",""), r.get("claim_id",""), r.get("claim_source",""))
-        if key not in judged_keys:
-            merged.append(r)
+    merged = _merge_chunk_outputs(chunk_dir, rows)
 
     _save(merged, out_path)
     print(f"\nDone: {total_counts}")

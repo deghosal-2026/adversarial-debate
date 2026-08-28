@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 from argparse import Namespace
 from pathlib import Path
@@ -229,7 +230,16 @@ class TestCmdTranscript:
         )
         assert rc == ExitCode.OK
         out_path = store_dir / f"transcript_{run_id}.jsonl"
-        assert out_path.is_file() or not out_path.is_file()
+        assert out_path.is_file()
+        content = out_path.read_text()
+        lines = content.strip().split("\n")
+        assert len(lines) >= 2
+        header = json.loads(lines[0])
+        assert header["type"] == "header"
+        assert header["run_id"] == run_id
+        assert header["event_count"] >= 1
+        last = json.loads(lines[-1])
+        assert last["type"] == "__completeness__"
 
 
 class TestCmdList:
@@ -465,7 +475,9 @@ class TestErrorHandling:
             path = f.name
         Path(path).unlink()
         rc = cmd_init(_make_args(path=path, force=False))
-        assert rc in (ExitCode.OK, ExitCode.USAGE)
+        # cmd_init should create the file when the path doesn't exist
+        assert rc == ExitCode.OK
+        assert Path(path).is_file()
 
 
 # ── Main entry point ─────────────────────────────────────────────────────────

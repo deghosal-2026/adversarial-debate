@@ -1,0 +1,272 @@
+{
+  "additions": 3,
+  "author": {
+    "id": "MDQ6VXNlcjIzMzA0",
+    "is_bot": false,
+    "login": "dims",
+    "name": "Davanum Srinivas"
+  },
+  "body": "#### What type of PR is this?\n\n/kind failing-test\n\n#### What this PR does / why we need it:\n\nThe tag `v20260108-7f313c340e` is no longer present in `gcr.io/k8s-staging-test-infra/gcb-docker-gcloud`, causing all `post-kubernetes-push-e2e-*-test-images` postsubmit jobs to fail immediately at image pull:\n\n```\nmanifest for gcr.io/k8s-staging-test-infra/gcb-docker-gcloud@sha256:4d778a... not found: manifest unknown\n```\n\nExample failure: https://storage.googleapis.com/kubernetes-ci-logs/logs/post-kubernetes-push-e2e-agnhost-test-images/2082475251370823680/build-log.txt\n\nUpdates `test/images/cloudbuild.yaml` to the latest available tag `v20260729-0b834bafc6` (built 2026-07-29).\n\n#### Which issue(s) this PR is related to:\n\nN/A\n\n#### Special notes for your reviewer:\n\nOne-line change, no logic change \u2014 just bumping the builder image tag + digest.\n\n#### Does this PR introduce a user-facing change?\n\n```release-note\nNONE\n```\n\n#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:\n\n```docs\n\n```",
+  "changedFiles": 3,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABMTc5kQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-07-29T16:30:15Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120670097",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTc7Kg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-29T16:30:17Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120670506",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTdR6g",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/sig testing\r\n/assign @liggitt @upodroid @aojea @pohly ",
+      "createdAt": "2026-07-29T16:30:44Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120676330",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTd-PA",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/kind cleanup\r\n/lgtm\r\n/approve",
+      "createdAt": "2026-07-29T16:31:43Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120687676",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTeErw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: b6d5eec710b2093c717ed06b41f0acb7b78287f7</details>",
+      "createdAt": "2026-07-29T16:31:52Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120689327",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTeeUg",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/kind bug\r\n/kind cleanup\r\n\r\nwe need to build agnhost and we are failing to build it as image has been pruned\r\n\r\ncc @kubernetes/release-team-leads ",
+      "createdAt": "2026-07-29T16:32:28Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120695890",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTfXXg",
+      "author": {
+        "login": "upodroid"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Can we update it for pause as well?",
+      "createdAt": "2026-07-29T16:33:56Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120710494",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTfutg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: fde82a7581b10931dc30b0ac42881416d41c111f</details>",
+      "createdAt": "2026-07-29T16:34:32Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120716470",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTf1sg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141034#\" title=\"Author self-approved\">dims</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120687676\" title=\"Approved\">liggitt</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141034#pullrequestreview-4810689148\" title=\"LGTM\">upodroid</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[build/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/build/OWNERS)~~ [dims,liggitt]\n- ~~[test/images/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/test/images/OWNERS)~~ [dims,liggitt]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-29T16:34:42Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120718258",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTjfHw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/milestone v1.37",
+      "createdAt": "2026-07-29T16:40:27Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120778015",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMTlkfA",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @kubernetes/release-team-leads \r\n\r\n",
+      "createdAt": "2026-07-29T16:43:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5120812156",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMT4qRg",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-07-29T17:12:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141034#issuecomment-5121124934",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 3,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMDUxNTI3MTc=",
+      "name": "area/test",
+      "description": "",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwxMjI3NzU2OTE=",
+      "name": "kind/cleanup",
+      "description": "Categorizes issue or PR as related to cleaning up code, process, or technical debt.",
+      "color": "c7def8"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA3OTM=",
+      "name": "size/XS",
+      "description": "Denotes a PR that changes 0-9 lines, ignoring generated files.",
+      "color": "009900"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw0ODMwNjk3NjQ=",
+      "name": "sig/testing",
+      "description": "Categorizes an issue or PR as relevant to SIG Testing.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-07-29T17:36:01Z",
+  "state": "MERGED",
+  "title": "Update gcb-docker-gcloud to v20260729-0b834bafc6"
+}

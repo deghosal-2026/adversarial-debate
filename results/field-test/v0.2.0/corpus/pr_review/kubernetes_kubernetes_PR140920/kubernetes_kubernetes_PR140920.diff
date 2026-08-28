@@ -1,0 +1,88 @@
+diff --git a/.go-version b/.go-version
+index ac2f7f3a47d3e..8fe00a57fe1d3 100644
+--- a/.go-version
++++ b/.go-version
+@@ -1 +1 @@
+-1.25.12
++1.26.5
+diff --git a/build/build-image/cross/VERSION b/build/build-image/cross/VERSION
+index 4c0e13e6b7c1c..4a8b098e9e287 100644
+--- a/build/build-image/cross/VERSION
++++ b/build/build-image/cross/VERSION
+@@ -1 +1 @@
+-v1.35.0-go1.25.12-bullseye.0
++v1.35.0-go1.26.5-bullseye.0
+diff --git a/build/common.sh b/build/common.sh
+index 66ffd87702fb7..51dc264b9512e 100755
+--- a/build/common.sh
++++ b/build/common.sh
+@@ -80,8 +80,8 @@ readonly REMOTE_OUTPUT_BINPATH="${REMOTE_OUTPUT_SUBPATH}/bin"
+ readonly REMOTE_OUTPUT_GOPATH="${REMOTE_OUTPUT_SUBPATH}/go"
+ 
+ # These are the default versions (image tags) for their respective base images.
+-readonly __default_distroless_iptables_version=v0.8.14
+-readonly __default_go_runner_version=v2.4.0-go1.25.12-bookworm.0
++readonly __default_distroless_iptables_version=v0.9.6
++readonly __default_go_runner_version=v2.4.0-go1.26.5-bookworm.0
+ readonly __default_setcap_version=bookworm-v1.0.6
+ 
+ # The default image for all binaries which are dynamically linked.
+diff --git a/build/dependencies.yaml b/build/dependencies.yaml
+index a34fc880a7803..b99692942d6ff 100644
+--- a/build/dependencies.yaml
++++ b/build/dependencies.yaml
+@@ -122,7 +122,7 @@ dependencies:
+   # should also be updated, but go-runner is much harder to exploit and has
+   # far less relevancy to go updates for Kubernetes more generally.
+   - name: "registry.k8s.io/kube-cross: dependents"
+-    version: v1.35.0-go1.25.12-bullseye.0
++    version: v1.35.0-go1.26.5-bullseye.0
+     refPaths:
+     - path: build/build-image/cross/VERSION
+ 
+@@ -132,11 +132,11 @@ dependencies:
+   # This entry is a stub of the major version to allow dependency checks to
+   # pass when building Kubernetes using a pre-release of Golang.
+   - name: "golang: 1.<major>"
+-    version: 1.25
++    version: 1.26
+     refPaths:
+     - path: build/build-image/cross/VERSION
+-    - path: hack/lib/golang.sh
+-      match: minimum_go_version=go([0-9]+\.[0-9]+)
++    #- path: hack/lib/golang.sh
++    #  match: minimum_go_version=go([0-9]+\.[0-9]+)
+ 
+   # Base images
+   - name: "registry.k8s.io/debian-base: dependents"
+@@ -170,7 +170,7 @@ dependencies:
+       match: registry\.k8s\.io\/build-image\/debian-base:[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+ 
+   - name: "registry.k8s.io/distroless-iptables: dependents"
+-    version: v0.8.14
++    version: v0.9.6
+     refPaths:
+     - path: build/common.sh
+       match: __default_distroless_iptables_version=
+@@ -178,7 +178,7 @@ dependencies:
+       match: configs\[DistrolessIptables\] = Config{list\.BuildImageRegistry, "distroless-iptables", "v([0-9]+)\.([0-9]+)\.([0-9]+)"}
+ 
+   - name: "registry.k8s.io/go-runner: dependents"
+-    version: v2.4.0-go1.25.12-bookworm.0
++    version: v2.4.0-go1.26.5-bookworm.0
+     refPaths:
+     - path: build/common.sh
+       match: __default_go_runner_version=
+diff --git a/test/utils/image/manifest.go b/test/utils/image/manifest.go
+index c4094f1591774..1dc4f90997385 100644
+--- a/test/utils/image/manifest.go
++++ b/test/utils/image/manifest.go
+@@ -214,7 +214,7 @@ func initImageConfigs(list RegistryList) (map[ImageID]Config, map[ImageID]Config
+ 	configs[APIServer] = Config{list.PromoterE2eRegistry, "sample-apiserver", "1.29.2"}
+ 	configs[AppArmorLoader] = Config{list.PromoterE2eRegistry, "apparmor-loader", "1.4"}
+ 	configs[BusyBox] = Config{list.PromoterE2eRegistry, "busybox", "1.37.0-1"}
+-	configs[DistrolessIptables] = Config{list.BuildImageRegistry, "distroless-iptables", "v0.8.14"}
++	configs[DistrolessIptables] = Config{list.BuildImageRegistry, "distroless-iptables", "v0.9.6"}
+ 	configs[Etcd] = Config{list.GcEtcdRegistry, "etcd", "3.6.6-0"}
+ 	configs[InvalidRegistryImage] = Config{list.InvalidRegistry, "alpine", "3.1"}
+ 	configs[IpcUtils] = Config{list.PromoterE2eRegistry, "ipc-utils", "1.3"}

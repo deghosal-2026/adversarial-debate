@@ -42,7 +42,7 @@ class PydanticAIAdapter:
         if self._agent is not None:
             return
         try:
-            from pydantic_ai import Agent  # noqa: PLC0415
+            from pydantic_ai import Agent
         except ImportError:
             msg = (
                 "pydantic_ai is not installed. Install with: uv add adversarial-debate[pydanticai]"

@@ -89,7 +89,7 @@ class ReviewerSessionManager:
         self._sessions: dict[str, ReviewerSession] = {}
         self._initialized = False
 
-    def create_sessions(  # noqa: PLR0913, PLR0917
+    def create_sessions(  # noqa: PLR0913
         self,
         artifact_id: str,
         provider_a: str,

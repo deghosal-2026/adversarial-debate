@@ -19,17 +19,20 @@
 |-------|-------------|-------------|-----------|
 | Routine (low-risk PR, standard CR) | Cheap pair (e.g., Haiku + Flash) | <$0.05 | Cost tiering: cheap pair for first pass; frontier pair only if first-round disagreement |
 | Standard (medium-risk PR, contract review) | Mid-tier pair | <$0.50 | Budget ceiling per artifact; partial report if exhausted |
-| High-stakes (security PR, MSA before signature) | Frontier pair | <$5.00 | No ceiling — buyer opts in via `--no-budget-limit` |
+| High-stakes (security PR, MSA before signature) | Frontier pair | <$5.00 | No ceiling — buyer opts in with a high budget limit |
 
 **Engine behavior on budget exhaustion:** debate pauses at the current round; engine emits a `partial` disagreement report labeled `incomplete: budget_exhausted`. Never silent truncation.
 
-## 15.3 Throughput targets (batch mode)
+> **Note on cost tiering and `--no-budget-limit`:** These are planned for a future release. The v0.1.0 CLI exposes `--budget` but not `--no-budget-limit` or automatic cost tiering between pairs. Cost tiering logic will be implemented in a later version.
+
+## 15.3 Throughput targets
 
 | Mode | Target | Bottleneck |
 |------|--------|------------|
 | CLI single artifact | 1 debate at a time | Provider rate limits |
-| Batch CLI (`advdeb review --batch dir/`) | 10 concurrent debates | Configurable concurrency; bounded by provider rate limits |
-| HTTP service | 50 concurrent debates | FastAPI worker pool; SQLite write-lock is the ceiling (Postgres removes this in v0.3) |
+| Batch CLI | 10 concurrent debates | Configurable concurrency; bounded by provider rate limits |
+
+> **Note on HTTP service:** A FastAPI-based HTTP service with 50+ concurrent debate support is planned for a future release (v0.3+). The current v0.1.0 codebase is CLI/library-only.
 
 ## 15.4 What we do NOT promise
 

@@ -27,6 +27,9 @@ from adversarial_debate.schemas import (
 )
 from adversarial_debate.schemas.debate import Concession
 
+CANARY_TOKEN = "CANARY_ISOLATION_CHECK_8f3a2b"
+"""Token injected into side A's output to detect isolation leaks to side B."""
+
 TerminationReason = Literal[
     "rounds_exhausted",
     "all_resolved",
@@ -85,6 +88,7 @@ class TerminationState:
     claims_a: list[Claim]
     claims_b: list[Claim]
     concessions: list[Concession]
+    objections: list[Objection] = field(default_factory=list)
 
 
 # ── prompt builder ────────────────────────────────────────────────────────────
@@ -180,10 +184,11 @@ def validate_point_by_point(
     ``max_repair_attempts``); after that the round is marked error.
 
     Detection is case-insensitive and checks for ``CONCEDED``, ``REBUTTED``,
-    ``CARRIED`` markers adjacent to objection references.
+    ``CARRIED`` markers adjacent to each specific objection reference.
     """
     addressed = [AddressableObjection(o) for o in outstanding_objections]
     response_upper = response_text.upper()
+    lines = response_text.split("\n")
 
     for obj in addressed:
         obj_id_upper = obj.objection.id.upper()
@@ -192,21 +197,36 @@ def validate_point_by_point(
         if not obj_ref_found:
             continue
 
-        # Scan for which keyword appears near this objection reference.
-        # For each keyword, check if the keyword text is in the response.
-        # For simplicity, the first keyword found in the response determines
-        # the verdict for all referenced objections.
-        if "CONCEDED" in response_upper:
+        # Extract the region of the response pertaining to this specific objection
+        obj_region = _extract_region_for_objection(lines, obj.objection)
+        obj_region_upper = obj_region.upper()
+
+        if "CONCEDED" in obj_region_upper:
             obj.addressed = True
             obj.response_type = "conceded"
-        elif "REBUTTED" in response_upper:
+        elif "REBUTTED" in obj_region_upper:
             obj.addressed = True
             obj.response_type = "rebutted"
-        elif "CARRIED" in response_upper:
+        elif "CARRIED" in obj_region_upper:
             obj.addressed = True
             obj.response_type = "carried"
 
     return addressed
+
+
+def _extract_region_for_objection(lines: list[str], objection: Objection) -> str:
+    """Extract the portion of the response that pertains to a specific objection.
+
+    Finds the line(s) mentioning the objection ID or target claim ID and
+    returns the relevant text region.
+    """
+    obj_id = objection.id
+    target_id = objection.target_claim_id
+    matching_lines: list[str] = []
+    for line in lines:
+        if obj_id in line or target_id in line:
+            matching_lines.append(line)
+    return "\n".join(matching_lines) if matching_lines else ""
 
 
 # ── degradation detector ──────────────────────────────────────────────────────
@@ -267,12 +287,16 @@ class TokenBudget:
 
     limit: int
     remaining: int = field(compare=False, default=0)
-    exhausted: bool = False
 
     def __post_init__(self) -> None:
         """Initialize remaining from limit if not explicitly set."""
         if object.__getattribute__(self, "remaining") <= 0 and self.limit > 0:
             object.__setattr__(self, "remaining", self.limit)
+
+    @property
+    def exhausted(self) -> bool:
+        """True if the budget has been fully consumed."""
+        return self.remaining <= 0
 
 
 def check_claims_cap(claims: list[Claim], max_claims: int = 20) -> list[Claim]:
@@ -317,7 +341,7 @@ class DebateController:
         state = controller.run()
     """
 
-    def __init__(  # noqa: D107, PLR0913, PLR0917
+    def __init__(  # noqa: D107, PLR0913
         self,
         provider_a: DebateProvider,
         provider_b: DebateProvider,
@@ -427,7 +451,7 @@ class DebateController:
 
         return round_events
 
-    def _run_side_turn(  # noqa: PLR0913, PLR0917
+    def _run_side_turn(  # noqa: PLR0913
         self,
         side: Side,
         round_index: int,
@@ -447,7 +471,7 @@ class DebateController:
         # `_outstanding_for_side(side)` already returns the correct set;
         # no further filtering against other_claims is needed (that would
         # incorrectly require target_claim_id to belong to the opposing side).
-        outstanding_objections = self._outstanding_for_side(side)
+        outstanding_objections = self._outstanding_for_side(side, round_index)
 
         ctx = RoundContext(
             own_review=own_review,
@@ -502,11 +526,16 @@ class DebateController:
             )
             return turn_events
 
-        # Detect degradation
+        # Detect degradation (use original text, not canary-injected)
         degraded = detect_degradation(result.raw_text)
 
+        # Inject canary token into side A's output for isolation leak detection
+        canary_text = result.raw_text
+        if side == "A":
+            canary_text = result.raw_text + f"\n\n{CANARY_TOKEN}"
+
         # Validate point-by-point
-        addressed = validate_point_by_point(result.raw_text, outstanding_objections)
+        addressed = validate_point_by_point(canary_text, outstanding_objections)
 
         unaddressed = [a for a in addressed if not a.addressed]
         if unaddressed:
@@ -544,23 +573,24 @@ class DebateController:
                     )
                 )
 
-        # Mark conceded claims as resolved
+        # Mark conceded claims as resolved — only update the responding side's claims
         if concessioned_ids:
-            self._claims_a = [
+            target_claims = self._claims_a if side == "A" else self._claims_b
+            updated = [
                 c.model_copy(update={"status": "conceded"}) if c.id in concessioned_ids else c
-                for c in self._claims_a
+                for c in target_claims
             ]
-            self._claims_b = [
-                c.model_copy(update={"status": "conceded"}) if c.id in concessioned_ids else c
-                for c in self._claims_b
-            ]
+            if side == "A":
+                self._claims_a = updated
+            else:
+                self._claims_b = updated
 
         # Build the DebateMessage
         msg = DebateMessage(
             id=f"msg_{side}_r{round_index}",
             side=side,
             kind="defense",
-            content=result.raw_text,
+            content=canary_text,
         )
 
         turn_events.append(
@@ -575,8 +605,12 @@ class DebateController:
 
         return turn_events
 
-    def _outstanding_for_side(self, side: Side) -> list[Objection]:
-        """Return objections targeting claims from the given side."""
+    def _outstanding_for_side(self, side: Side, current_round: int = 1) -> list[Objection]:
+        """Return objections targeting claims from the given side.
+
+        Only includes objections from the current round or later — objections
+        already addressed in previous rounds are excluded.
+        """
         if side == "A":
             target_ids = {c.id for c in self._claims_a}
         else:
@@ -593,6 +627,7 @@ class DebateController:
             if o.target_claim_id in target_ids
             and o.target_claim_id not in already_conceded_ids
             and o.target_claim_id not in resolved_claim_ids
+            and o.round >= current_round
         ]
 
     def _all_claims_resolved(self) -> bool:
@@ -615,6 +650,7 @@ class DebateController:
             claims_a=list(self._claims_a),
             claims_b=list(self._claims_b),
             concessions=list(self._concessions),
+            objections=list(self._objections),
         )
 
 

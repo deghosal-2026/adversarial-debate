@@ -45,29 +45,37 @@ api_key = "local"
 
 ```toml
 [reviewer_a]
-provider = "ollama"
+provider = "openai_compatible"
+base_url = "http://localhost:11434/v1"
 model = "llama3.1:70b"
+api_key = "ollama"  # Ollama doesn't require a real key
 
 [reviewer_b]
-provider = "ollama"
+provider = "openai_compatible"
+base_url = "http://localhost:11434/v1"
 model = "qwen2.5:72b"
+api_key = "ollama"
 ```
+
+> **Note:** These use the `openai_compatible` provider type, which works with any OpenAI-compatible API (including Ollama and vLLM). The provider registry supports `openai_compatible`, `scripted`, `pydantic_ai`, and `langgraph`.
 
 ### Azure OpenAI (private endpoint)
 
 ```toml
 [reviewer_a]
-provider = "azure_openai"
-endpoint = "https://my-private.openai.azure.com"
-deployment = "gpt-4o-reviewer-a"
+provider = "openai_compatible"
+base_url = "https://my-private.openai.azure.com/openai/deployments/gpt-4o-reviewer-a"
+model = "gpt-4o"
 api_key = "${AZURE_OPENAI_KEY_A}"
 
 [reviewer_b]
-provider = "azure_openai"
-endpoint = "https://my-private.openai.azure.com"
-deployment = "gpt-4o-reviewer-b"  # same family — flag as homogeneous in reports
+provider = "openai_compatible"
+base_url = "https://my-private.openai.azure.com/openai/deployments/gpt-4o-reviewer-b"
+model = "gpt-4o"
 api_key = "${AZURE_OPENAI_KEY_B}"
 ```
+
+> **Note:** Azure OpenAI uses the OpenAI-compatible API under the hood. Use the `openai_compatible` provider type with your Azure endpoint and deployment name as the model.
 
 ## 23.3 Air-gapped considerations
 

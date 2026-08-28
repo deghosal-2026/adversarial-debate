@@ -1,6 +1,6 @@
 # 02 — Architecture (What We're Building)
 
-> Sub-document of the [Design overview](../README.md). Component overview, pipeline stages, and data model for v0.1.0. The canonical deep spec lives in `docs/architecture/architecture-v0.1.0.md` (authored at AD-M1).
+> Sub-document of the [Design overview](../README.md). Component overview, pipeline stages, and data model for v0.1.0. The canonical deep spec lives in `docs/architecture/architecture-v0.1.0.md`.
 
 ## 2.1 The loop
 

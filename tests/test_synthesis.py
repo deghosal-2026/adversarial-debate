@@ -24,7 +24,7 @@ from adversarial_debate.schemas.debate import Concession, DebateMessage, Severit
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 
 
-def _make_evidence(  # noqa: PLR0913, PLR0917
+def _make_evidence(  # noqa: PLR0913
     verdict: str = "verdict",
     resolved: int = 2,
     total: int = 2,
@@ -266,7 +266,48 @@ class TestDisagreementReporter:
 # ── T7.3 (#33) Fail-closed synthesis ─────────────────────────────────────────
 
 
-class TestFailClosed:
+class TestFlags:
+    """Report flags from evidence context and debate events."""
+
+    def test_flags_from_evidence_context(self) -> None:
+        evidence = _make_evidence(
+            verdict="disputed", resolved=0, total=1, theater=True, cascade=True
+        )
+        report = synthesize_verdict(
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
+        )
+        assert report.flags.theater is True
+        assert report.flags.capitulation_cascade is True
+
+    def test_degraded_rounds_from_events(self) -> None:
+        """Degraded rounds are extracted from debate events."""
+        events = [
+            _make_event("defense", side="A", round_index=1, content="Normal response."),
+            DebateEvent(
+                round_index=2,
+                side="B",
+                kind="defense",
+                degraded=True,
+                message=DebateMessage(
+                    id="msg_B_r2", side="B", kind="defense", content="Degraded output"
+                ),
+                timestamp=NOW,
+            ),
+        ]
+        evidence = _make_evidence(verdict="disputed", resolved=0, total=1)
+        report = synthesize_verdict(
+            artifact_id="art_001",
+            evidence=evidence,
+            claims_by_side={"A": [], "B": []},
+            concessions=[],
+            events=events,
+        )
+        assert report.flags.degraded_rounds == [2]
+
+    # ── T7.3 (#33) Fail-closed synthesis ─────────────────────────────────────────
     def test_valid_inputs_pass_validation(self) -> None:
         evidence = _make_evidence(verdict="verdict", resolved=2, total=2)
         v = validate_synthesis_inputs(
@@ -295,6 +336,15 @@ class TestFailClosed:
             validate_synthesis_inputs(
                 evidence, {"A": [_make_claim("cl_001"), _make_claim("cl_002")]}
             )
+
+    def test_duplicate_claim_ids_across_sides_passes(self) -> None:
+        """Same claim ID in both sides counts once toward total_claims."""
+        evidence = _make_evidence(verdict="verdict", resolved=1, total=1)
+        # Same claim ID appears in both sides — unique count is 1, matches total_claims
+        v = validate_synthesis_inputs(
+            evidence, {"A": [_make_claim("cl_001")], "B": [_make_claim("cl_001")]}
+        )
+        assert v == []
 
 
 # ── T7.4 (#34) JSONL exporter ────────────────────────────────────────────────
