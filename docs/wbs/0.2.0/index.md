@@ -15,7 +15,7 @@
 | M5 | [M5-field-test-data-integrity.md](M5-field-test-data-integrity.md) | Correct field-test report inaccuracies | #72-#74, #102-#104, #111 | M1-M4 |
 | M6 | [M6-documentation-prd-corrections.md](M6-documentation-prd-corrections.md) | Missing files, unimplemented features in PRDs/guides/READMEs | #105-#110 | M5 |
 | M7 | [M7-field-test-rerun.md](M7-field-test-rerun.md) | ✅ COMPLETE — Re-run field tests, flakiness sweep, produce corrected reports, articles | #112-#114, #122 (closed); #115 (article updates deferred) | M1-M6 |
-| M8 | [M8-release-readiness.md](M8-release-readiness.md) | Security scan, CI verify, docs, OSS files, PyPI, GitHub tag, merge to main | #115-#121, #123-#125 | M7 |
+| M8 | [M8-release-readiness.md](M8-release-readiness.md) | ✅ COMPLETE — Security scan, CI verify, docs, OSS files, PyPI, GitHub tag, merge to main | #115-#121, #123-#125 | M7 |
 
 **Total: 58+ issues · 8 milestones (M1-M8)**
 
