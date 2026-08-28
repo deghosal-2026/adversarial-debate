@@ -6,9 +6,11 @@
 
 | Layer | What | v0.1.0 | v0.5.0 | v1.0.0 |
 |-------|------|--------|--------|--------|
-| **Artifact language** | The artifact under review can be in any language | ✅ (model-dependent) | ✅ | ✅ |
-| **Report language** | The verdict/disagreement report output language | English only | 5 languages | 10+ languages |
-| **UI language** | The side-by-side review interface | English only | 3 languages | 5+ languages |
+| **Artifact language** | The artifact under review can be in any language | ⏳ (model-dependent, not enforced) | ✅ | ✅ |
+| **Report language** | The verdict/disagreement report output language | English only (v0.1.0) | 5 languages | 10+ languages |
+| **UI language** | The side-by-side review interface | English only (v0.1.0) | 3 languages | 5+ languages |
+
+> **v0.1.0 note:** Artifact language support is model-dependent — the engine passes artifact content as-is to the model. However, the `detected_language` field in `ReviewArtifact` is hard-coded to English, and the `--report-language` CLI flag is not implemented. Full i18n support is deferred to v0.5.0+.
 
 ## 22.2 Artifact language handling
 

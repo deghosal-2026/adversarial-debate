@@ -22,4 +22,4 @@
 
 ## Planned Documents
 
-- `architecture-v0.1.0.md` — full spec: pipeline stages, data model, isolation mechanics, provider layer, adapters
+- `architecture-v0.1.0.md` — full spec: pipeline stages, data model, isolation mechanics, provider layer, adapters (authored) ✓
