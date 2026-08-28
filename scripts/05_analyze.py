@@ -24,7 +24,6 @@ from __future__ import annotations
 import csv
 import json
 import re
-import sys
 from collections import Counter
 from pathlib import Path
 
@@ -54,9 +53,11 @@ def extract_issues(raw_text: str) -> list[str]:
         line = line.strip()
         if not line:
             continue
-        if re.match(r"^[\*\-]\s", line) or re.match(r"^\d+[\.\)]\s", line):
-            issues.append(_normalize_issue(line))
-        elif re.search(r"\b(high|medium|low)\b", line, re.IGNORECASE):
+        if (
+            re.match(r"^[\*\-]\s", line)
+            or re.match(r"^\d+[\.\)]\s", line)
+            or re.search(r"\b(high|medium|low)\b", line, re.IGNORECASE)
+        ):
             issues.append(_normalize_issue(line))
     return issues
 
@@ -155,7 +156,9 @@ def main() -> None:
         row = {"artifact_id": pr_id}
         for model in MODEL_NAMES:
             data = all_results[model].get(pr_id)
-            row[f"{model}_total_issues"] = str(len(extract_issues(data["raw_text"]))) if data else "0"
+            row[f"{model}_total_issues"] = (
+                str(len(extract_issues(data["raw_text"]))) if data else "0"
+            )
             row[f"{model}_latency_ms"] = str(data["latency_ms"]) if data else "0"
             row[f"{model}_cost"] = str(data.get("cost", 0)) if data else "0"
         distinct_rows.append(row)
@@ -198,26 +201,49 @@ def main() -> None:
         w = csv.writer(f)
         w.writerow(["model", "total_cost", "avg_latency_ms", "total_tokens", "pr_count"])
         for model, stats in model_stats.items():
-            w.writerow([model, stats["total_cost"], stats["avg_latency_ms"],
-                       stats["total_tokens"], stats["pr_count"]])
-        w.writerow(["TOTAL", round(total_cost, 4), total_latency, total_tokens,
-                   sum(s["pr_count"] for s in model_stats.values())])
+            w.writerow(
+                [
+                    model,
+                    stats["total_cost"],
+                    stats["avg_latency_ms"],
+                    stats["total_tokens"],
+                    stats["pr_count"],
+                ]
+            )
+        w.writerow(
+            [
+                "TOTAL",
+                round(total_cost, 4),
+                total_latency,
+                total_tokens,
+                sum(s["pr_count"] for s in model_stats.values()),
+            ]
+        )
     print(f"Wrote {cost_path}")
 
     # 4. Print summary
     print("\n=== COST & LATENCY SUMMARY ===")
     for model, stats in model_stats.items():
-        print(f"  {model}: {stats['total_cost']} USD, "
-              f"{stats['avg_latency_ms']}ms avg, "
-              f"{stats['total_tokens']} tokens, "
-              f"{stats['pr_count']} PRs")
+        print(
+            f"  {model}: {stats['total_cost']} USD, "
+            f"{stats['avg_latency_ms']}ms avg, "
+            f"{stats['total_tokens']} tokens, "
+            f"{stats['pr_count']} PRs"
+        )
     print(f"  TOTAL: {round(total_cost, 4)} USD")
 
-    avg_overlap = sum(float(r.get("overlap_openai_gpt-4o-mini_vs_google_gemini-2-5-flash", 0))
-                       for r in overlap_rows) / len(overlap_rows) if overlap_rows else 0
-    print(f"\n=== CROSS-MODEL OVERLAP ===")
+    avg_overlap = (
+        sum(
+            float(r.get("overlap_openai_gpt-4o-mini_vs_google_gemini-2-5-flash", 0))
+            for r in overlap_rows
+        )
+        / len(overlap_rows)
+        if overlap_rows
+        else 0
+    )
+    print("\n=== CROSS-MODEL OVERLAP ===")
     print(f"  Avg overlap (GPT-4o-mini vs Gemini): {avg_overlap:.3f}")
-    print(f"  (0 = completely different, 1 = identical)")
+    print("  (0 = completely different, 1 = identical)")
 
     # 5. Debate summary
     debate_rows = []
@@ -233,20 +259,22 @@ def main() -> None:
                 # Exclude zero-claim no-op rows (data integrity failures)
                 if data.get("total_claims", 0) == 0 and data.get("events_count", 0) == 0:
                     continue
-                debate_rows.append({
-                    "pair": data.get("pair", ""),
-                    "artifact_id": data.get("artifact_id", data.get("pr_id", "")),
-                    "termination": data.get("termination_reason", ""),
-                    "rounds": str(data.get("rounds_completed", 0)),
-                    "verdict_kind": data.get("verdict_kind", ""),
-                    "convergence_score": str(round(data.get("convergence_score", 0), 3)),
-                    "theater": str(data.get("theater", False)),
-                    "capitulation": str(data.get("capitulation_cascade", False)),
-                    "resolved_count": str(data.get("resolved_count", 0)),
-                    "total_claims": str(data.get("total_claims", 0)),
-                    "concessions": str(data.get("concessions_count", 0)),
-                    "unresolved": str(len(data.get("report", {}).get("unresolved", []))),
-                })
+                debate_rows.append(
+                    {
+                        "pair": data.get("pair", ""),
+                        "artifact_id": data.get("artifact_id", data.get("pr_id", "")),
+                        "termination": data.get("termination_reason", ""),
+                        "rounds": str(data.get("rounds_completed", 0)),
+                        "verdict_kind": data.get("verdict_kind", ""),
+                        "convergence_score": str(round(data.get("convergence_score", 0), 3)),
+                        "theater": str(data.get("theater", False)),
+                        "capitulation": str(data.get("capitulation_cascade", False)),
+                        "resolved_count": str(data.get("resolved_count", 0)),
+                        "total_claims": str(data.get("total_claims", 0)),
+                        "concessions": str(data.get("concessions_count", 0)),
+                        "unresolved": str(len(data.get("report", {}).get("unresolved", []))),
+                    }
+                )
 
     if debate_rows:
         debate_path = ANALYSIS_DIR / "debate-summary.csv"
@@ -254,7 +282,7 @@ def main() -> None:
             w = csv.DictWriter(f, fieldnames=debate_rows[0].keys())
             w.writeheader()
             w.writerows(debate_rows)
-        print(f"\n=== DEBATE SUMMARY ===")
+        print("\n=== DEBATE SUMMARY ===")
         print(f"  {len(debate_rows)} debates analyzed")
         verdicts = Counter(r["verdict_kind"] for r in debate_rows)
         print(f"  Verdicts: {dict(verdicts)}")

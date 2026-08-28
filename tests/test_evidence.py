@@ -468,8 +468,9 @@ class TestEvidenceReferenceValidation:
         """Block IDs starting with / are preserved during lookup."""
         claims = [_make_claim("cl_001", evidence_refs=["/workspace/src/test.py:10"])]
         content_blocks = [
-            ContentBlock(id="/workspace/src/test.py", kind="diff", name="test.py",
-                         content="", sequence=0),
+            ContentBlock(
+                id="/workspace/src/test.py", kind="diff", name="test.py", content="", sequence=0
+            ),
         ]
         tracker = EvidenceTracker(claims, concessions=[], events=[])
         unresolved = tracker.validate_evidence(content_blocks)

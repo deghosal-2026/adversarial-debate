@@ -23,12 +23,22 @@ PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
 PAIRS = {
     "pair1_gpt_gemini": {"a": "openai_gpt-4o-mini", "b": "google_gemini-2-5-flash"},
     "pair2_gemini_deepseek": {"a": "google_gemini-2-5-flash", "b": "deepseek_deepseek-chat"},
-    "pair3_gpt_mistral": {"a": "openai_gpt-4o-mini", "b": "mistralai_mistral-small-3-2-24b-instruct"},
-    "pair4_gemini_mistral": {"a": "google_gemini-2-5-flash", "b": "mistralai_mistral-small-3-2-24b-instruct"},
-    "pair5_deepseek_mistral": {"a": "deepseek_deepseek-chat", "b": "mistralai_mistral-small-3-2-24b-instruct"},
+    "pair3_gpt_mistral": {
+        "a": "openai_gpt-4o-mini",
+        "b": "mistralai_mistral-small-3-2-24b-instruct",
+    },
+    "pair4_gemini_mistral": {
+        "a": "google_gemini-2-5-flash",
+        "b": "mistralai_mistral-small-3-2-24b-instruct",
+    },
+    "pair5_deepseek_mistral": {
+        "a": "deepseek_deepseek-chat",
+        "b": "mistralai_mistral-small-3-2-24b-instruct",
+    },
     "homogeneous_gpt": {"a": "openai_gpt-4o-mini", "b": "openai_gpt-4o-mini"},
     "baseline_gpt": {"a": "openai_gpt-4o-mini", "b": None},
 }
+
 
 def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
     name = corpus_path.name
@@ -67,11 +77,19 @@ def load_result(model_slug: str, pr_id: str) -> dict | None:
 
 def main() -> None:
     import argparse
+
     parser = argparse.ArgumentParser(description="Combine model results into pairs")
-    parser.add_argument("--corpus", default=None,
-                        help="Path to corpus CSV (default: results/field-test/v0.2.0/corpus.csv)")
-    parser.add_argument("--pair", action="append", default=None,
-                        help="Pair(s) to combine. Defaults to the approved v0.2.0 set.")
+    parser.add_argument(
+        "--corpus",
+        default=None,
+        help="Path to corpus CSV (default: results/field-test/v0.2.0/corpus.csv)",
+    )
+    parser.add_argument(
+        "--pair",
+        action="append",
+        default=None,
+        help="Pair(s) to combine. Defaults to the approved v0.2.0 set.",
+    )
     args = parser.parse_args()
 
     csv_path = Path(args.corpus) if args.corpus else CORPUS_CSV

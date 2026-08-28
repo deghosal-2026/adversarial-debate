@@ -68,7 +68,7 @@ def unregister(domain: str) -> None:
 def _lazy_load_builtins() -> None:
     """Ensure built-in adapters are registered."""
     if "pr_review" not in _REGISTRY:
-        from adversarial_debate.adapters import pr_review  # noqa: PLC0415, F401
+        from adversarial_debate.adapters import pr_review  # noqa: F401
 
 
 def available_domains() -> list[str]:

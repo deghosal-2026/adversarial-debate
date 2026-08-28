@@ -106,7 +106,7 @@ class SynthesisReport:
 # ── T7.1 (#31) JointVerdict synthesizer ───────────────────────────────────────
 
 
-def synthesize_verdict(  # noqa: PLR0913, PLR0917, D417
+def synthesize_verdict(  # noqa: PLR0913, D417
     artifact_id: str,
     evidence: EvidenceContext,
     claims_by_side: dict[Side, list[Claim]],
@@ -281,11 +281,7 @@ def _find_degraded_rounds(
     """Identify rounds that were marked degraded by scanning debate events."""
     if events is None:
         return []
-    return sorted({
-        e.round_index
-        for e in events
-        if e.degraded
-    })
+    return sorted({e.round_index for e in events if e.degraded})
 
 
 # ── T7.3 (#33) Fail-closed synthesis ──────────────────────────────────────────

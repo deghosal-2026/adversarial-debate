@@ -41,6 +41,7 @@ CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
 PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
 DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
 
+
 def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
     name = corpus_path.name
     if name == "validation_subset.csv":
@@ -48,6 +49,7 @@ def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
     if name == "negative_control_subset.csv":
         return ["pair1_gpt_gemini"]
     return ["pair3_gpt_mistral"]
+
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -100,15 +102,17 @@ def load_pair(pair_name: str, pr_id: str) -> dict | None:
 
 def call_openrouter(model: str, prompt: str, api_key: str) -> dict:
     """Call OpenRouter API and return raw_text + usage stats."""
-    body = json.dumps({
-        "model": model,
-        "messages": [
-            {"role": "system", "content": DEBATE_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.0,
-        "max_tokens": 2000,
-    }).encode()
+    body = json.dumps(
+        {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": DEBATE_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.0,
+            "max_tokens": 2000,
+        }
+    ).encode()
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -135,7 +139,7 @@ def call_openrouter(model: str, prompt: str, api_key: str) -> dict:
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,
             }
-        except Exception as e:
+        except Exception:
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY * (attempt + 1))
             else:
@@ -161,6 +165,8 @@ class LiveProvider:
     def review(self, request):  # type: ignore[no-untyped-def]
         from adversarial_debate.providers.contract import (
             ReviewResult as _RR,
+        )
+        from adversarial_debate.providers.contract import (
             ReviewResultMetadata,
         )
 
@@ -215,21 +221,25 @@ def parse_claims_from_review(raw_text: str, side: str, review_id: str) -> list:
         is_negated = any(n in lower for n in negation_patterns)
         if is_negated:
             severity = "medium"
-        elif any(w in lower for w in ["high", "critical", "security", "vulnerability", "injection"]):
+        elif any(
+            w in lower for w in ["high", "critical", "security", "vulnerability", "injection"]
+        ):
             severity = "high"
         elif any(w in lower for w in ["low", "minor", "style", "nit", "cosmetic"]):
             severity = "low"
         else:
             severity = "medium"
 
-        claims.append(Claim(
-            id=f"cl_{side}_{i}",
-            review_id=review_id,
-            text=text[:300],
-            severity=severity,
-            evidence_refs=[],
-            status="open",
-        ))
+        claims.append(
+            Claim(
+                id=f"cl_{side}_{i}",
+                review_id=review_id,
+                text=text[:300],
+                severity=severity,
+                evidence_refs=[],
+                status="open",
+            )
+        )
     return claims
 
 
@@ -409,17 +419,13 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
 
 def main() -> None:
     import argparse
+
     parser = argparse.ArgumentParser(description="Run debate engine on paired reviews")
-    parser.add_argument("--corpus", default=str(CORPUS_CSV),
-                        help="Path to corpus CSV")
-    parser.add_argument("--pair", default=None,
-                        help="Only run this pair (e.g. pair1_gpt_gemini)")
-    parser.add_argument("--artifact", default=None,
-                        help="Only run this artifact ID")
-    parser.add_argument("--limit", type=int, default=None,
-                        help="Max PRs to process")
-    parser.add_argument("--force", action="store_true",
-                        help="Re-run debates even if output exists")
+    parser.add_argument("--corpus", default=str(CORPUS_CSV), help="Path to corpus CSV")
+    parser.add_argument("--pair", default=None, help="Only run this pair (e.g. pair1_gpt_gemini)")
+    parser.add_argument("--artifact", default=None, help="Only run this artifact ID")
+    parser.add_argument("--limit", type=int, default=None, help="Max PRs to process")
+    parser.add_argument("--force", action="store_true", help="Re-run debates even if output exists")
     args = parser.parse_args()
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -487,10 +493,12 @@ def main() -> None:
                     for event in result["events"]:
                         f.write(json.dumps(event, sort_keys=True) + "\n")
 
-                print(f"ok ({result['termination_reason']}, "
-                      f"score={result['convergence_score']:.2f}, "
-                      f"{result['concessions_count']} concessions, "
-                      f"{result['api_calls_a'] + result['api_calls_b']} API calls)")
+                print(
+                    f"ok ({result['termination_reason']}, "
+                    f"score={result['convergence_score']:.2f}, "
+                    f"{result['concessions_count']} concessions, "
+                    f"{result['api_calls_a'] + result['api_calls_b']} API calls)"
+                )
                 count += 1
                 total += 1
             except Exception as e:

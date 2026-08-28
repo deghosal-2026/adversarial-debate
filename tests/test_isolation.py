@@ -110,11 +110,11 @@ class TestIsolationAudit:
         assert state.reason in ("rounds_exhausted", "all_resolved")
 
         # The secret from A's debate response must not appear in B's input prompt
-        assert secret not in provider_b.last_prompt, (
-            f"Isolation leak: secret {secret} found in B's prompt!"
-        )
+        assert (
+            secret not in provider_b.last_prompt
+        ), f"Isolation leak: secret {secret} found in B's prompt!"
 
         # The secret must not appear in B's raw output either
-        assert secret not in provider_b.raw_text, (
-            f"Isolation leak: secret {secret} found in B's output!"
-        )
+        assert (
+            secret not in provider_b.raw_text
+        ), f"Isolation leak: secret {secret} found in B's output!"

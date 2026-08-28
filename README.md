@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen)]()
+[![Status](https://img.shields.io/badge/status-v0.2.0-brightgreen)]()
 [![PyPI](https://img.shields.io/pypi/v/adversarial-debate)](https://pypi.org/project/adversarial-debate/)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/14254/badge)](https://www.bestpractices.dev/en/projects/14254/passing)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000)](https://github.com/astral-sh/ruff)
@@ -14,7 +14,7 @@
 </div>
 
 > [!NOTE]
-> **Status:** v0.1.0 shipped Aug 2026. Field-tested on 70 real PRs across 6 model pairs — 411 debates, $0.53 total cost.
+> **Status:** v0.2.0 shipped Aug 2026. Field-tested on 150 artifacts across 4 domains — 217 debates, $0.42 total cost.
 > The core isolation rule is mechanically enforced: **reviewer B cannot see reviewer A's answer until it has fully committed its own.**
 
 ---
@@ -94,7 +94,7 @@ See [docs/reference/quickstart.md](docs/reference/quickstart.md) for the full wa
 | **Evidence over rhetoric** | Confidence tied to cited evidence and failure modes, not tone |
 | **Auditability** | Full transcript lineage: every claim, objection, concession, verdict |
 
-## Architecture (v0.1.0)
+## Architecture (v0.2.0)
 
 | Component | Responsibility |
 |-----------|----------------|
@@ -105,7 +105,9 @@ See [docs/reference/quickstart.md](docs/reference/quickstart.md) for the full wa
 | **Synthesis Layer** | Joint decision or structured disagreement report |
 | **Audit Log** | Persists full review lineage (SQLite) |
 
-**Planned stack:** Python · FastAPI · Pydantic schemas · PydanticAI / LangGraph / raw-API adapters · SQLite · React side-by-side review UI.
+**Current stack:** Python · Pydantic schemas · SQLite · PydanticAI / LangGraph / raw-API adapters · CLI and field-test scripts.
+
+**Planned additions:** FastAPI service · React side-by-side review UI · broader adapter coverage.
 
 ## Example Output
 
@@ -134,10 +136,43 @@ audit: transcripts/2026-08-pr482.jsonl
 
 | Version | Scope |
 |---------|-------|
-| **v0.1.0** | Independent dual-review pass, bounded debate, claims/objections/concessions schema, consensus + disagreement reports, PR-review domain adapter, transcripts, field test on real public-repo PRs |
-| v0.2.0 | More domain adapters (architecture review, incident hypothesis), stronger disagreement taxonomy, argument-importance scoring |
+| v0.1.0 | Independent dual-review pass, bounded debate, claims/objections/concessions schema, consensus + disagreement reports, PR-review domain adapter, transcripts, field test on real public-repo PRs |
+| **v0.2.0** | Corrected field-test pipeline, mixed-domain corpus (PR review, incident response, change management, security incidents), subset-based model validation, stronger report integrity |
 | v0.3.0 | N-agent mode, side-by-side debate visualization, diversity/convergence-quality metrics |
 | v0.4.0 | Eval benchmark scenarios, approval-workflow integration, learning from past unresolved disagreements |
+
+## Field Test Reports
+
+- [v0.2.0 Full Corpus Report](docs/field-test/v0.2.0/FIELD_TEST_REPORT_full_corpus.md) — 150 artifacts, 4 domains, 217 debates, $0.42
+- [v0.2.0 Field Test Plan](docs/field-test/v0.2.0/field-test-plan.md) — corpus design, model strategy, success criteria
+- [v0.1.0 Full Corpus Report](docs/field-test/v0.1.0/FIELD_TEST_REPORT_full_corpus.md) — 70 PRs, 6 pairs, 411 debates, $0.53
+- [v0.1.0 Field Test Plan](docs/field-test/v0.1.0/field-test-plan.md) — original PR-only field test plan
+- [Field Testing Strategy](docs/field-test/field-testing-strategy.md) — 4-tier cross-domain plan
+
+### v0.2.0 Key Results
+
+| Metric | v0.1.0 | v0.2.0 |
+|--------|--------|--------|
+| Artifacts | 70 PRs | 150 across 4 domains |
+| Debates | 411 | 217 |
+| Theater | 0.2% | 0% |
+| Binary bar (MATCH) | 81% | 88.7% |
+| Verdict stability | 96% | 100% (sampled) |
+| Total cost | $0.53 | $0.42 |
+| Primary pair | pair5 (DeepSeek+Mistral) | pair3 (GPT+Mistral) |
+
+### v0.2.0 Artifacts
+
+- Corpus: `results/field-test/v0.2.0/corpus.csv`
+- Candidate lists: `docs/field-test/v0.2.0/{incident_response,change_management,security_incidents}_corpus_candidates.csv`
+- PR reuse list: `docs/field-test/v0.2.0/pr_reuse_80.csv`
+- Validation subset: `results/field-test/v0.2.0/validation_subset.csv`
+- Negative control subset: `results/field-test/v0.2.0/negative_control_subset.csv`
+- Pair roles: `results/field-test/v0.2.0/SUBSETS.md`
+- Analysis CSVs: `results/field-test/v0.2.0/analysis/`
+- Ground truth: `results/field-test/v0.2.0/analysis/ground-truth-judged.csv`
+- Flakiness: `results/field-test/v0.2.0/analysis/flakiness-summary.csv`
+- Field test scripts: `scripts/README.md`
 
 ## Non-Goals
 

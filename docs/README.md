@@ -14,9 +14,15 @@
 
 ## Key Documents
 
+### v0.2.0
+- **Field Test Report** → `field-test/v0.2.0/FIELD_TEST_REPORT_full_corpus.md`
+- **Field Test Plan** → `field-test/v0.2.0/field-test-plan.md`
+- **WBS** → `wbs/v0.2.0/`
+- **CHANGELOG** → `../CHANGELOG.md`
+
 ### v0.1.0
 - **Architecture & Spec** → `architecture/architecture-v0.1.0.md`
-- **PRD** → `design/README.md` (overview) → `design/prd/` sub-docs (why, architecture, landscape, users+CUJs, features, security, metrics, risks, roadmap)
-- **Design Decisions** → `design/design-decisions.md` *(authored as implementation reveals choices)*
+- **PRD** → `design/README.md` (overview) → `design/prd/` sub-docs
+- **Field Test Report** → `field-test/v0.1.0/FIELD_TEST_REPORT_full_corpus.md`
 - **Quickstart** → `reference/quickstart.md`
-- **WBS** → `wbs/v0.1.0/` *(authored at AD-M1)*
+- **WBS** → `wbs/v0.1.0/`

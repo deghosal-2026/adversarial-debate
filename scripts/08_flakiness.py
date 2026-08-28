@@ -41,7 +41,9 @@ def load_corpus_ids(corpus_csv: Path) -> list[str]:
                 ids.append(artifact_id)
                 continue
             repo = row["repo"]
-            pr_num = int(row.get("url", row.get("source_url", "")).strip().rstrip("/").split("/")[-1])
+            pr_num = int(
+                row.get("url", row.get("source_url", "")).strip().rstrip("/").split("/")[-1]
+            )
             ids.append(f"{repo.replace('/', '_')}_PR{pr_num}")
         return ids
 
@@ -53,6 +55,7 @@ def main() -> None:
         sys.path.insert(0, scripts_dir)
     try:
         from importlib import import_module
+
         rd = import_module("04_run_debate")
     finally:
         if scripts_dir in sys.path:
@@ -76,11 +79,15 @@ def main() -> None:
 
     total_runs = len(pr_ids) * args.runs
     done_runs = sum(
-        1 for pr in pr_ids for r in range(1, args.runs + 1)
+        1
+        for pr in pr_ids
+        for r in range(1, args.runs + 1)
         if (out_base / pr / f"run{r}" / "report.json").is_file()
     )
-    print(f"Flakiness sweep: {len(pr_ids)} artifacts × {args.runs} runs "
-          f"({done_runs}/{total_runs} already done)")
+    print(
+        f"Flakiness sweep: {len(pr_ids)} artifacts × {args.runs} runs "
+        f"({done_runs}/{total_runs} already done)"
+    )
 
     completed = 0
     for pr_id in pr_ids:
@@ -129,16 +136,18 @@ def main() -> None:
         if not verdicts:
             continue
         if len(verdicts) < args.runs:
-            rows.append({
-                "pr_id": pr_id,
-                "runs": str(len(verdicts)),
-                "verdicts": ",".join(verdicts),
-                "dominant_verdict": "incomplete",
-                "stability": "0.00",
-                "avg_convergence": "0.000",
-                "score_range": "0.00-0.00",
-                "flaky": "True",
-            })
+            rows.append(
+                {
+                    "pr_id": pr_id,
+                    "runs": str(len(verdicts)),
+                    "verdicts": ",".join(verdicts),
+                    "dominant_verdict": "incomplete",
+                    "stability": "0.00",
+                    "avg_convergence": "0.000",
+                    "score_range": "0.00-0.00",
+                    "flaky": "True",
+                }
+            )
             print(f"  {pr_id}: INCOMPLETE ({len(verdicts)}/{args.runs} runs)")
             continue
         counter = Counter(verdicts)
@@ -146,16 +155,18 @@ def main() -> None:
         stability = count / len(verdicts)
         avg_score = sum(scores) / len(scores)
         flaky = stability < 0.8
-        rows.append({
-            "pr_id": pr_id,
-            "runs": str(len(verdicts)),
-            "verdicts": ",".join(verdicts),
-            "dominant_verdict": most_common_verdict,
-            "stability": f"{stability:.2f}",
-            "avg_convergence": f"{avg_score:.3f}",
-            "score_range": f"{min(scores):.2f}-{max(scores):.2f}",
-            "flaky": str(flaky),
-        })
+        rows.append(
+            {
+                "pr_id": pr_id,
+                "runs": str(len(verdicts)),
+                "verdicts": ",".join(verdicts),
+                "dominant_verdict": most_common_verdict,
+                "stability": f"{stability:.2f}",
+                "avg_convergence": f"{avg_score:.3f}",
+                "score_range": f"{min(scores):.2f}-{max(scores):.2f}",
+                "flaky": str(flaky),
+            }
+        )
         flag = " ⚠️ FLAKY" if flaky else ""
         print(f"  {pr_id}: {most_common_verdict} ({stability:.0%}), avg={avg_score:.2f}{flag}")
 

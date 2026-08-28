@@ -15,7 +15,7 @@
 | M4 | [M4-test-corrections-audits.md](0.2.0/M4-test-corrections-audits.md) | Test corrections & audits | #75-#76, #93-#94, #96-#97 |
 | M5 | [M5-field-test-data-integrity.md](0.2.0/M5-field-test-data-integrity.md) | Field test data integrity | #72-#74, #102-#104, #111 |
 | M6 | [M6-documentation-prd-corrections.md](0.2.0/M6-documentation-prd-corrections.md) | Documentation & PRD corrections | #105-#110 |
-| M7 | [M7-field-test-rerun.md](0.2.0/M7-field-test-rerun.md) | Field test rerun | #112-#114, #122 |
+| M7 | [M7-field-test-rerun.md](0.2.0/M7-field-test-rerun.md) | ✅ Field test rerun | #112-#114, #122 |
 | M8 | [M8-release-readiness.md](0.2.0/M8-release-readiness.md) | Release readiness | #115-#121, #123-#125 |
 
 ## v0.1.0

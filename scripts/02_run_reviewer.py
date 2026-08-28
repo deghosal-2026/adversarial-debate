@@ -53,7 +53,9 @@ def compute_cost(model: str, prompt_tokens: int, completion_tokens: int) -> floa
         msg = f"Unknown model {model!r}. Add pricing to PRICING dict."
         raise KeyError(msg)
     in_price, out_price = PRICING[model]
-    return round((prompt_tokens / 1_000_000) * in_price + (completion_tokens / 1_000_000) * out_price, 6)
+    return round(
+        (prompt_tokens / 1_000_000) * in_price + (completion_tokens / 1_000_000) * out_price, 6
+    )
 
 
 def load_artifacts(corpus_csv: Path, artifact_filter: str | None = None) -> list[dict]:  # type: ignore[valid-type]
@@ -83,12 +85,14 @@ def load_artifacts(corpus_csv: Path, artifact_filter: str | None = None) -> list
         if content_path is None:
             continue
 
-        result.append({
-            "artifact_id": aid,
-            "domain": domain,
-            "url": url,
-            "content_path": content_path,
-        })
+        result.append(
+            {
+                "artifact_id": aid,
+                "domain": domain,
+                "url": url,
+                "content_path": content_path,
+            }
+        )
 
     return result
 
@@ -154,8 +158,12 @@ def _prepare_non_pr_content(content: str, max_chars: int = 10000) -> str:
     """Strip HTML chrome and bound non-PR content before sending to the model."""
     lowered = content.lower()
     if "<html" in lowered or "<!doctype html" in lowered:
-        content = re.sub(r"<script\b[^>]*>.*?</script>", " ", content, flags=re.IGNORECASE | re.DOTALL)
-        content = re.sub(r"<style\b[^>]*>.*?</style>", " ", content, flags=re.IGNORECASE | re.DOTALL)
+        content = re.sub(
+            r"<script\b[^>]*>.*?</script>", " ", content, flags=re.IGNORECASE | re.DOTALL
+        )
+        content = re.sub(
+            r"<style\b[^>]*>.*?</style>", " ", content, flags=re.IGNORECASE | re.DOTALL
+        )
         content = re.sub(r"<[^>]+>", " ", content)
         content = re.sub(r"&nbsp;", " ", content, flags=re.IGNORECASE)
         content = re.sub(r"&amp;", "&", content, flags=re.IGNORECASE)
@@ -185,15 +193,20 @@ def _prepare_non_pr_content(content: str, max_chars: int = 10000) -> str:
 def call_llm(model: str, content: str, api_key: str) -> dict:
     import urllib.request
 
-    body = json.dumps({
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "You are an expert reviewer. Be thorough and specific."},
-            {"role": "user", "content": content},
-        ],
-        "temperature": 0.0,
-        "max_tokens": 2000,
-    }).encode()
+    body = json.dumps(
+        {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are an expert reviewer. Be thorough and specific.",
+                },
+                {"role": "user", "content": content},
+            ],
+            "temperature": 0.0,
+            "max_tokens": 2000,
+        }
+    ).encode()
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -236,9 +249,13 @@ def call_llm(model: str, content: str, api_key: str) -> dict:
     return {}
 
 
-def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
-                  artifact_filter: str | None = None,
-                  corpus_csv: Path | None = None) -> None:
+def run_for_model(
+    model: str,
+    limit: int | None = None,
+    dry_run: bool = False,
+    artifact_filter: str | None = None,
+    corpus_csv: Path | None = None,
+) -> None:
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key and not dry_run:
         print("ERROR: OPENROUTER_API_KEY env var not set")
@@ -270,7 +287,9 @@ def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
         in_price, out_price = PRICING[model]
         avg_tokens = 2000
         avg_in = avg_out = avg_tokens / 2
-        est_cost = len(pending) * ((avg_in / 1_000_000) * in_price + (avg_out / 1_000_000) * out_price)
+        est_cost = len(pending) * (
+            (avg_in / 1_000_000) * in_price + (avg_out / 1_000_000) * out_price
+        )
     else:
         est_cost = len(pending) * 0.002
 
@@ -314,9 +333,11 @@ def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
 
             done_ids.add(aid)
             checkpoint.write_text("\n".join(sorted(done_ids)))
-            print(f"ok ({result['latency_ms']}ms, "
-                  f"{result['prompt_tokens']}+{result['completion_tokens']} tok, "
-                  f"${result['cost']:.4f})")
+            print(
+                f"ok ({result['latency_ms']}ms, "
+                f"{result['prompt_tokens']}+{result['completion_tokens']} tok, "
+                f"${result['cost']:.4f})"
+            )
 
             time.sleep(1)
 
@@ -328,6 +349,7 @@ def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
 
 def main() -> None:
     import argparse
+
     parser = argparse.ArgumentParser(description="Run a single LLM reviewer")
     parser.add_argument("--model", required=True)
     parser.add_argument("--corpus", required=True)

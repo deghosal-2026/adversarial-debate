@@ -6,7 +6,7 @@ types defined in the field test plan, then writes corpus.csv.
 
 Usage:
     python3 gen_corpus.py --out ../results/field-test/v0.1.0/corpus.csv
-    
+
 Requires: gh CLI authenticated
 """
 
@@ -75,9 +75,23 @@ def gh_pr_list(repo: str, state: str = "merged", limit: int = 50) -> list[dict[s
     """Fetch PRs from a repo using gh CLI."""
     try:
         r = subprocess.run(
-            ["gh", "pr", "list", "--repo", repo, "--state", state, "--limit", str(limit),
-             "--json", "number,title,mergedAt,additions,deletions,labels,author,comments"],
-            capture_output=True, text=True, timeout=30,
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                repo,
+                "--state",
+                state,
+                "--limit",
+                str(limit),
+                "--json",
+                "number,title,mergedAt,additions,deletions,labels,author,comments",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
         )
         if r.returncode != 0:
             return []
@@ -88,9 +102,13 @@ def gh_pr_list(repo: str, state: str = "merged", limit: int = 50) -> list[dict[s
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="Generate corpus CSV from real PRs")
-    parser.add_argument("--out", default="../results/field-test/v0.1.0/corpus.csv",
-                        help="Output path for corpus.csv")
+    parser.add_argument(
+        "--out",
+        default="../results/field-test/v0.1.0/corpus.csv",
+        help="Output path for corpus.csv",
+    )
     args = parser.parse_args()
     out_path = args.out
     rows = []
@@ -98,11 +116,18 @@ def main():
 
     # Cycle through outcomes to ensure distribution
     outcome_cycle = [
-        "Merged-then-reverted", "Merged-then-hotfixed", "Merged-then-security-advisory",
-        "Merged-then-fixed", "Merged-then-perf-regression", "Merged-then-flaky-tests",
-        "Rejected/closed-without-merge", "Closed-by-author-after-review",
-        "Race condition caught in review", "Breaking API change caught in review",
-        "Refactoring that introduced regression", "Clean merge",
+        "Merged-then-reverted",
+        "Merged-then-hotfixed",
+        "Merged-then-security-advisory",
+        "Merged-then-fixed",
+        "Merged-then-perf-regression",
+        "Merged-then-flaky-tests",
+        "Rejected/closed-without-merge",
+        "Closed-by-author-after-review",
+        "Race condition caught in review",
+        "Breaking API change caught in review",
+        "Refactoring that introduced regression",
+        "Clean merge",
     ]
 
     for repo_name, lang, _ in REPOS:
@@ -138,7 +163,9 @@ def main():
 
             labels = [l["name"].lower() for l in pr.get("labels", [])]
             comment_count = len(pr.get("comments", []))
-            review_depth = "Low" if comment_count < 10 else "Medium" if comment_count < 50 else "High"
+            review_depth = (
+                "Low" if comment_count < 10 else "Medium" if comment_count < 50 else "High"
+            )
 
             author = pr.get("author", {}) or {}
             if author.get("login") == "dependabot[bot]":
@@ -174,21 +201,23 @@ def main():
 
             expected_debate = "true" if outcome != "Clean merge" else "false"
 
-            rows.append({
-                "url": f"https://github.com/{repo_name}/pull/{pr_num}",
-                "repo": repo_name,
-                "language": lang,
-                "lines_changed": str(lines),
-                "size_label": size_label,
-                "outcome": outcome,
-                "purpose": purpose,
-                "review_depth": review_depth,
-                "contributor_type": contrib_type,
-                "diff_content_type": diff_type,
-                "revert_reason": pr.get("title", ""),
-                "expected_debate_flag": expected_debate,
-                "notes": "",
-            })
+            rows.append(
+                {
+                    "url": f"https://github.com/{repo_name}/pull/{pr_num}",
+                    "repo": repo_name,
+                    "language": lang,
+                    "lines_changed": str(lines),
+                    "size_label": size_label,
+                    "outcome": outcome,
+                    "purpose": purpose,
+                    "review_depth": review_depth,
+                    "contributor_type": contrib_type,
+                    "diff_content_type": diff_type,
+                    "revert_reason": pr.get("title", ""),
+                    "expected_debate_flag": expected_debate,
+                    "notes": "",
+                }
+            )
 
         if len(rows) >= 150:
             break
@@ -202,9 +231,21 @@ def main():
         count = sum(1 for r in rows if r["outcome"] == o)
         print(f"  {o}: {count}")
 
-    fieldnames = ["url", "repo", "language", "lines_changed", "size_label", "outcome",
-                  "purpose", "review_depth", "contributor_type", "diff_content_type",
-                  "revert_reason", "expected_debate_flag", "notes"]
+    fieldnames = [
+        "url",
+        "repo",
+        "language",
+        "lines_changed",
+        "size_label",
+        "outcome",
+        "purpose",
+        "review_depth",
+        "contributor_type",
+        "diff_content_type",
+        "revert_reason",
+        "expected_debate_flag",
+        "notes",
+    ]
 
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

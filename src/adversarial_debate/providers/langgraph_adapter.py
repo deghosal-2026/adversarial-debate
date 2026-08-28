@@ -42,7 +42,7 @@ class LangGraphAdapter:
         if self._llm is not None:
             return
         try:
-            from langchain_openai import ChatOpenAI  # noqa: PLC0415
+            from langchain_openai import ChatOpenAI
         except ImportError:
             msg = "langgraph is not installed. Install with: uv add adversarial-debate[langgraph]"
             raise ImportError(msg) from None
@@ -83,7 +83,7 @@ class LangGraphAdapter:
 
     def _build_messages(self, request: ReviewRequest) -> list[Any]:
         """Build LangChain message list from the review request."""
-        from langchain_core.messages import (  # noqa: PLC0415
+        from langchain_core.messages import (
             HumanMessage,
             SystemMessage,
         )

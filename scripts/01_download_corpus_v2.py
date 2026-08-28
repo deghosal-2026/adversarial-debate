@@ -32,14 +32,17 @@ PR_DOMAIN = "pr_review"
 
 def _gh_run(args: list[str], timeout: int = 30) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["gh"] + args, capture_output=True, text=True, timeout=timeout
+        ["gh"] + args, capture_output=True, text=True, timeout=timeout, check=False
     )
 
 
 def _curl(url: str, timeout: int = 30) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["curl", "-sS", "-L", "--max-time", str(timeout), url],
-        capture_output=True, text=True, timeout=timeout + 5,
+        capture_output=True,
+        text=True,
+        timeout=timeout + 5,
+        check=False,
     )
 
 
@@ -62,9 +65,8 @@ def _download_web(url: str, out_dir: Path, force: bool) -> bool:
 
 def _download_raw_github(url: str, out_dir: Path, force: bool) -> bool:
     """Fetch a raw GitHub content URL (convert blob URL to raw URL)."""
-    raw_url = (
-        url.replace("https://github.com/", "https://raw.githubusercontent.com/")
-        .replace("/blob/", "/")
+    raw_url = url.replace("https://github.com/", "https://raw.githubusercontent.com/").replace(
+        "/blob/", "/"
     )
     ext = Path(url).suffix or ".md"
     out_path = out_dir / f"content{ext}"
@@ -151,9 +153,7 @@ def download_artifact(row: dict, out_dir: Path, force: bool) -> bool:
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     if not (artifact_dir / "source.json").exists() or force:
-        (artifact_dir / "source.json").write_text(
-            json.dumps(dict(row), indent=2, sort_keys=True)
-        )
+        (artifact_dir / "source.json").write_text(json.dumps(dict(row), indent=2, sort_keys=True))
 
     return downloader(row, artifact_dir, force)
 
@@ -161,21 +161,19 @@ def download_artifact(row: dict, out_dir: Path, force: bool) -> bool:
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Download non-PR corpus for v0.2.0 field test"
-    )
+    parser = argparse.ArgumentParser(description="Download non-PR corpus for v0.2.0 field test")
     parser.add_argument(
-        "--corpus", default=str(DEFAULT_CORPUS_CSV),
+        "--corpus",
+        default=str(DEFAULT_CORPUS_CSV),
         help=f"Corpus CSV path (default: {DEFAULT_CORPUS_CSV})",
     )
     parser.add_argument(
-        "--out", default=str(DEFAULT_CORPUS_DIR),
+        "--out",
+        default=str(DEFAULT_CORPUS_DIR),
         help=f"Output directory (default: {DEFAULT_CORPUS_DIR})",
     )
     parser.add_argument("--force", action="store_true", help="Re-download all")
-    parser.add_argument(
-        "--domain", help="Restrict to one domain (e.g. incident_response)"
-    )
+    parser.add_argument("--domain", help="Restrict to one domain (e.g. incident_response)")
     parser.add_argument("--limit", type=int, help="Max artifacts to download")
     args = parser.parse_args()
 

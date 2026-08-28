@@ -291,14 +291,14 @@ def cmd_report(args: argparse.Namespace) -> int:
         parsed["total_claims"] = report_data["total_claims"]
         # Merge partial metadata into stored flags instead of overwriting
         stored_flags = (
-            parsed.get("flags", {}).copy()
-            if isinstance(parsed.get("flags"), dict)
-            else {}
+            parsed.get("flags", {}).copy() if isinstance(parsed.get("flags"), dict) else {}
         )
-        stored_flags.update({
-            "partial": report_data.get("partial", False),
-            "partial_reason": report_data.get("partial_reason"),
-        })
+        stored_flags.update(
+            {
+                "partial": report_data.get("partial", False),
+                "partial_reason": report_data.get("partial_reason"),
+            }
+        )
         parsed["flags"] = stored_flags
         print(_format_report(parsed))
     else:

@@ -18,7 +18,6 @@ from __future__ import annotations
 import csv
 import json
 import re
-import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -81,7 +80,9 @@ def load_corpus(corpus_csv: Path) -> dict[str, dict]:
             artifact_id = row.get("artifact_id", "").strip()
             if not artifact_id:
                 repo = row["repo"]
-                pr_num = int(row.get("url", row.get("source_url", "")).strip().rstrip("/").split("/")[-1])
+                pr_num = int(
+                    row.get("url", row.get("source_url", "")).strip().rstrip("/").split("/")[-1]
+                )
                 artifact_id = f"{repo.replace('/', '_')}_PR{pr_num}"
             row["artifact_id"] = artifact_id
             rows[artifact_id] = row
@@ -90,17 +91,20 @@ def load_corpus(corpus_csv: Path) -> dict[str, dict]:
 
 def main() -> None:
     import argparse
+
     parser = argparse.ArgumentParser(description="Ground-truth verification export")
     parser.add_argument("--corpus", required=True, help="Path to corpus CSV")
-    parser.add_argument("--output", default=None,
-                        help="Output CSV (default: analysis/ground-truth-comparison.csv)")
+    parser.add_argument(
+        "--output", default=None, help="Output CSV (default: analysis/ground-truth-comparison.csv)"
+    )
     args = parser.parse_args()
 
     corpus = load_corpus(Path(args.corpus))
 
     # Only PRs with known ground truth (revert reason documented)
     gt_prs = {
-        pid: row for pid, row in corpus.items()
+        pid: row
+        for pid, row in corpus.items()
         if row.get("outcome") in GROUND_TRUTH_OUTCOMES and row.get("revert_reason", "").strip()
     }
     print(f"PRs with ground truth: {len(gt_prs)}")
@@ -126,34 +130,38 @@ def main() -> None:
                 claim_text = r.get("claim_text", r.get("rationale", ""))[:300]
                 if not _is_substantive_claim(claim_text):
                     continue
-                out_rows.append({
-                    "artifact_id": pr_id,
-                    "outcome": gt_prs[pr_id]["outcome"],
-                    "known_reason": known_reason,
-                    "pair": pair_name,
-                    "claim_source": "resolved(conceded)",
-                    "claim_id": r.get("claim_id", ""),
-                    "claim_text": claim_text,
-                    "severity": "",
-                    "human_judgment": "",  # fill: MATCH / NO_MATCH / PARTIAL
-                })
+                out_rows.append(
+                    {
+                        "artifact_id": pr_id,
+                        "outcome": gt_prs[pr_id]["outcome"],
+                        "known_reason": known_reason,
+                        "pair": pair_name,
+                        "claim_source": "resolved(conceded)",
+                        "claim_id": r.get("claim_id", ""),
+                        "claim_text": claim_text,
+                        "severity": "",
+                        "human_judgment": "",  # fill: MATCH / NO_MATCH / PARTIAL
+                    }
+                )
 
             # Unresolved points — surviving disagreement
             for u in report.get("unresolved", []):
                 text = f"A: {u.get('position_a', '')[:150]} | B: {u.get('position_b', '')[:150]}"
                 if not _is_substantive_claim(text):
                     continue
-                out_rows.append({
-                    "artifact_id": pr_id,
-                    "outcome": gt_prs[pr_id]["outcome"],
-                    "known_reason": known_reason,
-                    "pair": pair_name,
-                    "claim_source": "unresolved",
-                    "claim_id": ",".join(u.get("claim_ids", [])),
-                    "claim_text": text[:300],
-                    "severity": u.get("severity", ""),
-                    "human_judgment": "",
-                })
+                out_rows.append(
+                    {
+                        "artifact_id": pr_id,
+                        "outcome": gt_prs[pr_id]["outcome"],
+                        "known_reason": known_reason,
+                        "pair": pair_name,
+                        "claim_source": "unresolved",
+                        "claim_id": ",".join(u.get("claim_ids", [])),
+                        "claim_text": text[:300],
+                        "severity": u.get("severity", ""),
+                        "human_judgment": "",
+                    }
+                )
 
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = Path(args.output) if args.output else ANALYSIS_DIR / "ground-truth-comparison.csv"

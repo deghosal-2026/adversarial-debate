@@ -39,16 +39,20 @@ def test_load_artifacts_handles_mixed_v020_layout(tmp_path: Path) -> None:
     with open(corpus_csv, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["artifact_id", "domain", "source_url"])
         writer.writeheader()
-        writer.writerow({
-            "artifact_id": "repo_owner_PR1",
-            "domain": "pr_review",
-            "source_url": "https://github.com/repo/owner/pull/1",
-        })
-        writer.writerow({
-            "artifact_id": "ir-001",
-            "domain": "incident_response",
-            "source_url": "https://example.com/incident",
-        })
+        writer.writerow(
+            {
+                "artifact_id": "repo_owner_PR1",
+                "domain": "pr_review",
+                "source_url": "https://github.com/repo/owner/pull/1",
+            }
+        )
+        writer.writerow(
+            {
+                "artifact_id": "ir-001",
+                "domain": "incident_response",
+                "source_url": "https://example.com/incident",
+            }
+        )
 
     original_corpus_dir = reviewer.CORPUS_DIR
     reviewer.CORPUS_DIR = corpus_root
@@ -69,16 +73,20 @@ def test_combine_results_uses_artifact_id_from_v020_corpus(tmp_path: Path) -> No
     with open(corpus_csv, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["artifact_id", "domain", "source_url"])
         writer.writeheader()
-        writer.writerow({
-            "artifact_id": "repo_owner_PR1",
-            "domain": "pr_review",
-            "source_url": "https://github.com/repo/owner/pull/1",
-        })
-        writer.writerow({
-            "artifact_id": "ir-001",
-            "domain": "incident_response",
-            "source_url": "https://example.com/incident",
-        })
+        writer.writerow(
+            {
+                "artifact_id": "repo_owner_PR1",
+                "domain": "pr_review",
+                "source_url": "https://github.com/repo/owner/pull/1",
+            }
+        )
+        writer.writerow(
+            {
+                "artifact_id": "ir-001",
+                "domain": "incident_response",
+                "source_url": "https://example.com/incident",
+            }
+        )
 
     with open(corpus_csv) as f:
         rows = list(csv.DictReader(f))
@@ -99,17 +107,25 @@ def test_default_pair_selection_depends_on_corpus_filename() -> None:
         "pair3_gpt_mistral",
     ]
 
-    assert combine.default_pairs_for_corpus(Path("results/field-test/v0.2.0/validation_subset.csv")) == [
+    assert combine.default_pairs_for_corpus(
+        Path("results/field-test/v0.2.0/validation_subset.csv")
+    ) == [
         "pair5_deepseek_mistral",
     ]
-    assert debate.default_pairs_for_corpus(Path("results/field-test/v0.2.0/validation_subset.csv")) == [
+    assert debate.default_pairs_for_corpus(
+        Path("results/field-test/v0.2.0/validation_subset.csv")
+    ) == [
         "pair5_deepseek_mistral",
     ]
 
-    assert combine.default_pairs_for_corpus(Path("results/field-test/v0.2.0/negative_control_subset.csv")) == [
+    assert combine.default_pairs_for_corpus(
+        Path("results/field-test/v0.2.0/negative_control_subset.csv")
+    ) == [
         "pair1_gpt_gemini",
     ]
-    assert debate.default_pairs_for_corpus(Path("results/field-test/v0.2.0/negative_control_subset.csv")) == [
+    assert debate.default_pairs_for_corpus(
+        Path("results/field-test/v0.2.0/negative_control_subset.csv")
+    ) == [
         "pair1_gpt_gemini",
     ]
 
@@ -117,7 +133,11 @@ def test_default_pair_selection_depends_on_corpus_filename() -> None:
 def test_reviewer_strips_html_and_truncates_non_pr_input() -> None:
     reviewer = _load_script_module("02_run_reviewer.py")
 
-    noisy_html = "<html><body>" + ("<div>noise</div>" * 5000) + "<article>real content</article></body></html>"
+    noisy_html = (
+        "<html><body>"
+        + ("<div>noise</div>" * 5000)
+        + "<article>real content</article></body></html>"
+    )
     prompt = reviewer._build_prompt("change_management", noisy_html)
 
     assert "<html" not in prompt.lower()

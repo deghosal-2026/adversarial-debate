@@ -341,7 +341,7 @@ class DebateController:
         state = controller.run()
     """
 
-    def __init__(  # noqa: D107, PLR0913, PLR0917
+    def __init__(  # noqa: D107, PLR0913
         self,
         provider_a: DebateProvider,
         provider_b: DebateProvider,
@@ -451,7 +451,7 @@ class DebateController:
 
         return round_events
 
-    def _run_side_turn(  # noqa: PLR0913, PLR0917
+    def _run_side_turn(  # noqa: PLR0913
         self,
         side: Side,
         round_index: int,

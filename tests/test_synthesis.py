@@ -24,7 +24,7 @@ from adversarial_debate.schemas.debate import Concession, DebateMessage, Severit
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 
 
-def _make_evidence(  # noqa: PLR0913, PLR0917
+def _make_evidence(  # noqa: PLR0913
     verdict: str = "verdict",
     resolved: int = 2,
     total: int = 2,
@@ -307,8 +307,7 @@ class TestFlags:
         )
         assert report.flags.degraded_rounds == [2]
 
-
-# ── T7.3 (#33) Fail-closed synthesis ─────────────────────────────────────────
+    # ── T7.3 (#33) Fail-closed synthesis ─────────────────────────────────────────
     def test_valid_inputs_pass_validation(self) -> None:
         evidence = _make_evidence(verdict="verdict", resolved=2, total=2)
         v = validate_synthesis_inputs(
