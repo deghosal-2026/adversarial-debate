@@ -186,7 +186,10 @@ def parse_claims_from_review(raw_text: str, side: str, review_id: str) -> list:
         # Bullet points, numbered items, or severity-marked lines
         is_bullet = line.startswith(("-", "*", "•"))
         is_numbered = len(line) > 0 and line[0].isdigit() and "." in line[:4]
-        if not (is_bullet or is_numbered):
+        is_severity_line = any(
+            w in line.lower() for w in ["high:", "medium:", "low:", "critical:", "severity:"]
+        )
+        if not (is_bullet or is_numbered or is_severity_line):
             continue
 
         # Clean the line
@@ -194,9 +197,13 @@ def parse_claims_from_review(raw_text: str, side: str, review_id: str) -> list:
         if len(text) < 5:
             continue
 
-        # Infer severity
+        # Infer severity with negation awareness
         lower = text.lower()
-        if any(w in lower for w in ["high", "critical", "security", "vulnerability", "injection"]):
+        negation_patterns = ["not a", "no ", "isn't", "doesn't", "won't", "without"]
+        is_negated = any(n in lower for n in negation_patterns)
+        if is_negated:
+            severity = "medium"
+        elif any(w in lower for w in ["high", "critical", "security", "vulnerability", "injection"]):
             severity = "high"
         elif any(w in lower for w in ["low", "minor", "style", "nit", "cosmetic"]):
             severity = "low"
@@ -303,6 +310,7 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
         claims=all_claims,
         concessions=termination.concessions,
         events=termination.events,
+        objections=termination.objections,
     )
     evidence = tracker.compute()
 
@@ -313,6 +321,7 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
         claims_by_side={"A": claims_a, "B": claims_b},
         concessions=termination.concessions,
         header=HeaderBlock(engine_version="0.1.0"),
+        events=termination.events,
     )
 
     # Build output

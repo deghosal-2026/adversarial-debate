@@ -14,6 +14,7 @@ Key invariants:
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -105,13 +106,14 @@ class SynthesisReport:
 # ── T7.1 (#31) JointVerdict synthesizer ───────────────────────────────────────
 
 
-def synthesize_verdict(  # noqa: PLR0913, PLR0917
+def synthesize_verdict(  # noqa: PLR0913, PLR0917, D417
     artifact_id: str,
     evidence: EvidenceContext,
     claims_by_side: dict[Side, list[Claim]],
     concessions: list[Concession],
     header: HeaderBlock | None = None,
     max_unresolved: int = 10,
+    events: list[DebateEvent] | None = None,
 ) -> SynthesisReport:
     """Build the full synthesis report from evidence context.
 
@@ -147,7 +149,7 @@ def synthesize_verdict(  # noqa: PLR0913, PLR0917
     )
 
     # Build flags
-    degraded_rounds = _find_degraded_rounds(evidence)
+    degraded_rounds = _find_degraded_rounds(evidence, events)
     flags = ReportFlags(
         theater=evidence.theater,
         capitulation_cascade=evidence.capitulation_cascade,
@@ -209,12 +211,18 @@ def _build_resolved(
     resolved: list[ResolvedEntry] = []
     for c in concessions:
         snap = snapshot_map.get(c.claim_id)
-        text = snap.text if snap else "(unknown claim)"
+        if snap is None:
+            logging.warning("Claim %s not found in snapshots; text will be unknown", c.claim_id)
+            text = "(unknown claim)"
+            severity: Severity = "medium"
+        else:
+            text = snap.text
+            severity = snap.severity
         resolved.append(
             ResolvedEntry(
                 claim_id=c.claim_id,
                 claim_text=text,
-                severity=snap.severity if snap else "medium",
+                severity=severity,
                 conceded_by=c.by_side,
                 rationale=c.rationale,
             )
@@ -266,11 +274,18 @@ def _generate_would_resolve_if(snapshot: ClaimSnapshot) -> str:
     )
 
 
-def _find_degraded_rounds(evidence: EvidenceContext) -> list[int]:  # noqa: ARG001
-    """Identify rounds that were marked degraded."""
-    # In v0.1, degraded round info comes from debate events.
-    # This is a placeholder for when events carry degradation info.
-    return []
+def _find_degraded_rounds(
+    evidence: EvidenceContext,  # noqa: ARG001
+    events: list[DebateEvent] | None = None,
+) -> list[int]:
+    """Identify rounds that were marked degraded by scanning debate events."""
+    if events is None:
+        return []
+    return sorted({
+        e.round_index
+        for e in events
+        if e.degraded
+    })
 
 
 # ── T7.3 (#33) Fail-closed synthesis ──────────────────────────────────────────
@@ -307,10 +322,11 @@ def validate_synthesis_inputs(
     if not claims_by_side:
         violations.append("claims_by_side is empty")
 
-    total_from_sides = sum(len(c) for c in claims_by_side.values())
-    if total_from_sides != evidence.total_claims and evidence.total_claims > 0:
+    # Compare unique claim IDs rather than raw list lengths
+    unique_ids_from_sides = {c.id for side_claims in claims_by_side.values() for c in side_claims}
+    if len(unique_ids_from_sides) != evidence.total_claims and evidence.total_claims > 0:
         violations.append(
-            f"claims_by_side count ({total_from_sides}) "
+            f"unique claim IDs from sides ({len(unique_ids_from_sides)}) "
             f"does not match evidence.total_claims ({evidence.total_claims})"
         )
 

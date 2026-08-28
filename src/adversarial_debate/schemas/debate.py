@@ -5,7 +5,7 @@ is a new event, never an edit; convergence is claim-state-based (DD-08), and
 ``would_resolve_if`` is mandatory on every unresolved point (DD-06).
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import (
     AwareDatetime,
@@ -62,7 +62,7 @@ class UnresolvedPoint(SchemaBase):
     """Disagreement surviving all rounds. ``would_resolve_if`` is mandatory (DD-06)."""
 
     id: str = Field(min_length=1)
-    claim_ids: list[str] = Field(min_length=1)
+    claim_ids: list[Annotated[str, Field(min_length=1)]] = Field(min_length=1)
     position_a: str = Field(min_length=1)
     position_b: str = Field(min_length=1)
     would_resolve_if: str = Field(min_length=1)

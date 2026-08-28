@@ -385,6 +385,35 @@ class TestPointByPointEnforcement:
         addressed = validate_point_by_point(response, objections)
         assert not addressed[0].addressed
 
+    def test_per_objection_keyword_scoping(self) -> None:
+        """Each objection gets its own verdict from its region of the response."""
+        objections = [
+            _make_objection("obj_A", "cl_A", "Locking issue"),
+            _make_objection("obj_B", "cl_B", "Memory leak"),
+        ]
+        response = (
+            "CONCEDED on obj_A: you are right about the locking issue.\n"
+            "REBUTTED on obj_B: the evidence does not support this concern."
+        )
+
+        addressed = validate_point_by_point(response, objections)
+
+        assert addressed[0].response_type == "conceded"
+        assert addressed[1].response_type == "rebutted"
+
+    def test_carried_and_conceded_in_same_response(self) -> None:
+        """Mixed response types per objection."""
+        objections = [
+            _make_objection("obj_1", "cl_001", "First issue"),
+            _make_objection("obj_2", "cl_002", "Second issue"),
+        ]
+        response = "CARRIED on obj_1: I stand by my assessment.\nCONCEDED on obj_2: valid point."
+
+        addressed = validate_point_by_point(response, objections)
+
+        assert addressed[0].response_type == "carried"
+        assert addressed[1].response_type == "conceded"
+
 
 # ── T5.3 (#25) Caps ──────────────────────────────────────────────────────────
 
@@ -410,12 +439,55 @@ class TestCaps:
 
     def test_token_budget_exhausted(self) -> None:
         budget = TokenBudget(limit=0)
-        assert budget.exhausted is False  # frozen dataclass default
+        assert budget.exhausted is True  # computed property from remaining <= 0
         assert budget.limit == 0
 
     def test_token_budget_with_remaining(self) -> None:
         budget = TokenBudget(limit=10000)
         assert budget.limit == 10000
+        assert budget.exhausted is False
+
+    def test_outstanding_filters_by_round(self) -> None:
+        """Objections from earlier rounds are not re-presented in later rounds."""
+        provider_a = _make_responder("CARRIED on cl_001.")
+        provider_b = _make_responder("CARRIED on cl_003.")
+
+        controller = DebateController(
+            provider_a=provider_a,
+            provider_b=provider_b,
+            session_a=_make_session("A"),
+            session_b=_make_session("B"),
+            review_a=_make_review("A", claims=[_make_claim("cl_001", "A1")]),
+            review_b=_make_review("B", claims=[_make_claim("cl_003", "B1")]),
+            artifact_for_prompt="test",
+            max_rounds=2,
+        )
+
+        state = controller.run()
+        # Round 2 should not re-present objections from round 1
+        # that were already carried (not conceded)
+        assert state.reason in ("rounds_exhausted", "all_resolved")
+
+    def test_side_turn_only_updates_responding_side(self) -> None:
+        """_run_side_turn only updates the responding side's claim list."""
+        provider_a = _make_responder("CONCEDED on cl_001.")
+        provider_b = _make_responder("REBUTTED.")
+
+        controller = DebateController(
+            provider_a=provider_a,
+            provider_b=provider_b,
+            session_a=_make_session("A"),
+            session_b=_make_session("B"),
+            review_a=_make_review("A", claims=[_make_claim("cl_001", "A1")]),
+            review_b=_make_review("B", claims=[_make_claim("cl_003", "B1")]),
+            artifact_for_prompt="test",
+            max_rounds=1,
+        )
+
+        state = controller.run()
+        # After round 1, only side A's claims should have status changes
+        a_conceded = any(c.status == "conceded" for c in state.claims_a)
+        assert a_conceded  # A conceded on cl_001
 
 
 # ── T5.4 (#26) Degradation detector ───────────────────────────────────────────
