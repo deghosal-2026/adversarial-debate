@@ -1,0 +1,406 @@
+{
+  "additions": 458,
+  "author": {
+    "id": "MDQ6VXNlcjczNjMyOQ==",
+    "is_bot": false,
+    "login": "adrianmoisey",
+    "name": "Adrian Moisey"
+  },
+  "body": "#### What type of PR is this?\r\n\r\n/kind bug\r\n/kind regression\r\n\r\n#### What this PR does / why we need it:\r\n\r\nThe previous rule would cause nft to coredump on IPv6:\r\n```console\r\n$ nft add rule ip6 kube-proxy 'svc-ABC123-default/my-svc/tcp/https' meta l4proto tcp dnat ip6 addr . port to fd00:10:244::4 . 6443\r\nAssertion failed: dreg < ctx->reg_low (src/netlink_linearize.c: netlink_gen_expr: 911)\r\nAborted                    (core dumped) nft add rule ip6 kube-proxy 'svc-ABC123-default/my-svc/tcp/https' meta l4proto tcp dnat ip6 addr . port to fd00:10:244::4 . 6443\r\n```\r\n\r\nThe new rule allows IPv6 without coredumping.\r\n\r\n\r\n\r\n#### Which issue(s) this PR is related to:\r\n\r\nFixes: #140951\r\n#### Special notes for your reviewer:\r\n\r\n#### Does this PR introduce a user-facing change?\r\n<!--\r\nIf no, just write \"NONE\" in the release-note block below.\r\nIf yes, a release note is required:\r\nEnter your extended release note in the block below. If the PR requires additional action from users switching to the new release, include the string \"action required\".\r\n\r\nFor more information on release notes see: https://git.k8s.io/community/contributors/guide/release-notes.md\r\n-->\r\n```release-note\r\nNONE\r\n```\r\n\r\n#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:\r\n\r\n<!--\r\nThis section can be blank if this pull request does not require a release note.\r\n\r\nWhen adding links which point to resources within git repositories, like\r\nKEPs or supporting documentation, please reference a specific commit and avoid\r\nlinking directly to the master branch. This ensures that links reference a\r\nspecific point in time, rather than a document that may change over time.\r\n\r\nSee here for guidance on getting permanent links to files: https://help.github.com/en/articles/getting-permanent-links-to-files\r\n\r\nPlease use the following format for linking documentation:\r\n- [KEP]: <link>\r\n- [Usage]: <link>\r\n- [Other doc]: <link>\r\n-->\r\n```docs\r\n\r\n```\r\n",
+  "changedFiles": 2,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABL3LMGw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-27T12:01:26Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5091019803",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL30uYA",
+      "author": {
+        "login": "danwinship"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/test pull-kubernetes-e2e-kind-ipv6 \n",
+      "createdAt": "2026-07-27T13:09:11Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5091700320",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4VF8A",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-07-27T13:54:37Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092230640",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4VqUQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/kind failing-test\r\n/triage accepted\r\n/priority critical-urgent\r\n\r\n( we can't ship 1.37 without this from what i understand )\r\n\r\ncc @kubernetes/release-team-leads ",
+      "createdAt": "2026-07-27T13:55:27Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092239953",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4dSyw",
+      "author": {
+        "login": "danwinship"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/lgtm\n/approve",
+      "createdAt": "2026-07-27T14:06:58Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092365003",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4dZLw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: d83df0f42711bc14d3ca020d206a4f6df22a2ef0</details>",
+      "createdAt": "2026-07-27T14:07:06Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092366639",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4hD5A",
+      "author": {
+        "login": "danwinship"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> /test pull-kubernetes-e2e-kind-ipv6\r\n\r\n(belatedly it occurs to me that this proves nothing, since that job uses iptables; there's no ipv6 or dual-stack presubmit using nftables)",
+      "createdAt": "2026-07-27T14:12:21Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092426724",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4nfvw",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test",
+      "createdAt": "2026-07-27T14:21:52Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092532159",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL4sf4Q",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "@danwinship @dims @adrianmoisey let's get it tested before merged https://github.com/kubernetes/test-infra/pull/37555",
+      "createdAt": "2026-07-27T14:29:10Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092614113",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL5_mfw",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test",
+      "createdAt": "2026-07-27T16:30:03Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5093975679",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL5_0Ew",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-e2e-kind-nftables-ipv6",
+      "createdAt": "2026-07-27T16:30:24Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5093979155",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL6RJFw",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Job is green https://prow.k8s.io/view/gs/kubernetes-ci-logs/pr-logs/pull/140960/pull-kubernetes-e2e-kind-nftables-ipv6/2081779269901488128 but should have an unit test that validates the change for possible regressions",
+      "createdAt": "2026-07-27T16:57:42Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5094263063",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL89afA",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "> /staging/src/k8s.io/sample-cli-plugin/... ./staging/src/k8s.io/sample-controller/... ./staging/src/k8s.io/streaming/...\r\nERROR: pkg/proxy/nftables/proxier_test.go:558:21: Error return value of `fp.syncProxyRules` is not checked (errcheck)\r\nERROR: \t\t\tfp.syncProxyRules()\r\nERROR: \t\t\t                 ^\r\n1 issues:\r\n* errcheck: 1",
+      "createdAt": "2026-07-27T21:36:17Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5097085564",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMAQO-Q",
+      "author": {
+        "login": "adrianmoisey"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "> > /staging/src/k8s.io/sample-cli-plugin/... ./staging/src/k8s.io/sample-controller/... ./staging/src/k8s.io/streaming/...\r\n> > ERROR: pkg/proxy/nftables/proxier_test.go:558:21: Error return value of `fp.syncProxyRules` is not checked (errcheck)\r\n> > ERROR: \t\t\tfp.syncProxyRules()\r\n> > ERROR: \t\t\t                 ^\r\n> > 1 issues:\r\n> \r\n> * errcheck: 1\r\n\r\nI left this as-is since all other instances of fp.syncProxyRules() have the same issue",
+      "createdAt": "2026-07-28T06:01:53Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5100539641",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMBVYnw",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "> I left this as-is since all other instances of fp.syncProxyRules() have the same issue\r\n\r\nlinter does not warn about code that is already merged, but help us to not carry on with the same mistake, I agree here that asserting the error is better than swallowing, there can be hidden bugs we do not catch (unlikely but possible)",
+      "createdAt": "2026-07-28T08:17:13Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5101672607",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMBpaYw",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "This is a regression and release blocking issue so is qualified for milestone (cc @kubernetes/release-managers )\r\n\r\n/lgtm\r\n/approve\r\n/milestone 1.37\r\n/release blocking",
+      "createdAt": "2026-07-28T08:52:50Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102000739",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMBpcQg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@aojea: The provided milestone is not valid for this repository. Milestones in this repository: [`next-candidate`, `v1.26`, `v1.27`, `v1.28`, `v1.29`, `v1.30`, `v1.31`, `v1.32`, `v1.33`, `v1.34`, `v1.35`, `v1.36`, `v1.37`, `v1.38`, `v1.39`, `v1.40`, `v1.41`, `v1.42`, `v1.43`]\n\nUse `/milestone clear` to clear the milestone.\n\n<details>\n\nIn response to [this](https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102000739):\n\n>This is a regression and release blocking issue so is qualified for milestone (cc @kubernetes/release-managers )\r\n>\r\n>/lgtm\r\n>/approve\r\n>/milestone 1.37\r\n>/release blocking\n\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-07-28T08:52:53Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102001218",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMBpgdw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 72a2bdac603d43d00af33cdb338dbd3661b52ab7</details>",
+      "createdAt": "2026-07-28T08:52:59Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102002295",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMBponw",
+      "author": {
+        "login": "aojea"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/milestone v1.37",
+      "createdAt": "2026-07-28T08:53:12Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102004383",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMBpqMQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/140960#\" title=\"Author self-approved\">adrianmoisey</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102000739\" title=\"Approved\">aojea</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5092365003\" title=\"Approved\">danwinship</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/140960#pullrequestreview-4788695922\" title=\"Approved\">Subzidion</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[pkg/proxy/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/pkg/proxy/OWNERS)~~ [aojea,danwinship]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-28T08:53:14Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102004785",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMCK8HA",
+      "author": {
+        "login": "adrianmoisey"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-integration",
+      "createdAt": "2026-07-28T09:48:05Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140960#issuecomment-5102550044",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 32,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTQ1MjgwNjg=",
+      "name": "priority/critical-urgent",
+      "description": "Highest priority. Must be actively worked on as someone's top priority right now.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTY3MTIxMDg=",
+      "name": "sig/network",
+      "description": "Categorizes an issue or PR as relevant to SIG Network.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwxMjg3MTY1ODk=",
+      "name": "area/kube-proxy",
+      "description": "",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA5Nzg=",
+      "name": "size/L",
+      "description": "Denotes a PR that changes 100-499 lines, ignoring generated files.",
+      "color": "ee9900"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw0OTY3NTI0Njg=",
+      "name": "kind/failing-test",
+      "description": "Categorizes issue or PR as related to a consistently or frequently failing test.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxOTY3Mjc2NTYw",
+      "name": "kind/regression",
+      "description": "Categorizes issue or PR as related to a regression from a prior release.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODU2NjU2",
+      "name": "triage/accepted",
+      "description": "Indicates an issue or PR is ready to be actively worked on.",
+      "color": "8fc951"
+    }
+  ],
+  "mergedAt": "2026-07-28T11:11:58Z",
+  "state": "MERGED",
+  "title": "Fix single-endpoint DNAT rule"
+}

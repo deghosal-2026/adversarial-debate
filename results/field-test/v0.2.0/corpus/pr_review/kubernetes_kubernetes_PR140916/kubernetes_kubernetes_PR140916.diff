@@ -1,0 +1,183 @@
+diff --git a/plugin/pkg/admission/gc/gc_admission_test.go b/plugin/pkg/admission/gc/gc_admission_test.go
+index bc02435e5696e..fdbdd55397fa1 100644
+--- a/plugin/pkg/admission/gc/gc_admission_test.go
++++ b/plugin/pkg/admission/gc/gc_admission_test.go
+@@ -100,6 +100,16 @@ func (fakeAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) (a
+ 	return authorizer.DecisionAllow, "", nil
+ }
+ 
++// ConditionsAwareAuthorize is not conditions-aware, converts the Authorize decision.
++func (f fakeAuthorizer) ConditionsAwareAuthorize(ctx context.Context, a authorizer.Attributes) authorizer.ConditionsAwareDecision {
++	return authorizer.ConditionsAwareDecisionFromParts(f.Authorize(ctx, a))
++}
++
++// EvaluateConditions is not supported by this authorizer.
++func (fakeAuthorizer) EvaluateConditions(_ context.Context, _ authorizer.ConditionsAwareDecision, _ authorizer.ConditionsData) (authorizer.Decision, string, error) {
++	return authorizer.DecisionDeny, "", authorizer.ErrorConditionEvaluationNotSupported
++}
++
+ // newGCPermissionsEnforcement returns the admission controller configured for testing.
+ func newGCPermissionsEnforcement() (*gcPermissionsEnforcement, error) {
+ 	// the pods/status endpoint is ignored by this plugin since old kubelets
+diff --git a/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer.go b/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer.go
+index b467a30415f1a..a1d7ace4a5f48 100644
+--- a/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer.go
++++ b/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer.go
+@@ -31,7 +31,7 @@ type pluginInitializer struct {
+ 	externalClient    kubernetes.Interface
+ 	dynamicClient     dynamic.Interface
+ 	externalInformers informers.SharedInformerFactory
+-	authorizer        authorizer.UnconditionalAuthorizer
++	authorizer        authorizer.Authorizer
+ 	featureGates      featuregate.FeatureGate
+ 	effectiveVersion  compatibility.EffectiveVersion
+ 	stopCh            <-chan struct{}
+@@ -45,7 +45,7 @@ func New(
+ 	extClientset kubernetes.Interface,
+ 	dynamicClient dynamic.Interface,
+ 	extInformers informers.SharedInformerFactory,
+-	authz authorizer.UnconditionalAuthorizer,
++	authz authorizer.Authorizer,
+ 	featureGates featuregate.FeatureGate,
+ 	effectiveVersion compatibility.EffectiveVersion,
+ 	stopCh <-chan struct{},
+@@ -94,6 +94,9 @@ func (i pluginInitializer) Initialize(plugin admission.Interface) {
+ 	if wants, ok := plugin.(WantsUnconditionalAuthorizer); ok {
+ 		wants.SetUnconditionalAuthorizer(i.authorizer)
+ 	}
++	if wants, ok := plugin.(WantsAuthorizer); ok {
++		wants.SetAuthorizer(i.authorizer)
++	}
+ 	if wants, ok := plugin.(WantsRESTMapper); ok {
+ 		wants.SetRESTMapper(i.restMapper)
+ 	}
+diff --git a/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go b/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go
+index 341d555efc7e9..298ed25896130 100644
+--- a/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go
++++ b/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go
+@@ -31,6 +31,17 @@ import (
+ 	"k8s.io/client-go/kubernetes/fake"
+ )
+ 
++// TestWantsUnconditionalAuthorizer ensures that the authorizer is injected
++// when the WantsUnconditionalAuthorizer interface is implemented by a plugin.
++func TestWantsUnconditionalAuthorizer(t *testing.T) {
++	target := initializer.New(nil, nil, nil, &TestAuthorizer{}, nil, nil, nil, nil)
++	wantUnconditionalAuthorizerAdmission := &WantUnconditionalAuthorizerAdmission{}
++	target.Initialize(wantUnconditionalAuthorizerAdmission)
++	if wantUnconditionalAuthorizerAdmission.auth == nil {
++		t.Errorf("expected unconditional authorizer to be initialized but found nil")
++	}
++}
++
+ // TestWantsAuthorizer ensures that the authorizer is injected
+ // when the WantsAuthorizer interface is implemented by a plugin.
+ func TestWantsAuthorizer(t *testing.T) {
+@@ -113,12 +124,29 @@ func (self *WantExternalKubeClientSet) ValidateInitialization() error      { ret
+ var _ admission.Interface = &WantExternalKubeClientSet{}
+ var _ initializer.WantsExternalKubeClientSet = &WantExternalKubeClientSet{}
+ 
++// WantUnconditionalAuthorizerAdmission is a test stub that fulfills the WantsUnconditionalAuthorizer interface.
++type WantUnconditionalAuthorizerAdmission struct {
++	auth authorizer.UnconditionalAuthorizer
++}
++
++func (self *WantUnconditionalAuthorizerAdmission) SetUnconditionalAuthorizer(a authorizer.UnconditionalAuthorizer) {
++	self.auth = a
++}
++func (self *WantUnconditionalAuthorizerAdmission) Admit(ctx context.Context, a admission.Attributes, o admission.ObjectInterfaces) error {
++	return nil
++}
++func (self *WantUnconditionalAuthorizerAdmission) Handles(o admission.Operation) bool { return false }
++func (self *WantUnconditionalAuthorizerAdmission) ValidateInitialization() error      { return nil }
++
++var _ admission.Interface = &WantUnconditionalAuthorizerAdmission{}
++var _ initializer.WantsUnconditionalAuthorizer = &WantUnconditionalAuthorizerAdmission{}
++
+ // WantAuthorizerAdmission is a test stub that fulfills the WantsAuthorizer interface.
+ type WantAuthorizerAdmission struct {
+-	auth authorizer.UnconditionalAuthorizer
++	auth authorizer.Authorizer
+ }
+ 
+-func (self *WantAuthorizerAdmission) SetUnconditionalAuthorizer(a authorizer.UnconditionalAuthorizer) {
++func (self *WantAuthorizerAdmission) SetAuthorizer(a authorizer.Authorizer) {
+ 	self.auth = a
+ }
+ func (self *WantAuthorizerAdmission) Admit(ctx context.Context, a admission.Attributes, o admission.ObjectInterfaces) error {
+@@ -128,7 +156,7 @@ func (self *WantAuthorizerAdmission) Handles(o admission.Operation) bool { retur
+ func (self *WantAuthorizerAdmission) ValidateInitialization() error      { return nil }
+ 
+ var _ admission.Interface = &WantAuthorizerAdmission{}
+-var _ initializer.WantsUnconditionalAuthorizer = &WantAuthorizerAdmission{}
++var _ initializer.WantsAuthorizer = &WantAuthorizerAdmission{}
+ 
+ // WantDrainedNotification is a test stub that filfills the WantsDrainedNotification interface.
+ type WantDrainedNotification struct {
+@@ -147,13 +175,23 @@ func (self *WantDrainedNotification) ValidateInitialization() error      { retur
+ var _ admission.Interface = &WantDrainedNotification{}
+ var _ initializer.WantsDrainedNotification = &WantDrainedNotification{}
+ 
+-// TestAuthorizer is a test stub that fulfills the WantsAuthorizer interface.
++// TestAuthorizer is a test stub that fulfills the full Authorizer interface.
+ type TestAuthorizer struct{}
+ 
+ func (t *TestAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) (authorized authorizer.Decision, reason string, err error) {
+ 	return authorizer.DecisionNoOpinion, "", nil
+ }
+ 
++// ConditionsAwareAuthorize is not conditions-aware, converts the Authorize decision.
++func (t *TestAuthorizer) ConditionsAwareAuthorize(ctx context.Context, a authorizer.Attributes) authorizer.ConditionsAwareDecision {
++	return authorizer.ConditionsAwareDecisionFromParts(t.Authorize(ctx, a))
++}
++
++// EvaluateConditions is not supported by this authorizer.
++func (*TestAuthorizer) EvaluateConditions(_ context.Context, _ authorizer.ConditionsAwareDecision, _ authorizer.ConditionsData) (authorizer.Decision, string, error) {
++	return authorizer.DecisionDeny, "", authorizer.ErrorConditionEvaluationNotSupported
++}
++
+ func TestRESTMapperAdmissionPlugin(t *testing.T) {
+ 	initializer := initializer.New(nil, nil, nil, &TestAuthorizer{}, nil, nil, nil, &doNothingRESTMapper{})
+ 	wantsRESTMapperAdmission := &WantsRESTMapperAdmissionPlugin{}
+diff --git a/staging/src/k8s.io/apiserver/pkg/admission/initializer/interfaces.go b/staging/src/k8s.io/apiserver/pkg/admission/initializer/interfaces.go
+index 2e29063a7d87b..55f80679076e0 100644
+--- a/staging/src/k8s.io/apiserver/pkg/admission/initializer/interfaces.go
++++ b/staging/src/k8s.io/apiserver/pkg/admission/initializer/interfaces.go
+@@ -43,12 +43,18 @@ type WantsExternalKubeInformerFactory interface {
+ 	admission.InitializationValidator
+ }
+ 
+-// WantsUnconditionalAuthorizer defines a function which sets authorizer.UnconditionalAuthorizer for admission plugins that need it.
++// WantsUnconditionalAuthorizer defines a function which sets a narrower, conditions-unaware UnconditionalAuthorizer for admission plugins that need it.
+ type WantsUnconditionalAuthorizer interface {
+ 	SetUnconditionalAuthorizer(authorizer.UnconditionalAuthorizer)
+ 	admission.InitializationValidator
+ }
+ 
++// WantsAuthorizer defines a function which sets a standard, possibly conditions-aware Authorizer for admission plugins that need it.
++type WantsAuthorizer interface {
++	SetAuthorizer(authorizer.Authorizer)
++	admission.InitializationValidator
++}
++
+ // WantsQuotaConfiguration defines a function which sets quota configuration for admission plugins that need it.
+ type WantsQuotaConfiguration interface {
+ 	SetQuotaConfiguration(quota.Configuration)
+diff --git a/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_test_context.go b/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_test_context.go
+index 7d02975702725..4870230cdbbfb 100644
+--- a/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_test_context.go
++++ b/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_test_context.go
+@@ -644,3 +644,13 @@ type fakeAuthorizer struct{}
+ func (f fakeAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) (authorizer.Decision, string, error) {
+ 	return authorizer.DecisionAllow, "", nil
+ }
++
++// ConditionsAwareAuthorize is not conditions-aware, converts the Authorize decision.
++func (f fakeAuthorizer) ConditionsAwareAuthorize(ctx context.Context, a authorizer.Attributes) authorizer.ConditionsAwareDecision {
++	return authorizer.ConditionsAwareDecisionFromParts(f.Authorize(ctx, a))
++}
++
++// EvaluateConditions is not supported by this authorizer.
++func (fakeAuthorizer) EvaluateConditions(_ context.Context, _ authorizer.ConditionsAwareDecision, _ authorizer.ConditionsData) (authorizer.Decision, string, error) {
++	return authorizer.DecisionDeny, "", authorizer.ErrorConditionEvaluationNotSupported
++}

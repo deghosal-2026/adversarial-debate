@@ -1,0 +1,444 @@
+{
+  "additions": 49,
+  "author": {
+    "id": "MDQ6VXNlcjIzMzA0",
+    "is_bot": false,
+    "login": "dims",
+    "name": "Davanum Srinivas"
+  },
+  "body": "#### What type of PR is this?\n\n/kind failing-test\n/sig node\n\n#### What this PR does / why we need it:\n\nPSI means Pressure Stall Information. The kernel counts how much time the tasks in a cgroup wait for memory, CPU, and IO. The kubelet reports these counters in /stats/summary. The test `should report Memory pressure in PSI metrics` starts a pod with a 200MB memory limit. The pod writes 50MB files in a loop, so the kernel must reclaim the pod's file cache again and again. This PR changes that one test, in one commit, in three ways.\n\n**1. The test now checks the total stall counter, not the 10 second average.**\n\nThe old code checked that the pod's `Memory.PSI.Full.Avg10` went above 0.1 within 2 minutes. That check only passes when the kernel blocks the pod inside memory reclaim for long periods. The kernel removed that blocking in two steps:\n\n- Linux v6.16 removed the ability of reclaim to write file pages to disk (torvalds/linux@6b0dfabb3555). ext4 also started to write large folios (torvalds/linux@16705e52e629).\n- Linux v6.19 made reclaim move dirty file pages out of its path the first time it sees them (torvalds/linux@2f05435df932). That change removed the sleeps that produced the stall time.\n\nThe effect in CI is a gradient. Kernel 6.1 passes. Kernels 6.8 and 6.12 pass or fail, and the environment decides. Ubuntu 26.04 with kernel 7.0 fails on every run. Both EC2 serial jobs (`ci-containerd-node-e2e-serial-ec2` and the arm64 twin) fail on every run since 2026-07-29. Triage: https://go.k8s.io/triage#f1d598b9e6b23860ee05\n\nThe kubelet reports PSI correctly on all of these kernels. The workload's wait time only moved from the memory counters to the IO counters. We reproduced this on GCP instances with a bare cgroup and the same write loop, without Kubernetes. On kernel 7.0 the average stays at zero in every sample, and the total counter grows in every sample. An idle cgroup stays at exactly zero. MGLRU and memory.high settings do not change the result.\n\nThe new code polls `Memory.PSI.Full.Total` for the pod from /stats/summary, through a new helper (`podMemoryPSIFullTotal`). It checks two steps, each with the same 2 minute limit and 15 second poll as before. First, the counter must become more than zero. Second, the counter must grow past the value from the first step while the workload runs. An idle pod adds no stall time, so growth shows that the pressure comes from this pod. The CPU and IO tests do not change, because their checks pass on all kernels we measured.\n\n**2. The test runs on CRI-O again.**\n\nThe commit deletes the runtime check that skipped the test on CRI-O. #136191 added that skip because the test failed on Fedora CoreOS (#134141). The skip named automatic memory.high configuration in CRI-O as the condition for removal, and that change (cri-o/cri-o#9714) closed without a merge. We also measured, on kernel 7.0, that memory.high does not make the old check pass. The v6.19 reclaim change removes the mechanism that memory.high would need, so we expect the same result on v6.19 and newer. The new check removes the reason for the skip.\n\n**3. The workload writes a small first pass, so it survives its start on XFS.**\n\nOn Fedora CoreOS the kernel killed the stress container about half a second after start, so the pod often never ran. We reproduced this on GCP Fedora CoreOS images with a bare cgroup, on kernel 6.15.10 and on kernel 7.1.3. The cause: the first pass of writes fills the whole memory limit with dirty pages before the kernel starts to write them to disk. On XFS the kernel then finds nothing to reclaim and kills the container. With `memory.oom.group=1`, which is the setting the kubelet applies, 17 to 18 of 20 starts died on both kernels. On an ext4 disk on the same kernels the starts survived: zero kills on kernel 6.15, and on kernel 7.1 one dd child died once while the workload continued. That difference is why Ubuntu and COS nodes never showed the problem.\n\nThe commit changes the container command: it now writes one pass of the 5 files at 10MB each, and then it runs the same 50MB loop as before. The limit then fills slowly, and the disk writes run before the first reclaim. We measured 20 of 20 clean starts on both kernels with this ramp, and the total stall counter still grows for the test.\n\n**CI results.** Runs of this change passed the PSI tests on all seven node environments: COS (kernel 6.12), Ubuntu GKE (6.8), Fedora CoreOS with CRI-O (7.1), and AL2023 (6.1) plus Ubuntu 26.04 (7.0) on EC2, on amd64 and on arm64.\n\n#### Which issue(s) this PR is related to:\n\nRelated to #134141\n\n#### Special notes for your reviewer:\n\n- The two EC2 serial presubmits completed for the first time in their history on this PR, after kubernetes/test-infra#37612 gave them a 300 minute timeout.\n- Pod level PSI counters keep their value when a container restarts. We checked this with a parent cgroup and a child cgroup that we deleted and created again six times.\n- The new helper returns an error when the pod is not in the summary yet. The poll then retries instead of failing the test.\n\n#### Does this PR introduce a user-facing change?\n\n```release-note\nNONE\n```\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABNCT5VQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Skipping CI for Draft Pull Request.\nIf you want CI signal for your change, please convert it to an actual PR.\nYou can still manually trigger a test run with `/test all`",
+      "createdAt": "2026-08-03T17:44:14Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5169805653",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNCT6Og",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-08-03T17:44:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5169805882",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNCT9kA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-08-03T17:44:20Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5169806736",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNCURPA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141146#\" title=\"Author self-approved\">dims</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[test/e2e_node/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/test/e2e_node/OWNERS)~~ [dims]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-08-03T17:44:51Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5169811772",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNGWk3Q",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-08-04T02:51:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5174043869",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNOyy5A",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-node-kubelet-serial-containerd\r\n/test pull-kubernetes-node-crio-kubelet-serial\r\n/test pull-kubernetes-node-e2e-containerd-serial-ec2\r\n/test pull-kubernetes-node-arm64-e2e-containerd-serial-ec2\r\n",
+      "createdAt": "2026-08-04T18:13:15Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5182894820",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNQ-ZHg",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "one test failed in:\r\nhttps://prow.k8s.io/view/gs/kubernetes-ci-logs/pr-logs/pull/141146/pull-kubernetes-node-e2e-containerd-serial-ec2/2084704259974107136\r\n\r\nthe failure is a known flake:\r\nhttps://go.k8s.io/triage#040e0a52a18bc214c7d9\r\n\r\n",
+      "createdAt": "2026-08-04T22:09:50Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5185181982",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNREfCg",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Looking good!\r\n\r\n### CI validation matrix (2026-08-04, final single-commit wave on k/k#141146)\r\n\r\nFour presubmit jobs ran the reworked test. All seven executions of \"should report\r\nMemory pressure in PSI metrics\" passed. The one red job failed on an unrelated\r\nHugePages test (a skip-list drift between the presubmit and its periodic).\r\n\r\n| CI job (result) | Node OS | Kernel | Container runtime | runc | Memory PSI test |\r\n|---|---|---|---|---|---|\r\n| node-kubelet-serial-containerd (pass) | Container-Optimized OS 129 LTS (cos-129-19506-299-60, GCE) | 6.12.94+ | containerd 2.2.5 (rev 77c8424, COS built-in) | COS built-in (not logged) | passed, 62s |\r\n| same job | Ubuntu 24.04 GKE (ubuntu-gke-2404-1-34 v20260803, GCE) | 6.8.0-1059-gke | containerd 2.1.9-0ubuntu0~24.04.1~gke2 (distro package) | Ubuntu package (not logged) | passed, 47s |\r\n| node-crio-kubelet-serial (pass) | Fedora CoreOS 44.20260707.3.1 (GCE, XFS) | 7.1.3-200.fc44 | CRI-O 1.36.0 | bundled runc + crun handlers, both used in the run | passed, 47s |\r\n| node-e2e-containerd-serial-ec2 (fail on unrelated HugePages) | Amazon Linux 2023, amd64 (EC2) | 6.1.176-223.369.amzn2023 | containerd v2.3.0-364-g1a34bf320 (main tarball) | v1.5.1 (pinned at that containerd revision) | passed, 47s |\r\n| same job | Ubuntu 26.04 LTS, amd64 (EC2) | 7.0.0-1009-aws | containerd v2.3.0-364-g1a34bf320 | v1.5.1 | passed, 32s |\r\n| node-arm64-e2e-containerd-serial-ec2 (pass) | Ubuntu 26.04 LTS, arm64 (EC2) | 7.0.0-1009-aws | containerd v2.3.0-364-g1a34bf320 | v1.5.1 | passed, 47s |\r\n| same job | Amazon Linux 2023, arm64 (EC2) | 6.1.176-223.369.amzn2023 | containerd v2.3.0-364-g1a34bf320 | v1.5.1 | passed, 32s |\r\n\r\nHow each column was read: kernels come from each instance's kern.log. containerd\r\nversions come from the last \"starting containerd\" line in containerd.log per\r\ninstance, because some images boot a stock containerd before the test build\r\nreplaces it. The EC2 runc version comes from containerd's script/setup/runc-version\r\nfile at the exact revision the logs name (1a34bf320 pins v1.5.1). The CRI-O version\r\ncomes from its startup banner, and the run's log shows both the runc and the crun\r\nhandler in use. The two \"not logged\" runc cells are image built-in packages whose\r\nversions appear in no artifact.\r\n\r\nCoverage in one wave: five kernel versions (6.1, 6.8, 6.12, 7.0, 7.1), five OS\r\nfamilies, two architectures, and three runtime stacks plus CRI-O with two OCI\r\nruntimes. The new check passed everywhere, in 32 to 62 seconds.",
+      "createdAt": "2026-08-04T22:23:02Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5185281802",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNREs-Q",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Running the 4 ci presubmits again!\r\n\r\n/test pull-kubernetes-node-kubelet-serial-containerd\r\n/test pull-kubernetes-node-crio-kubelet-serial\r\n/test pull-kubernetes-node-e2e-containerd-serial-ec2\r\n/test pull-kubernetes-node-arm64-e2e-containerd-serial-ec2",
+      "createdAt": "2026-08-04T22:23:33Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5185285369",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNRFOcA",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/assign @kannon92 @SergeyKanzhelev @saschagrunert @haircommander \r\n\r\nplease look at results here:\r\nhttps://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5185281802\r\n",
+      "createdAt": "2026-08-04T22:24:44Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5185293936",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNRHSTQ",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "@ndixita can you please take a look as well?",
+      "createdAt": "2026-08-04T22:29:25Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "HEART",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5185327693",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNRboTw",
+      "author": {
+        "login": "ndixita"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/assign",
+      "createdAt": "2026-08-04T23:17:05Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5185661007",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNR8A2A",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-node-crio-kubelet-serial\r\n/test pull-kubernetes-node-e2e-containerd-serial-ec2",
+      "createdAt": "2026-08-05T00:40:32Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5186191576",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNSp-Xg",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-node-kubelet-serial-containerd",
+      "createdAt": "2026-08-05T02:47:05Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5186944606",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNWajYg",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-node-kubelet-serial-containerd\r\n/test pull-kubernetes-node-crio-kubelet-serial\r\n/test pull-kubernetes-node-e2e-containerd-serial-ec2\r\n/test pull-kubernetes-node-arm64-e2e-containerd-serial-ec2",
+      "createdAt": "2026-08-05T10:59:18Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5190886242",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNXlBiw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-08-05T13:06:18Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5192106379",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNZ1YLQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-node-e2e-containerd-serial-ec2",
+      "createdAt": "2026-08-05T16:28:57Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5194471469",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNaaKSQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-node-arm64-e2e-containerd-serial-ec2",
+      "createdAt": "2026-08-05T17:27:40Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5195074121",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNcEBcQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@dims: The following test **failed**, say `/retest` to rerun all failed tests or `/retest-required` to rerun all mandatory failed tests:\n\nTest name | Commit | Details | Required | Rerun command\n--- | --- | --- | --- | ---\npull-kubernetes-node-e2e-containerd-serial-ec2 | 22f0e738f9d830876a3420004437beebbd033361 | [link](https://prow.k8s.io/view/gs/kubernetes-ci-logs/pr-logs/pull/141146/pull-kubernetes-node-e2e-containerd-serial-ec2/2085040386736132096) | false | `/test pull-kubernetes-node-e2e-containerd-serial-ec2`\n\n[Full PR test history](https://prow.k8s.io/pr-history?org=kubernetes&repo=kubernetes&pr=141146). [Your PR dashboard](https://prow.k8s.io/pr?query=is%3Apr%20state%3Aopen%20author%3Adims). Please help us cut down on flakes by [linking to](https://git.k8s.io/community/contributors/devel/sig-testing/flaky-tests.md#filing-issues-for-flaky-tests) an [open issue](https://github.com/kubernetes/kubernetes/issues?q=is:issue+is:open) when you hit one in your PR.\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository. I understand the commands that are listed [here](https://go.k8s.io/bot-commands).\n</details>\n<!-- test report -->",
+      "createdAt": "2026-08-05T20:10:58Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5196808561",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNdeXfQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/test pull-kubernetes-node-e2e-containerd-serial-ec2",
+      "createdAt": "2026-08-05T22:50:31Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5198288765",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNeZl6Q",
+      "author": {
+        "login": "ndixita"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/lgtm",
+      "createdAt": "2026-08-06T01:12:31Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5199259113",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNeZo4w",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 0bd25a7a18d0cf2b76bf65c793ab6a18c7e58ffc</details>",
+      "createdAt": "2026-08-06T01:12:39Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5199259875",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABNehQXw",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/milestone v1.37\r\n\r\ncc @kubernetes/release-team-leads ",
+      "createdAt": "2026-08-06T01:34:09Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141146#issuecomment-5199384671",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 29,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNTI3MTc=",
+      "name": "area/test",
+      "description": "",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTM2NjU=",
+      "name": "sig/node",
+      "description": "Categorizes an issue or PR as relevant to SIG Node.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA5MzQ=",
+      "name": "size/M",
+      "description": "Denotes a PR that changes 30-99 lines, ignoring generated files.",
+      "color": "eebb00"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw0ODMwNjk3NjQ=",
+      "name": "sig/testing",
+      "description": "Categorizes an issue or PR as relevant to SIG Testing.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWw0OTY3NTI0Njg=",
+      "name": "kind/failing-test",
+      "description": "Categorizes issue or PR as related to a consistently or frequently failing test.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-08-06T02:22:34Z",
+  "state": "MERGED",
+  "title": "node e2e: fix the memory PSI test for new kernels and remove the CRI-O skip"
+}

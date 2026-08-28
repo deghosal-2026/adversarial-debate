@@ -180,7 +180,7 @@ Selection rules:
 
 Publish the corpus before the first rerun under:
 
-- `docs/field-test/v0.2.0/corpus.csv`
+- `results/field-test/v0.2.0/corpus.csv`
 
 Required fields:
 

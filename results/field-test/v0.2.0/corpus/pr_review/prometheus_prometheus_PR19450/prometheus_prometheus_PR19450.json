@@ -1,0 +1,63 @@
+{
+  "additions": 236,
+  "author": {
+    "id": "MDQ6VXNlcjE3NzYzMjA=",
+    "is_bot": false,
+    "login": "pr00se",
+    "name": "Patryk Prus"
+  },
+  "body": "#### Which issue(s) does the PR fix:\r\n\r\nFollow-up to #19216 (OOO-only wrap).\r\n\r\n#### Release notes for end users (**ALL** commits must be considered).\r\n*Reviewers should verify clarity and quality.*\r\n\r\n```release-notes\r\n[BUGFIX] TSDB: Fix in-order chunk ID overflow by wrapping head chunk IDs modulo 2^23 so they never collide with the out-of-order flag bit.\r\n```\r\n\r\n## Summary\r\n\r\nIn-order chunk IDs were stored in a 24-bit field of `HeadChunkRef`, but the top bit is reserved as the OOO flag. Once the chunk ID reached `2^23`, lookups treated the chunk as out-of-order and returned `ErrNotFound`.\r\n\r\nThis mirrors #19216 for the in-order path: wrap IDs modulo `2^23` on assign and lookup, advance `firstChunkID` modulo `2^23` on truncate. The OOO path logs and drops data when the ID space is exhausted, since OOO ingestion is best-effort. The in-order path panics instead, since dropping would mean losing current writes. In practice this shouldn't happen because head compaction keeps the live set of chunks small.",
+  "changedFiles": 7,
+  "comments": [
+    {
+      "id": "IC_kwDOAGhaic8AAAABP4Ai0Q",
+      "author": {
+        "login": "pr00se"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "test failures are waiting on https://github.com/prometheus/prometheus/pull/19465",
+      "createdAt": "2026-08-20T18:53:59Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19450#issuecomment-5360329425",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABQDNKBA",
+      "author": {
+        "login": "roidelapluie"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Thanks for the follow-up. The logic looks right.\r\n\r\nA few things:\r\n\r\n- `headChunkID`'s doc still says the bound is enforced by `cutNewHeadChunk`, but the second commit moved it to `pushHeadChunk`. Same for the test name `TestCutNewHeadChunk_PanicsAtIDSpaceBound`.\r\n- The `HeadChunkID` doc in `chunks.go` contradicts itself now. The new paragraph says in-order IDs wrap, but the bullets below still order them (\"less than the above, but >= memSeries.firstID\") and the example table reads as monotonic. I would propose stating the rule instead: `i = (HeadChunkID - firstChunkID) mod 2^23`, and that these IDs must never be ordered or bound-checked directly.\r\n- You add `wrapChunkID` but then write `% oooChunkIDMask` in `truncateChunksBefore`. Can you use the helper there? It also avoids churning the OOO line from `&` to `%` for no behaviour change.\r\n- `wrapChunkID`'s comment says a signed `%` would not wrap negative ids, but `HeadChunkID` is `uint64`. The real reason is that `id - firstChunkID` wraps modulo 2^64 and the mask recovers the 23 bits.\r\n- On the OOO side #19216 logs and drops (`\"Too many OOO chunks, dropping data\"`), here you panic. I am fine with the panic since it is unreachable in practice, but can you note the divergence in the commit message?\r\n- `oooChunkIDMask` now bounds the in-order space too, so the name is misleading. Rename it, or add an alias?\r\n\r\nNothing blocking.",
+      "createdAt": "2026-08-21T15:44:32Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19450#issuecomment-5372070404",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAGhaic8AAAABQHWU9A",
+      "author": {
+        "login": "pr00se"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> * `headChunkID`'s doc still says the bound is enforced by `cutNewHeadChunk`, but the second commit moved it to `pushHeadChunk`. Same for the test name `TestCutNewHeadChunk_PanicsAtIDSpaceBound`.\r\n> * The `HeadChunkID` doc in `chunks.go` contradicts itself now. The new paragraph says in-order IDs wrap, but the bullets below still order them (\"less than the above, but >= memSeries.firstID\") and the example table reads as monotonic. I would propose stating the rule instead: `i = (HeadChunkID - firstChunkID) mod 2^23`, and that these IDs must never be ordered or bound-checked directly.\r\n> * You add `wrapChunkID` but then write `% oooChunkIDMask` in `truncateChunksBefore`. Can you use the helper there? It also avoids churning the OOO line from `&` to `%` for no behaviour change.\r\n> * `wrapChunkID`'s comment says a signed `%` would not wrap negative ids, but `HeadChunkID` is `uint64`. The real reason is that `id - firstChunkID` wraps modulo 2^64 and the mask recovers the 23 bits.\r\n\r\nAddressed in https://github.com/prometheus/prometheus/pull/19450/commits/52c1f1ad6dcb61d1312dc48dd5eb4ac5207f79bc\r\n\r\n> * On the OOO side [tsdb: fix OOO chunk ID overflow via modular wrapping\u00a0#19216](https://github.com/prometheus/prometheus/pull/19216) logs and drops (`\"Too many OOO chunks, dropping data\"`), here you panic. I am fine with the panic since it is unreachable in practice, but can you note the divergence in the commit message?\r\n\r\nUpdated in the PR description.\r\n\r\n> * `oooChunkIDMask` now bounds the in-order space too, so the name is misleading. Rename it, or add an alias?\r\n\r\nI'll do this in a follow-up PR to keep this changeset small.",
+      "createdAt": "2026-08-21T23:23:56Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/prometheus/prometheus/pull/19450#issuecomment-5376414964",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 42,
+  "labels": [],
+  "mergedAt": "2026-08-24T08:02:01Z",
+  "state": "MERGED",
+  "title": "tsdb: fix in-order chunk ID overflow via modular wrapping"
+}

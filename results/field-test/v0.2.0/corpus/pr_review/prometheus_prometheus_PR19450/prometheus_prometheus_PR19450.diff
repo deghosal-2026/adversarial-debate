@@ -1,0 +1,419 @@
+diff --git a/tsdb/chunks/chunks.go b/tsdb/chunks/chunks.go
+index d2d63812d59..0beb2ca0ab3 100644
+--- a/tsdb/chunks/chunks.go
++++ b/tsdb/chunks/chunks.go
+@@ -76,31 +76,22 @@ func (p HeadChunkRef) Unpack() (HeadSeriesRef, HeadChunkID) {
+ }
+ 
+ // HeadChunkID refers to a specific chunk in a series (memSeries) in the Head.
+-// Each memSeries has its own number to refer to its chunks: it is monotonically
+-// increasing for in-order chunks, while out-of-order chunk IDs wrap around modulo
+-// 2^23 (see oooHeadChunkID in tsdb/head_read.go), so they only increase between
+-// wrap-arounds.
+-// If the HeadChunkID value is...
+-//   - memSeries.firstChunkID+len(memSeries.mmappedChunks), it's the head chunk.
+-//   - less than the above, but >= memSeries.firstID, then it's
+-//     memSeries.mmappedChunks[i] where i = HeadChunkID - memSeries.firstID.
++// Each memSeries has its own IDs for in-order and out-of-order chunks.
+ //
+-// If memSeries.headChunks is non-nil it points to a *memChunk that holds the current
+-// "open" (accepting appends) instance. *memChunk is a linked list and memChunk.next pointer
+-// might link to the older *memChunk instance.
+-// If there are multiple *memChunk instances linked to each other from memSeries.headChunks
+-// they will be m-mapped as soon as possible leaving only "open" *memChunk instance.
++// IDs occupy bits 0-22 of HeadChunkRef (bit 23 is the OOO flag) and wrap modulo
++// 2^23 (see wrapChunkID, headChunkID, and oooHeadChunkID in tsdb/head_read.go).
++// They are not a globally monotonic counter: never order them, compare them, or
++// bound-check them directly. Recover the live-chunk index with
++//
++//	i = wrapChunkID(HeadChunkID - firstChunkID)
+ //
+-// Example:
+-// assume a memSeries.firstChunkID=7 and memSeries.mmappedChunks=[p5,p6,p7,p8,p9].
++// For in-order chunks, i indexes mmappedChunks, then the headChunks linked list.
+ //
+-//	| HeadChunkID value | refers to ...                                                                          |
+-//	|-------------------|----------------------------------------------------------------------------------------|
+-//	|               0-6 | chunks that have been compacted to blocks, these won't return data for queries in Head |
+-//	|              7-11 | memSeries.mmappedChunks[i] where i is 0 to 4.                                          |
+-//	|                12 |                                                         *memChunk{next: nil}
+-//	|                13 |                                         *memChunk{next: ^}
+-//	|                14 | memSeries.headChunks -> *memChunk{next: ^}
++// If memSeries.headChunks is non-nil it points to a *memChunk that holds the current
++// "open" (accepting appends) instance. *memChunk is a linked list and memChunk.prev
++// pointer might link to the older *memChunk instance.
++// If there are multiple *memChunk instances linked to each other from memSeries.headChunks
++// they will be m-mapped as soon as possible leaving only one "open" *memChunk instance.
+ type HeadChunkID uint64
+ 
+ // BlockChunkRef refers to a chunk within a persisted block.
+diff --git a/tsdb/db_test.go b/tsdb/db_test.go
+index 0921517f425..9b8710cb6e8 100644
+--- a/tsdb/db_test.go
++++ b/tsdb/db_test.go
+@@ -11617,3 +11617,80 @@ func testOOOCompactionAcrossChunkIDWrap(t *testing.T, scenario sampleTypeScenari
+ 	sort.Slice(expSamples, func(i, j int) bool { return expSamples[i].T() < expSamples[j].T() })
+ 	requireEqualSeries(t, map[string][]chunks.Sample{l.String(): expSamples}, seriesSet, true)
+ }
++
++// TestInOrderCompactionAcrossChunkIDWrap verifies that queries and head
++// compaction work on a series whose in-order chunk IDs wrap past the 23-bit
++// boundary.
++func TestInOrderCompactionAcrossChunkIDWrap(t *testing.T) {
++	for name, scenario := range sampleTypeScenarios {
++		t.Run(name, func(t *testing.T) {
++			testInOrderCompactionAcrossChunkIDWrap(t, scenario)
++		})
++	}
++}
++
++func testInOrderCompactionAcrossChunkIDWrap(t *testing.T, scenario sampleTypeScenario) {
++	const chunkRange = 100
++	const maxT = 500
++
++	db := newTestDB(t, withRngs(chunkRange))
++	db.DisableCompactions()
++
++	l := labels.FromStrings("l", "v1")
++
++	// Create the series, then seed firstChunkID at the top of the 23-bit ID
++	// space to emulate a long-lived series that has already truncated ~8M
++	// chunks. Every chunk appended afterwards is created with an ID at or past
++	// the boundary, so their stored HeadChunkRef IDs must wrap.
++	app := db.Appender(context.Background())
++	ref, _, err := scenario.appendFunc(app, l, 0, 0)
++	require.NoError(t, err)
++	require.NoError(t, app.Commit())
++
++	firstChunkIDSeed := chunks.HeadChunkID(oooChunkIDMask - 1)
++	ms := db.head.series.getByID(chunks.HeadSeriesRef(ref))
++	require.NotNil(t, ms)
++	ms.Lock()
++	ms.firstChunkID = firstChunkIDSeed
++	ms.Unlock()
++
++	newestChunkID := func() chunks.HeadChunkID {
++		ms.Lock()
++		defer ms.Unlock()
++		return ms.headChunkID(len(ms.mmappedChunks) + int(ms.headChunkCount.Load()) - 1)
++	}
++	newestBeforeAppends := newestChunkID()
++
++	expSamples := []chunks.Sample{scenario.sampleFunc(0, 0)}
++	app = db.Appender(context.Background())
++	for ts := int64(10); ts < maxT; ts += 10 {
++		_, _, err = scenario.appendFunc(app, l, ts, ts)
++		require.NoError(t, err)
++		expSamples = append(expSamples, scenario.sampleFunc(ts, ts))
++	}
++	require.NoError(t, app.Commit())
++	sort.Slice(expSamples, func(i, j int) bool { return expSamples[i].T() < expSamples[j].T() })
++
++	require.Less(t, newestChunkID(), newestBeforeAppends, "chunk IDs should have wrapped past the boundary")
++
++	matcher := labels.MustNewMatcher(labels.MatchEqual, "l", "v1")
++
++	// Queries must resolve the wrapped chunk IDs while the data is in the head.
++	querier, err := db.Querier(0, maxT)
++	require.NoError(t, err)
++	requireEqualSeries(t, map[string][]chunks.Sample{l.String(): expSamples}, query(t, querier, matcher), true)
++
++	// Head compaction reads every chunk through the same wrapped IDs, then drops
++	// the compacted ones via truncateChunksBefore, wrapping firstChunkID too.
++	require.NoError(t, db.Compact(context.Background()))
++
++	ms.Lock()
++	firstChunkIDAfter := ms.firstChunkID
++	ms.Unlock()
++	require.Less(t, firstChunkIDAfter, firstChunkIDSeed, "firstChunkID should have wrapped past 0")
++
++	// The compacted block must contain every sample.
++	querier, err = db.Querier(0, maxT)
++	require.NoError(t, err)
++	requireEqualSeries(t, map[string][]chunks.Sample{l.String(): expSamples}, query(t, querier, matcher), true)
++}
+diff --git a/tsdb/head.go b/tsdb/head.go
+index a47c517d4e7..855de7eebe9 100644
+--- a/tsdb/head.go
++++ b/tsdb/head.go
+@@ -2862,6 +2862,13 @@ func (s *memSeries) maxTime() int64 {
+ // (mmapChunks, truncateChunksBefore) must be immediately paired with a
+ // setHeadChunks call.
+ func (s *memSeries) pushHeadChunk(chk *memChunk) *memChunk {
++	// Chunk IDs can only be 23 bits, so a series cannot hold more than 2^23 chunks
++	// without two of them sharing an ID. This is not reachable in practice (head
++	// compaction keeps the live set tiny); panic rather than serve an ambiguous ID.
++	if len(s.mmappedChunks)+int(s.headChunkCount.Load()) >= oooChunkIDMask-1 {
++		panic(fmt.Sprintf("too many in-order head chunks for series %s (%d)", s.lset.String(), s.ref))
++	}
++
+ 	chk.prev = s.headChunks
+ 	s.headChunks = chk
+ 	s.headChunkCount.Add(1)
+@@ -2889,7 +2896,7 @@ func (s *memSeries) truncateChunksBefore(mint int64, minOOOMmapRef chunks.ChunkD
+ 			if chk.maxTime < mint {
+ 				// If any head chunk is truncated, we can truncate all mmapped chunks.
+ 				removedInOrder = chk.len() + len(s.mmappedChunks)
+-				s.firstChunkID += chunks.HeadChunkID(removedInOrder)
++				s.firstChunkID = wrapChunkID(s.firstChunkID + chunks.HeadChunkID(removedInOrder))
+ 				if i == 0 {
+ 					// This is the first chunk on the list so we need to remove the entire list.
+ 					s.setHeadChunks(nil, 0)
+@@ -2914,7 +2921,7 @@ func (s *memSeries) truncateChunksBefore(mint int64, minOOOMmapRef chunks.ChunkD
+ 			removedInOrder = i + 1
+ 		}
+ 		s.mmappedChunks = append(s.mmappedChunks[:0], s.mmappedChunks[removedInOrder:]...)
+-		s.firstChunkID += chunks.HeadChunkID(removedInOrder)
++		s.firstChunkID = wrapChunkID(s.firstChunkID + chunks.HeadChunkID(removedInOrder))
+ 	}
+ 
+ 	var removedOOO int
+@@ -2926,7 +2933,7 @@ func (s *memSeries) truncateChunksBefore(mint int64, minOOOMmapRef chunks.ChunkD
+ 			removedOOO = i + 1
+ 		}
+ 		s.ooo.oooMmappedChunks = append(s.ooo.oooMmappedChunks[:0], s.ooo.oooMmappedChunks[removedOOO:]...)
+-		s.ooo.firstOOOChunkID = (s.ooo.firstOOOChunkID + chunks.HeadChunkID(removedOOO)) & (oooChunkIDMask - 1)
++		s.ooo.firstOOOChunkID = wrapChunkID(s.ooo.firstOOOChunkID + chunks.HeadChunkID(removedOOO))
+ 
+ 		if len(s.ooo.oooMmappedChunks) == 0 && s.ooo.oooHeadChunk == nil {
+ 			s.ooo = nil
+diff --git a/tsdb/head_read.go b/tsdb/head_read.go
+index 20cdf6ee156..853bd224d7a 100644
+--- a/tsdb/head_read.go
++++ b/tsdb/head_read.go
+@@ -403,15 +403,30 @@ func appendSeriesChunks(s *memSeries, mint, maxt int64, chks []chunks.Meta, head
+ 	return chks, headChunksBuf
+ }
+ 
++const oooChunkIDMask = 1 << 23
++
++// wrapChunkID reduces id into the 23-bit chunk ID space (bits 0..22 of HeadChunkRef),
++// so that IDs never overflow into the OOO flag at bit 23. Callers wrap in both
++// directions: pos + firstChunkID when a chunk ID is assigned, and id - firstChunkID
++// when its position is looked up.
++// HeadChunkID is uint64, so id - firstChunkID wraps modulo 2^64 when firstChunkID > id;
++// masking with oooChunkIDMask-1 recovers the 23-bit position.
++func wrapChunkID(id chunks.HeadChunkID) chunks.HeadChunkID {
++	return id & (oooChunkIDMask - 1)
++}
++
+ // headChunkID returns the HeadChunkID referred to by the given position.
+ // * 0 <= pos < len(s.mmappedChunks) refer to s.mmappedChunks[pos]
+ // * pos >= len(s.mmappedChunks) refers to s.headChunks linked list.
++//
++// The position is wrapped modulo oooChunkIDMask so that firstChunkID can grow
++// indefinitely without overflowing the 23-bit ID space. Correctness requires the
++// number of chunks a series holds to stay below 2^23,
++// which pushHeadChunk enforces.
+ func (s *memSeries) headChunkID(pos int) chunks.HeadChunkID {
+-	return chunks.HeadChunkID(pos) + s.firstChunkID
++	return wrapChunkID(chunks.HeadChunkID(pos) + s.firstChunkID)
+ }
+ 
+-const oooChunkIDMask = 1 << 23
+-
+ // oooHeadChunkID returns the HeadChunkID referred to by the given position.
+ // Only the bottom 24 bits are used. Bit 23 is always 1 for an OOO chunk; for the rest:
+ // * 0 <= pos < len(s.oooMmappedChunks) refer to s.oooMmappedChunks[pos]
+@@ -420,10 +435,10 @@ const oooChunkIDMask = 1 << 23
+ //
+ // The position is wrapped modulo oooChunkIDMask so that firstOOOChunkID can
+ // grow indefinitely without overflowing the 23-bit ID space. Correctness
+-// requires len(oooMmappedChunks) to stay below oooChunkIDMask, which is
++// requires len(oooMmappedChunks) to stay below 2^23, which is
+ // enforced by the guard in mmapCurrentOOOHeadChunk.
+ func (s *memSeries) oooHeadChunkID(pos int) chunks.HeadChunkID {
+-	return ((chunks.HeadChunkID(pos) + s.ooo.firstOOOChunkID) & (oooChunkIDMask - 1)) | oooChunkIDMask
++	return wrapChunkID(chunks.HeadChunkID(pos)+s.ooo.firstOOOChunkID) | oooChunkIDMask
+ }
+ 
+ func unpackHeadChunkRef(ref chunks.ChunkRef) (seriesID chunks.HeadSeriesRef, chunkID chunks.HeadChunkID, isOOO bool) {
+@@ -661,7 +676,8 @@ func (h *Head) chunkFromSeries(s *memSeries, cid chunks.HeadChunkID, isOOO bool,
+ // if isOpen is true, it means that the returned *memChunk is used for appends.
+ func (s *memSeries) chunk(id chunks.HeadChunkID, chunkDiskMapper *chunks.ChunkDiskMapper, memChunkPool *sync.Pool, headChunks []*memChunk) (chunk *memChunk, headChunk, isOpen bool, err error) {
+ 	// ix is the chunk's oldest-first position in the logical sequence. Chunk IDs
+-	// increase by one when a chunk is created, so id-firstChunkID yields that position.
++	// increase by one per chunk, so wrapChunkID(id-firstChunkID) yields that
++	// position even after the IDs have wrapped past 0.
+ 	// s.mmappedChunks is stored oldest-first, while the s.headChunks linked list is
+ 	// stored newest-first:
+ 	//
+@@ -673,10 +689,7 @@ func (s *memSeries) chunk(id chunks.HeadChunkID, chunkDiskMapper *chunks.ChunkDi
+ 	// Values below len(s.mmappedChunks) index the slice directly. Remaining values
+ 	// index head chunks oldest-first; the pre-collected headChunks slice already uses
+ 	// this order, while the linked-list fallback reverses the index.
+-	ix := int(id) - int(s.firstChunkID)
+-	if ix < 0 {
+-		return nil, false, false, storage.ErrNotFound
+-	}
++	ix := int(wrapChunkID(id - s.firstChunkID))
+ 
+ 	if ix < len(s.mmappedChunks) {
+ 		chk, err := chunkDiskMapper.Chunk(s.mmappedChunks[ix].ref)
+@@ -731,11 +744,10 @@ func (s *memSeries) chunk(id chunks.HeadChunkID, chunkDiskMapper *chunks.ChunkDi
+ // oooChunk returns the chunk for the HeadChunkID by m-mapping it from the disk.
+ // It never returns the head OOO chunk.
+ func (s *memSeries) oooChunk(id chunks.HeadChunkID, chunkDiskMapper *chunks.ChunkDiskMapper, _ *sync.Pool) (chunk chunkenc.Chunk, maxTime int64, err error) {
+-	// ix represents the index of chunk in the s.ooo.oooMmappedChunks slice.
+-	// Both id and firstOOOChunkID live in a modular 23-bit space; unsigned
+-	// subtraction followed by masking recovers the correct index even when
+-	// firstOOOChunkID has wrapped past 0.
+-	ix := int((id - s.ooo.firstOOOChunkID) & (oooChunkIDMask - 1))
++	// ix is the index into s.ooo.oooMmappedChunks. Chunk IDs increase by one per
++	// chunk, so wrapChunkID(id-firstOOOChunkID) recovers the index even after the
++	// IDs have wrapped past 0.
++	ix := int(wrapChunkID(id - s.ooo.firstOOOChunkID))
+ 
+ 	if ix >= len(s.ooo.oooMmappedChunks) {
+ 		return nil, 0, storage.ErrNotFound
+@@ -763,7 +775,7 @@ func (c *safeHeadChunk) Iterator(reuseIter chunkenc.Iterator) chunkenc.Iterator
+ // iterator returns a chunk iterator for the requested chunk ID, or a NopIterator if it is out of range.
+ // It is unsafe to call this concurrently with s.append(...) without holding the series lock.
+ func (s *memSeries) iterator(id chunks.HeadChunkID, c chunkenc.Chunk, isoState *isolationState, it chunkenc.Iterator) chunkenc.Iterator {
+-	ix := int(id) - int(s.firstChunkID)
++	ix := int(wrapChunkID(id - s.firstChunkID))
+ 
+ 	numSamples := c.NumSamples()
+ 	stopAfter := numSamples
+diff --git a/tsdb/head_read_test.go b/tsdb/head_read_test.go
+index b1221d31713..ea29bc734f9 100644
+--- a/tsdb/head_read_test.go
++++ b/tsdb/head_read_test.go
+@@ -501,6 +501,75 @@ func TestMemSeries_chunk_FastPath(t *testing.T) {
+ 	require.ErrorIs(t, err, storage.ErrNotFound)
+ }
+ 
++// TestMemSeries_chunk_ResolveAfterWrap checks that chunk IDs keep resolving to
++// the same chunks as truncation advances firstChunkID and wraps it back past 0.
++// Truncated IDs must report ErrNotFound rather than aliasing onto a chunk that
++// is still live.
++func TestMemSeries_chunk_ResolveAfterWrap(t *testing.T) {
++	const chunkRange int64 = 100
++	const chunkStep int64 = 5
++	const numChunks = 20
++
++	dir := t.TempDir()
++	chunkDiskMapper, err := chunks.NewChunkDiskMapper(nil, dir, chunkenc.NewPool(), chunks.DefaultWriteBufferSize, chunks.DefaultWriteQueueSize)
++	require.NoError(t, err)
++	t.Cleanup(func() { require.NoError(t, chunkDiskMapper.Close()) })
++	memChunkPool := &sync.Pool{New: func() any { return &memChunk{} }}
++
++	series := newMemSeries(labels.EmptyLabels(), 1, 0, true, false)
++	series.firstChunkID = chunks.HeadChunkID(oooChunkIDMask - 10)
++
++	for ts := int64(0); ts < chunkRange*numChunks; ts += chunkStep {
++		ok, _ := series.append(0, ts, float64(ts), 0, chunkOpts{
++			chunkDiskMapper: chunkDiskMapper,
++			chunkRange:      chunkRange,
++			samplesPerChunk: DefaultSamplesPerChunk,
++		})
++		require.True(t, ok, "sample append failed")
++	}
++	series.mmapChunks(chunkDiskMapper)
++	require.Len(t, series.mmappedChunks, numChunks-1, "wrong number of mmapped chunks")
++	require.Equal(t, 1, series.headChunks.len(), "wrong number of head chunks")
++
++	// Chunk i covers [i*chunkRange, (i+1)*chunkRange). Positions 10+ take IDs
++	// past the 23-bit boundary, so they wrap back to 0, 1, 2, ...
++	ids := make([]chunks.HeadChunkID, numChunks)
++	for i := range ids {
++		ids[i] = series.headChunkID(i)
++		require.Zero(t, ids[i]&oooChunkIDMask, "pos %d: ID must not set the OOO flag", i)
++	}
++	require.Equal(t, chunks.HeadChunkID(oooChunkIDMask-1), ids[9], "pos 9 should hold the last ID before the boundary")
++	require.Equal(t, chunks.HeadChunkID(0), ids[10], "pos 10 should have wrapped to 0")
++
++	requireResolves := func(t *testing.T, firstLive int) {
++		t.Helper()
++		for pos := range numChunks {
++			chk, _, _, err := series.chunk(ids[pos], chunkDiskMapper, memChunkPool, nil)
++			if pos < firstLive {
++				require.ErrorIs(t, err, storage.ErrNotFound, "pos %d was truncated and must not resolve", pos)
++				continue
++			}
++			require.NoError(t, err, "pos %d should resolve", pos)
++			require.Equal(t, int64(pos)*chunkRange, chk.minTime, "pos %d resolved to the wrong chunk", pos)
++		}
++	}
++
++	requireResolves(t, 0)
++
++	// Truncate positions 0-3. firstChunkID stays near the top of the space, so
++	// the surviving wrapped IDs (positions 10+) are numerically below it.
++	removed := series.truncateChunksBefore(chunkRange*4, 0)
++	require.Equal(t, 4, removed)
++	require.Equal(t, chunks.HeadChunkID(oooChunkIDMask-6), series.firstChunkID)
++	requireResolves(t, 4)
++
++	// Truncate positions 4-11, which carries firstChunkID itself past 0.
++	removed = series.truncateChunksBefore(chunkRange*12, 0)
++	require.Equal(t, 8, removed)
++	require.Equal(t, chunks.HeadChunkID(2), series.firstChunkID)
++	requireResolves(t, 12)
++}
++
+ func TestHeadIndexReader_PostingsForLabelMatching(t *testing.T) {
+ 	testPostingsForLabelMatching(t, 0, func(t *testing.T, series []labels.Labels) IndexReader {
+ 		opts := DefaultHeadOptions()
+diff --git a/tsdb/head_test.go b/tsdb/head_test.go
+index 3bd8b2a50cf..e9058f5a222 100644
+--- a/tsdb/head_test.go
++++ b/tsdb/head_test.go
+@@ -1945,6 +1945,44 @@ func TestOOOTruncateChunksBefore_Wrap(t *testing.T) {
+ 	}
+ }
+ 
++func TestPushHeadChunk_PanicsAtIDSpaceBound(t *testing.T) {
++	s := newMemSeries(labels.FromStrings("a", "b"), 1, 0, true, false)
++	s.headChunkCount.Store(oooChunkIDMask - 1)
++
++	require.Panics(t, func() {
++		s.pushHeadChunk(&memChunk{
++			chunk:   chunkenc.NewXORChunk(),
++			minTime: 0,
++			maxTime: 0,
++		})
++	})
++}
++
++func TestAppendHistogramLayoutChange_PanicsAtIDSpaceBound(t *testing.T) {
++	head, _ := newTestHead(t, 1000, compression.None, false)
++	l := labels.FromStrings("l", "v1")
++
++	app := head.Appender(context.Background())
++	h := tsdbutil.GenerateTestHistogram(0)
++	_, err := app.AppendHistogram(0, l, 0, h, nil)
++	require.NoError(t, err)
++	require.NoError(t, app.Commit())
++
++	ms, _, err := head.getOrCreate(l.Hash(), l, false)
++	require.NoError(t, err)
++	ms.Lock()
++	ms.headChunkCount.Store(oooChunkIDMask - 1)
++	ms.Unlock()
++
++	h2 := h.Copy()
++	h2.Schema++
++	require.Panics(t, func() {
++		app := head.Appender(context.Background())
++		_, _ = app.AppendHistogram(0, l, 1, h2, nil)
++		_ = app.Commit()
++	})
++}
++
+ func TestHeadDeleteSeriesWithoutSamples(t *testing.T) {
+ 	for _, enableSTStorage := range []bool{false, true} {
+ 		for _, compress := range []compression.Type{compression.None, compression.Snappy, compression.Zstd} {
+diff --git a/tsdb/ooo_head_read_test.go b/tsdb/ooo_head_read_test.go
+index 22c0910a03c..0336e46f3fc 100644
+--- a/tsdb/ooo_head_read_test.go
++++ b/tsdb/ooo_head_read_test.go
+@@ -1373,7 +1373,7 @@ func TestOOOChunk_ResolveAfterWrap(t *testing.T) {
+ 
+ 	// Simulate truncation of the first 8 chunks.
+ 	s.ooo.oooMmappedChunks = s.ooo.oooMmappedChunks[8:]
+-	s.ooo.firstOOOChunkID = (s.ooo.firstOOOChunkID + 8) & (oooChunkIDMask - 1)
++	s.ooo.firstOOOChunkID = (s.ooo.firstOOOChunkID + 8) % oooChunkIDMask
+ 	require.Equal(t, chunks.HeadChunkID(3), s.ooo.firstOOOChunkID)
+ 
+ 	// Surviving chunks (original positions 8, 9) must resolve.

@@ -1,0 +1,35 @@
+diff --git a/hack/apidiff-changelog/api-changes-allowlist b/hack/apidiff-changelog/api-changes-allowlist
+index 4c083cc320101..55b4c5f179f4a 100644
+--- a/hack/apidiff-changelog/api-changes-allowlist
++++ b/hack/apidiff-changelog/api-changes-allowlist
+@@ -15,10 +15,12 @@
+ # - ./kubernetes/typed/certificates/v1alpha1.(*CertificatesV1alpha1Client).PodCertificateRequests: removed
+ # - ./kubernetes/typed/certificates/v1alpha1.PodCertificateRequestsGetter.PodCertificateRequests, method set of CertificatesV1alpha1Interface: removed
+ # - ./kubernetes/typed/certificates/v1alpha1/fake.(*FakeCertificatesV1alpha1).PodCertificateRequests: removed
++# - ./informers.SharedInformerFactory.Lifecycle: added
+ 
+ ^- \./(informers|kubernetes/typed)/[a-z]+/v[a-z0-9]+(\.[a-zA-Z0-9]+)?\.[a-zA-Z0-9]+(, method set of .*)?: (added|removed|old is comparable, new is not)$
+ ^- \./kubernetes(\.Interface|/fake...Clientset.|...Clientset.)\.[A-Za-z]+V[a-z0-9]+(, method set of .*)?: (added|removed)$
+ ^- \./kubernetes/typed/[a-z]+/v[a-z0-9]+(/fake)?\.(..[a-zA-Z0-9]+.|[a-zA-Z0-9]+)\.[a-zA-Z0-9]+(, method set of .*)?: (added|removed|old is comparable, new is not)$
+ ^- \./informers/[a-z]+\.Interface\.V[a-z0-9]+(, method set of .*)?: (added|removed)$
++^- \./informers\.SharedInformerFactory\..*: (added|removed)$
+ ^- \./(listers|applyconfigurations)/[a-z]+/v1.*(, method set of .*)?: (added|removed|old is comparable, new is not)$
+ ^- package k8s\.io/client-go/(applyconfigurations|informers|kubernetes/typed|listers)/[a-z]+/v[a-z0-9]+(/fake)?: (added|removed)$
+diff --git a/staging/src/k8s.io/client-go/CHANGELOG.md b/staging/src/k8s.io/client-go/CHANGELOG.md
+index 16e852ecbc533..0ded7852e726f 100644
+--- a/staging/src/k8s.io/client-go/CHANGELOG.md
++++ b/staging/src/k8s.io/client-go/CHANGELOG.md
+@@ -4,13 +4,6 @@ Go API changes are typically not included in the Kubernetes release notes, so
+ noteworthy Go API changes *may* be documented here. This is currently not
+ *required*, so consult the git history to see all changes.
+ 
+-### Introduce Lifecycle API group for v1alpha1 EvictionRequest and Eviction APIs
+-
+-See [PR #137050](https://github.com/kubernetes/kubernetes/pull/137050)
+-```
+-- ./informers.SharedInformerFactory.Lifecycle: added
+-```
+-
+ ### Type-safe informers
+ 
+ All code using the result of the generated client-go Informer() methods (a

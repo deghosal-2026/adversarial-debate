@@ -1,0 +1,218 @@
+{
+  "additions": 73,
+  "author": {
+    "id": "MDQ6VXNlcjMzOTA5MDY=",
+    "is_bot": false,
+    "login": "PushkarJ",
+    "name": "Pushkar Joglekar"
+  },
+  "body": "### What this PR does\r\n\r\nExtends `THREAT_MODEL.md` with explicit trust consequences and finding-disposition\r\nrules, while keeping the existing boundary structure and assumptions unchanged:\r\n\r\n- **Client and peer boundaries** now state that traffic which has passed mTLS is\r\n  trusted input, and that a vulnerability report must show unauthenticated\r\n  reachability or privilege escalation \u2014 crashes and resource exhaustion from\r\n  authenticated senders are robustness defects.\r\n- **New boundaries** for authentication/authorization semantics (RBAC is an\r\n  optional secondary control; watch permission revocation is eventually\r\n  consistent by design) and for build/release/CI tooling (`scripts/`, `tools/`,\r\n  `hack/`, `.github/` are not product attack surface).\r\n- **New sections** scoping best-effort components (`grpc-proxy`, gateway,\r\n  `cache`, `contrib/`) and non-default or test-only configuration (pprof,\r\n  expvar, debug logging, tracing, `unix(s)://` listeners).\r\n- **Reporting section** defining when a finding qualifies as a vulnerability,\r\n  with an explicit note that robustness and hardening findings remain welcome\r\n  through normal issues and PRs \u2014 \"not a vulnerability\" never means\r\n  \"do not report\".\r\n\r\n### Why\r\n\r\nCodifying the disposition rules lets researchers and automated tooling self-filter these\r\nclasses before reporting, while steering real robustness fixes to the normal\r\ncontribution flow instead of the security-disclosure process.\r\n\r\nNo behavioral or code changes; documentation only.\r\n\r\nAI assisted: drafting the document restructure, commit message, and PR description\r\n\r\n\r\n",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAKtHts8AAAABMiD1CQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "NONE",
+      "body": "Hi @PushkarJ. Thanks for your PR.\n\nI'm waiting for a [etcd-io](https://github.com/orgs/etcd-io/people) member to verify that this patch is reasonable to test. If it is, they should reply with `/ok-to-test` on its own line. Until that is done, I will not automatically test new commits in this PR, but the usual testing commands by org members will still work.\n\nRegular contributors should [join the org](https://github.com/etcd-io/etcd/blob/main/CONTRIBUTING.md) to skip this step.\n\nOnce the patch is verified, the new status will be reflected by the `ok-to-test` label.\n\nI understand the commands that are listed [here](https://go.k8s.io/bot-commands?repo=etcd-io%2Fetcd).\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>\n",
+      "createdAt": "2026-07-30T20:34:22Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5135987977",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMnArHg",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "It looks really good!!! It should be able to reduce etcd SRC's burden.  Thanks @PushkarJ \r\n\r\ncc @fuweid @serathius ",
+      "createdAt": "2026-07-31T09:01:43Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        },
+        {
+          "content": "HOORAY",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5141179166",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMnD_pg",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/ok-to-test",
+      "createdAt": "2026-07-31T09:07:55Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5141233574",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMnIrJg",
+      "author": {
+        "login": "serathius"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "+1 to what @ahrtr, this is really good.\r\n\r\nNot sure if we need review from someone more familiar with security, but I found the contents really good (not a security expert).",
+      "createdAt": "2026-07-31T09:17:12Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "ROCKET",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5141310246",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMnTb3g",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "> Not sure if we need review from someone more familiar with security\r\n\r\nFYI. @PushkarJ is a security expert. He is an active contributor in sig-security, I recall he is approvers of several sub-projects under sig-security.\r\n\r\nI think this is mostly up to sig-etcd leads and etcd SRC. We also clarified that `\"not a vulnerability\" never means \"do not report\"` https://github.com/etcd-io/etcd/pull/22236#discussion_r3689473599\r\n",
+      "createdAt": "2026-07-31T09:36:35Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        },
+        {
+          "content": "HEART",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5141486558",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMnUUXQ",
+      "author": {
+        "login": "codecov"
+      },
+      "authorAssociation": "NONE",
+      "body": "## [Codecov](https://app.codecov.io/gh/etcd-io/etcd/pull/22236?dropdown=coverage&src=pr&el=h1&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io) Report\n:white_check_mark: All modified and coverable lines are covered by tests.\n:white_check_mark: Project coverage is 69.73%. Comparing base ([`87126ab`](https://app.codecov.io/gh/etcd-io/etcd/commit/87126aba72f480db1be43481acc123a3c6156a84?dropdown=coverage&el=desc&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)) to head ([`6c5082e`](https://app.codecov.io/gh/etcd-io/etcd/commit/6c5082e81cb6a82c8fca7ca814eb7a1dd51b5b22?dropdown=coverage&el=desc&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)).\n:warning: Report is 2 commits behind head on main.\n\n<details><summary>Additional details and impacted files</summary>\n\n\n[see 24 files with indirect coverage changes](https://app.codecov.io/gh/etcd-io/etcd/pull/22236/indirect-changes?src=pr&el=tree-more&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)\n\n```diff\n@@            Coverage Diff             @@\n##             main   #22236      +/-   ##\n==========================================\n- Coverage   69.75%   69.73%   -0.03%     \n==========================================\n  Files         449      449              \n  Lines       38207    38207              \n==========================================\n- Hits        26652    26643       -9     \n- Misses      10127    10134       +7     \n- Partials     1428     1430       +2     \n```\n\n------\n\n[Continue to review full report in Codecov by Harness](https://app.codecov.io/gh/etcd-io/etcd/pull/22236?dropdown=coverage&src=pr&el=continue&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io).\n> **Legend** - [Click here to learn more](https://docs.codecov.io/docs/codecov-delta?utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io)\n> `\u0394 = absolute <relative> (impact)`, `\u00f8 = not affected`, `? = missing data`\n> Powered by [Codecov](https://app.codecov.io/gh/etcd-io/etcd/pull/22236?dropdown=coverage&src=pr&el=footer&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io). Last update [87126ab...6c5082e](https://app.codecov.io/gh/etcd-io/etcd/pull/22236?dropdown=coverage&src=pr&el=lastupdated&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io). Read the [comment docs](https://docs.codecov.io/docs/pull-request-comments?utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=etcd-io).\n</details>\n<details><summary> :rocket: New features to boost your workflow: </summary>\n\n- :snowflake: [Test Analytics](https://docs.codecov.com/docs/test-analytics): Detect flaky tests, report on failures, and find test suite problems.\n</details>",
+      "createdAt": "2026-07-31T09:38:27Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5141501021",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMneS7A",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "@PushkarJ please mark this PR ready to review when you feel comfortable. Thanks.",
+      "createdAt": "2026-07-31T09:58:51Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5141664492",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMrlZpg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "NONE",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/etcd-io/etcd/pull/22236#pullrequestreview-4830996610\" title=\"Approved\">ahrtr</a>*, *<a href=\"https://github.com/etcd-io/etcd/pull/22236#\" title=\"Author self-approved\">PushkarJ</a>*, *<a href=\"https://github.com/etcd-io/etcd/pull/22236#pullrequestreview-4827404791\" title=\"Approved\">serathius</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=etcd-io%2Fetcd).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[OWNERS](https://github.com/etcd-io/etcd/blob/main/OWNERS)~~ [ahrtr,serathius]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-31T18:00:10Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5145975206",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAKtHts8AAAABMsC6Uw",
+      "author": {
+        "login": "ahrtr"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-07-31T18:58:15Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/etcd-io/etcd/pull/22236#issuecomment-5146458707",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 0,
+  "labels": [
+    {
+      "id": "LA_kwDOAKtHts7eodLq",
+      "name": "stage/merge-when-tests-green",
+      "description": "",
+      "color": "C2E0C6"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABclmLxA",
+      "name": "ok-to-test",
+      "description": "",
+      "color": "ededed"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABpPzhbA",
+      "name": "size/M",
+      "description": "",
+      "color": "ededed"
+    },
+    {
+      "id": "LA_kwDOAKtHts8AAAABqyqBaw",
+      "name": "approved",
+      "description": "",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-07-31T19:53:11Z",
+  "state": "MERGED",
+  "title": "docs: add trust consequences and disposition rules to THREAT_MODEL.md"
+}

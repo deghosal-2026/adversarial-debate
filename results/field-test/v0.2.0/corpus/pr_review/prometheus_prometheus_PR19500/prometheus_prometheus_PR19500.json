@@ -1,0 +1,17 @@
+{
+  "additions": 33,
+  "author": {
+    "id": "U_kgDODykLRQ",
+    "is_bot": false,
+    "login": "adisivaprasad",
+    "name": ""
+  },
+  "body": "#### Which issue(s) does the PR fix:\n\nFixes #7218\n\n#### What does this PR do:\n\nAdds a new **Latencies** row to the `prometheus-remote-write` dashboard in the prometheus-mixin, with a single time-series panel plotting the p95 and p99 of the remote write send-batch duration, computed via `histogram_quantile` over `prometheus_remote_storage_sent_batch_duration_seconds_bucket`.\n\n#### Why is it needed:\n\nWhen debugging the \"RW is falling behind\" alert or unexpected resharding, the existing dashboard shows shard counts, sample rates, and timestamp lag, but not the actual latency of sending batches to the remote endpoint. Issue #7218 explicitly asks for \"a graph of remote write's latencies, either a heatmap via the buckets or histogram_quantile to show p95/p99\".\n\n#### Implementation notes\n\n- Uses the existing `panel.timeSeries` + `panelTimeSeriesStdOptions` helpers already used by every other panel in this dashboard, so no new grafonnet surface area is introduced.\n- The histogram metric `prometheus_remote_storage_sent_batch_duration_seconds` is emitted by `storage/remote/queue_manager.go` and is labelled with `remote_name` and `url`, so the panel reuses the dashboard's existing `$url` variable and the `remote_name`/`url` legend pattern used by the surrounding panels.\n- The query uses `sum by (le, <clusterLabel>, instance, remote_name, url)` so it composes correctly with the dashboard's `$cluster` / `$instance` / `$url` template variables, matching the selector style of the adjacent panels.\n- Went with `histogram_quantile` (p95/p99) rather than a heatmap to keep the change to a single well-tested grafonnet panel type; the issue explicitly offers either option.\n\n#### Verification\n\nCould not run `make dashboards_out` locally (no `jsonnet`/`jb` in this environment). The change is a straight copy of the patterns used by the surrounding panels (`samplesRate`, `currentShards`, etc.) and the `||| ... ||| % $._config` string interpolation is the same idiom already used for the timestamp-comparison queries.\n\n#### Release notes for end users (ALL commits must be considered).\n```release-notes\n[ENHANCEMENT] Mixin: Add a p95/p99 remote-write send-batch latency panel to the remote-write dashboard.\n```\n\n#### DCO\n\nSigned-off-by: adisivaprasad <254348101+adisivaprasad@users.noreply.github.com>",
+  "changedFiles": 1,
+  "comments": [],
+  "deletions": 0,
+  "labels": [],
+  "mergedAt": "2026-08-25T08:16:16Z",
+  "state": "MERGED",
+  "title": "mixin: add remote write send-batch latency panel"
+}
