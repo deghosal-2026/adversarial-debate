@@ -15,16 +15,16 @@ Upstream: M1, M2, M3, M4. Downstream: M6, M7, M8.
 
 ### WS 5.a — Report corrections
 
-- [ ] T5.1 (#102) Full-corpus report: correct etcd coverage claim — only 3 repos exist in frozen corpus, not 4
-- [ ] T5.2 (#103) Full-corpus report: exclude zero-claim zero-event no-op rows from verdict totals and success metrics
-- [ ] T5.3 (#104) MATCH rate: restrict ground-truth scoring to substantive issue claims only — exclude severity labels, evidence headings, file paths, generic remediation text
-- [ ] T5.4 (#111) Small-corpus report: correct universal zero-overlap claim — overlap CSV contains non-zero values
+- [x] T5.1 (#102) Full-corpus report: correct etcd coverage claim — only 3 repos exist in frozen corpus, not 4
+- [x] T5.2 (#103) Full-corpus report: exclude zero-claim zero-event no-op rows from verdict totals and success metrics
+- [x] T5.3 (#104) MATCH rate: restrict ground-truth scoring to substantive issue claims only — exclude severity labels, evidence headings, file paths, generic remediation text
+- [x] T5.4 (#111) Small-corpus report: correct universal zero-overlap claim — overlap CSV contains non-zero values
 
 ### WS 5.b — Methodology improvements
 
-- [ ] T5.5 (#72) Pair ranking table: add capitulation rate column or annotate verdict rate with capitulation caveat
-- [ ] T5.6 (#74) Homogeneous control pair (GPT+GPT): define falsifiable failure thresholds so control can actually detect leakage
-- [ ] T5.7 (#73) Implement canary token test for runtime isolation verification as a built-in feature
+- [x] T5.5 (#72) Pair ranking table: add capitulation rate column or annotate verdict rate with capitulation caveat
+- [x] T5.6 (#74) Homogeneous control pair (GPT+GPT): define falsifiable failure thresholds so control can actually detect leakage
+- [x] T5.7 (#73) Implement canary token test for runtime isolation verification as a built-in feature
 
 ## Documents, plans & tests to update
 
@@ -38,11 +38,11 @@ Upstream: M1, M2, M3, M4. Downstream: M6, M7, M8.
 
 ## Acceptance criteria / exit gate
 
-- All 7 issues closed with passing tests
-- Corrected reports are internally consistent (prose matches CSVs)
-- Ruff clean, mypy strict clean, full test suite green
-- Code review completed on all changes
-- Committed and pushed to `rel-0.2.0`
+- [x] All 7 issues closed with passing tests
+- [x] Corrected reports are internally consistent (prose matches CSVs)
+- [x] Ruff clean, mypy strict clean, full test suite green
+- [x] Code review completed on all changes
+- [x] Committed and pushed to `rel-0.2.0` (d6304ed)
 
 ## Explicitly out of scope
 
