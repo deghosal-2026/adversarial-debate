@@ -18,15 +18,15 @@ Upstream: M5. Downstream: M7, M8.
 
 ### WS 6.a — Missing file references
 
-- [ ] T6.1 (#105) Architecture doc: add `docs/architecture/architecture-v0.1.0.md` or retarget all references to existing doc
-- [ ] T6.2 (#110) API reference: add `docs/reference/api.md` or remove from key-document lists
+- [x] T6.1 (#105) Architecture doc: add `docs/architecture/architecture-v0.1.0.md` or retarget all references to existing doc
+- [x] T6.2 (#110) API reference: add `docs/reference/api.md` or remove from key-document lists
 
 ### WS 6.b — Unimplemented feature claims
 
-- [ ] T6.3 (#106) Performance PRD: move non-existent CLI flags (`--no-budget-limit`, `--batch`) and HTTP service claims to roadmap/future sections
-- [ ] T6.4 (#107) Enterprise deployment guide: rewrite provider config examples to use supported types (`openai_compatible` for Ollama/Azure)
-- [ ] T6.5 (#108) Internationalization PRD: mark i18n features as future work instead of v0.1.0 shipped
-- [ ] T6.6 (#109) Design README: mark FastAPI/React delivery surfaces as roadmap items, consistent with CLI/library-only implementation
+- [x] T6.3 (#106) Performance PRD: move non-existent CLI flags (`--no-budget-limit`, `--batch`) and HTTP service claims to roadmap/future sections
+- [x] T6.4 (#107) Enterprise deployment guide: rewrite provider config examples to use supported types (`openai_compatible` for Ollama/Azure)
+- [x] T6.5 (#108) Internationalization PRD: mark i18n features as future work instead of v0.1.0 shipped
+- [x] T6.6 (#109) Design README: mark FastAPI/React delivery surfaces as roadmap items, consistent with CLI/library-only implementation
 
 ## Documents, plans & tests to update
 
@@ -47,12 +47,12 @@ Upstream: M5. Downstream: M7, M8.
 
 ## Acceptance criteria / exit gate
 
-- All 6 issues closed with passing tests
-- Every referenced markdown target exists in-tree
-- Every documented CLI flag exists in `build_parser()`
-- Ruff clean, mypy strict clean, full test suite green
-- Code review completed on all changes
-- Committed and pushed to `rel-0.2.0`
+- [x] All 6 issues closed with passing tests
+- [x] Every referenced markdown target exists in-tree
+- [x] Every documented CLI flag exists in `build_parser()`
+- [x] Ruff clean, mypy strict clean, full test suite green
+- [x] Code review completed on all changes
+- [x] Committed and pushed to `rel-0.2.0` (b775cd3)
 
 ## Explicitly out of scope
 
