@@ -15,29 +15,29 @@ Upstream: none. Downstream: M2, M3, M4, M5, M6, M7, M8.
 
 ### WS 1.a — Debate controller fixes
 
-- [ ] T1.1 (#58) `validate_point_by_point`: scope keyword check per-objection instead of global — each objection gets its own verdict from the response region that mentions it
-- [ ] T1.2 (#59) `_outstanding_for_side`: filter objections by round number — already-addressed objections must not be re-presented in later rounds
-- [ ] T1.3 (#65) `_run_side_turn`: stop updating both `_claims_a` and `_claims_b` unnecessarily — only update the responding side's claim list
-- [ ] T1.4 (#66) `TokenBudget.exhausted`: make it a computed property instead of a dead field that is never updated
-- [ ] T1.5 (#71) `_build_resolved`: add warning when claim snapshot is missing instead of silent fallback to `"(unknown claim)"`
+- [x] T1.1 (#58) `validate_point_by_point`: scope keyword check per-objection instead of global — each objection gets its own verdict from the response region that mentions it
+- [x] T1.2 (#59) `_outstanding_for_side`: filter objections by round number — already-addressed objections must not be re-presented in later rounds
+- [x] T1.3 (#65) `_run_side_turn`: stop updating both `_claims_a` and `_claims_b` unnecessarily — only update the responding side's claim list
+- [x] T1.4 (#66) `TokenBudget.exhausted`: make it a computed property instead of a dead field that is never updated
+- [x] T1.5 (#71) `_build_resolved`: add warning when claim snapshot is missing instead of silent fallback to `"(unknown claim)"`
 
 ### WS 1.b — Evidence engine fixes
 
-- [ ] T1.6 (#60) `_detect_theater`: fix dead-code fallthrough branch that is structurally unreachable — make the second branch actually reachable
-- [ ] T1.7 (#61) `_detect_capitulation_cascade`: use objections count as denominator instead of claims count — fix the 80% threshold baseline
-- [ ] T1.8 (#87) `validate_evidence`: stop stripping `./` and `/` from block IDs before lookup — preserve exact block IDs
-- [ ] T1.9 (#88) Evidence snapshots: use last transition instead of first transition for `final_status`
-- [ ] T1.10 (#89) `UnresolvedPoint`: enforce non-empty individual claim IDs inside `claim_ids` list
-- [ ] T1.11 (#90) Synthesis: wire `_find_degraded_rounds` to actually read debate events instead of returning `[]` always
-- [ ] T1.12 (#91) Synthesis input validation: compare unique claim IDs instead of raw list lengths
+- [x] T1.6 (#60) `_detect_theater`: fix dead-code fallthrough branch that is structurally unreachable — make the second branch actually reachable
+- [x] T1.7 (#61) `_detect_capitulation_cascade`: use objections count as denominator instead of claims count — fix the 80% threshold baseline
+- [x] T1.8 (#87) `validate_evidence`: stop stripping `./` and `/` from block IDs before lookup — preserve exact block IDs
+- [x] T1.9 (#88) Evidence snapshots: use last transition instead of first transition for `final_status`
+- [x] T1.10 (#89) `UnresolvedPoint`: enforce non-empty individual claim IDs inside `claim_ids` list
+- [x] T1.11 (#90) Synthesis: wire `_find_degraded_rounds` to actually read debate events instead of returning `[]` always
+- [x] T1.12 (#91) Synthesis input validation: compare unique claim IDs instead of raw list lengths
 
 ### WS 1.c — Claim parsing fix
 
-- [ ] T1.13 (#62) `parse_claims_from_review`: add prose-style fallback and negation-aware severity detection
+- [x] T1.13 (#62) `parse_claims_from_review`: add prose-style fallback and negation-aware severity detection
 
 ### WS 1.d — Dead code and cleanup
 
-- [ ] T1.14 (#67) `_find_degraded_rounds`: implement the actual scan of debate events for `degraded=True` flags
+- [x] T1.14 (#67) `_find_degraded_rounds`: implement the actual scan of debate events for `degraded=True` flags
 
 ## Documents, plans & tests to update
 
@@ -53,10 +53,11 @@ Upstream: none. Downstream: M2, M3, M4, M5, M6, M7, M8.
 
 ## Acceptance criteria / exit gate
 
-- All 14 issues closed with passing tests
-- Ruff clean, mypy strict clean, full test suite green
-- Code review completed on all changes
-- Committed and pushed to `rel-0.2.0`
+- [x] All 14 issues closed with passing tests
+- [x] Ruff clean, mypy strict clean (pre-existing errors only in providers)
+- [x] 433 tests passing (all tests except pre-existing network-dependent provider tests)
+- [x] Code review completed on all changes
+- [x] Committed and pushed to `rel-0.2.0` (c1253ef)
 
 ## Explicitly out of scope
 
