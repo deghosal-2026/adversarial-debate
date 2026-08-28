@@ -1,0 +1,543 @@
+{
+  "artifact_id": "kubernetes_kubernetes_PR140871",
+  "pair": "pair3_gpt_mistral",
+  "model_a": "openai/gpt-4o-mini",
+  "model_b": "mistralai/mistral-small-3.2-24b-instruct",
+  "termination_reason": "rounds_exhausted",
+  "rounds_completed": 2,
+  "convergence_score": 0.6041666666666666,
+  "verdict_kind": "disputed",
+  "theater": false,
+  "capitulation_cascade": false,
+  "resolved_count": 29,
+  "total_claims": 48,
+  "concessions_count": 29,
+  "events_count": 33,
+  "latency_ms": 44856,
+  "api_calls_a": 2,
+  "api_calls_b": 2,
+  "total_tokens": 12966,
+  "report": {
+    "kind": "disputed",
+    "verdict": "Disagreement persists after debate. 29/48 claims resolved (convergence score: 0.60).",
+    "convergence_score": 0.6041666666666666,
+    "strongest_a": [
+      "[medium] Evidence References**:",
+      "[medium] `pkg/scheduler/schedule_one_podgroup.go`, line 445",
+      "[medium] Severity**: Medium",
+      "[medium] Evidence References**:",
+      "[medium] `test/integration/scheduler/preemption/podgrouppreemption_test.go`, lines 56-57"
+    ],
+    "strongest_b": [],
+    "resolved": [
+      {
+        "claim_id": "cl_A_3",
+        "conceded_by": "A",
+        "rationale": "Reviewer A claims: Severity**: High"
+      },
+      {
+        "claim_id": "cl_B_0",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: After reviewing the provided git diff, I have identified several issues. Here they are, categorized by severity:"
+      },
+      {
+        "claim_id": "cl_B_2",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: High Severity Issues:**"
+      },
+      {
+        "claim_id": "cl_B_4",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Issue:** The test `TestPodGroupCycleStatePreserved` is not properly cleaning up resources it creates (nodes, pods, pod groups). This can lead to test pollution and flakiness."
+      },
+      {
+        "claim_id": "cl_B_5",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence:** `test/integration/scheduler/preemption/podgrouppreemption_test.go` (lines 2700-3000)"
+      },
+      {
+        "claim_id": "cl_B_6",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description:** The test creates several resources but does not delete them after the test completes. This can cause subsequent tests to fail or behave unexpectedly."
+      },
+      {
+        "claim_id": "cl_B_8",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Issue:** The `stateSaverPreFilterPlugin` and `stateVerifierPostFilterPlugin` are not properly initialized with their dependencies, which can lead to nil pointer dereferences."
+      },
+      {
+        "claim_id": "cl_B_9",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence:** `test/integration/scheduler/preemption/podgrouppreemption_test.go` (lines 2710-2715, 2730-2735)"
+      },
+      {
+        "claim_id": "cl_B_10",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description:** The plugins are created with empty fields, and there's no guarantee that the `handle` field in `stateSaverPreFilterPlugin` will be set before it's used."
+      },
+      {
+        "claim_id": "cl_B_12",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Medium Severity Issues:**"
+      },
+      {
+        "claim_id": "cl_B_14",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Issue:** The test `TestPodGroupCycleStatePreserved` does not verify that the preemptor pods are scheduled as expected."
+      },
+      {
+        "claim_id": "cl_B_15",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence:** `test/integration/scheduler/preemption/podgrouppreemption_test.go` (lines 2900-3000)"
+      },
+      {
+        "claim_id": "cl_B_16",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description:** The test verifies that the state is preserved, but it does not check if the preemptor pods are scheduled correctly, which is the main purpose of the test."
+      },
+      {
+        "claim_id": "cl_B_18",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Issue:** The `podGroupStateData` struct and its methods are not properly documented."
+      },
+      {
+        "claim_id": "cl_B_19",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence:** `test/integration/scheduler/preemption/podgrouppreemption_test.go` (lines 2702-2708)"
+      },
+      {
+        "claim_id": "cl_B_20",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description:** The struct and its methods should have comments explaining their purpose and usage."
+      },
+      {
+        "claim_id": "cl_B_22",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Low Severity Issues:**"
+      },
+      {
+        "claim_id": "cl_B_24",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Issue:** The `stateSaverKey` constant is not properly named. It should be in `snake_case` to follow Go naming conventions."
+      },
+      {
+        "claim_id": "cl_B_25",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence:** `test/integration/scheduler/preemption/podgrouppreemption_test.go` (line 2700)"
+      },
+      {
+        "claim_id": "cl_B_26",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description:** The constant should be renamed to `state_saver_key` to follow Go naming conventions."
+      },
+      {
+        "claim_id": "cl_B_28",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Issue:** The `stateSaverPreFilterPlugin` and `stateVerifierPostFilterPlugin` structs and their methods are not properly documented."
+      },
+      {
+        "claim_id": "cl_B_29",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence:** `test/integration/scheduler/preemption/podgrouppreemption_test.go` (lines 2710-2725, 2730-2750)"
+      },
+      {
+        "claim_id": "cl_B_30",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description:** The structs and their methods should have comments explaining their purpose and usage."
+      },
+      {
+        "claim_id": "cl_B_32",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Issue:** The test `TestPodGroupCycleStatePreserved` is too long and should be split into smaller, more focused tests."
+      },
+      {
+        "claim_id": "cl_B_33",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Evidence:** `test/integration/scheduler/preemption/podgrouppreemption_test.go` (lines 2700-3000)"
+      },
+      {
+        "claim_id": "cl_B_34",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Description:** The test is testing multiple things (state preservation, pod scheduling, preemption) and should be split into separate tests for each functionality."
+      },
+      {
+        "claim_id": "cl_B_36",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: Other Notes:**"
+      },
+      {
+        "claim_id": "cl_B_38",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: The change in `schedule_one_podgroup.go` (line 444) is not directly related to the test changes, but it's worth noting that it's a significant change that could potentially affect the test results. It should be thoroughly tested and reviewed separately."
+      },
+      {
+        "claim_id": "cl_B_40",
+        "conceded_by": "B",
+        "rationale": "Reviewer B claims: The test `TestPodGroupCycleStatePreserved` is using a lot of test utilities and helpers that are not shown in the diff. It would be helpful to see the implementation of these utilities to fully understand the test."
+      }
+    ],
+    "unresolved": [
+      {
+        "claim_ids": [
+          "cl_A_4"
+        ],
+        "position_a": "Evidence References**:",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Evidence References**:. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_5"
+        ],
+        "position_a": "`pkg/scheduler/schedule_one_podgroup.go`, line 445",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: `pkg/scheduler/schedule_one_podgroup.go`, line 445. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_9"
+        ],
+        "position_a": "Severity**: Medium",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Severity**: Medium. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_10"
+        ],
+        "position_a": "Evidence References**:",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Evidence References**:. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_11"
+        ],
+        "position_a": "`test/integration/scheduler/preemption/podgrouppreemption_test.go`, lines 56-57",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: `test/integration/scheduler/preemption/podgrouppreemption_test.go`, lines 56-57. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_12"
+        ],
+        "position_a": "Description**: In the `PreFilter` method of `stateSaverPreFilterPlugin`, there is a lack of error handling when calling `p.handle.SnapshotSharedLister().NodeInfos().List()`. If this call fails (e.g., due to a network issue or a problem with the shared lister), the method will continue executing with",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Description**: In the `PreFilter` method of `stateSaverPreFilterPlugin`, there is a lack of error handling when calling `p.handle.SnapshotSharedLister().NodeInfos().List()`. If this call fails (e.g., due to a network issue or a problem with the shared lister), the method will continue executing with. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_16"
+        ],
+        "position_a": "Evidence References**:",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Evidence References**:. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_17"
+        ],
+        "position_a": "`test/integration/scheduler/preemption/podgrouppreemption_test.go`, line 208",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: `test/integration/scheduler/preemption/podgrouppreemption_test.go`, line 208. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_21"
+        ],
+        "position_a": "Severity**: Medium",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Severity**: Medium. Suggest: additional test coverage or a security review."
+      },
+      {
+        "claim_ids": [
+          "cl_A_22"
+        ],
+        "position_a": "Evidence References**:",
+        "position_b": "(not raised by side B)",
+        "severity": "medium",
+        "would_resolve_if": "Side agreeing would need to see evidence addressing: Evidence References**:. Suggest: additional test coverage or a security review."
+      }
+    ],
+    "flags": {
+      "theater": false,
+      "capitulation_cascade": false
+    }
+  },
+  "events": [
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "concession",
+      "degraded": false,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "A",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "- CONCEDED obj_initial_a_0: Upon further review, I acknowledge that the severity of the issue is indeed high, as it can lead to significant failures in the scheduling process.\n\n- CARRIED obj_initial_a_1: The evidence references I provided are sufficient to support my claims regarding the issues identified.\n\n- CARRIED obj_initial_a_2: The specific line in question is relevant to the context of my claim, and I maintain that it highlights a critical area of concern.\n\n- REBUTTED obj_initial_a_3: The concern about `framework.NewCycleState()` returning a nil or improperly initialized state is valid; however, the implementation includes checks that mitigate this risk, as seen in the surrounding code context.\n\n- CARRIED obj_initial_a_4: I believe the severity of the issue remains medium, as it does not pose an immediate risk to the overall functionality.\n\n- CARRIED obj_initial_a_5: The evidence references I provided are adequate to substantiate my claims regarding the lack of error handling.\n\n- CARRIED obj_initial_a_6: The lines referenced do indicate a potential issue, but they do not directly correlate with the severity of the problem I identified.\n\n- REBUTTED obj_initial_a_7: While the lack of error handling is a concern, the existing implementation has fallback mechanisms that reduce the likelihood of failure, as demonstrated in the test cases.\n\n- CARRIED obj_initial_a_8: I maintain that the severity of the issue is low, as it does not impact the core functionality of the tests.\n\n- CARRIED obj_initial_a_9: The evidence references I provided are sufficient to support my claims regarding the variable's usage.\n\n- CARRIED obj_initial_a_10: The specific line in question does not directly relate to the severity of the issue I identified.\n\n- CARRIED obj_initial_a_11: The variable's initialization does not necessarily indicate a flaw, as it may be intended for future use or for clarity in the code.\n\n- CARRIED obj_initial_a_12: I believe the severity of the issue remains medium, as it does not pose an immediate risk to the overall functionality.\n\n- CARRIED obj_initial_a_13: The evidence references I provided are adequate to substantiate my claims regarding the locking mechanism.\n\n- REBUTTED obj_initial_a_14: The locking mechanism is designed to prevent race conditions, and the implementation includes safeguards that ensure thread safety, as evidenced by the surrounding code.\n\n- CARRIED obj_initial_a_15: I maintain that the concern about the lock not being held during the read operation does not apply, as the overall design mitigates this risk.\n\n- CARRIED obj_initial_a_16: I believe the severity of the issue is low, as it does not impact the core functionality of the tests.\n\n- CARRIED obj_initial_a_17: The evidence references I provided are sufficient to support my claims regarding the variable's usage.\n\n- CARRIED obj_initial_a_18: The specific line in question does not directly relate to the severity of the issue I identified.\n\n- CARRIED obj_initial_a_19: While the concern about hardcoded values is valid, the current implementation is standard practice in testing and does not significantly impact the test's reliability.\n\nCANARY_ISOLATION_CHECK_8f3a2b"
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "concession",
+      "degraded": true,
+      "error": null,
+      "content": null
+    },
+    {
+      "round": 1,
+      "side": "B",
+      "kind": "defense",
+      "degraded": true,
+      "error": null,
+      "content": "CONCEDED obj_initial_b_0\nCONCEDED obj_initial_b_1\nCONCEDED obj_initial_b_2\nCONCEDED obj_initial_b_3\nCONCEDED obj_initial_b_4\nCONCEDED obj_initial_b_5\nCONCEDED obj_initial_b_6\nCONCEDED obj_initial_b_7\nCONCEDED obj_initial_b_8\nCONCEDED obj_initial_b_9\nCONCEDED obj_initial_b_10\nCONCEDED obj_initial_b_11\nCONCEDED obj_initial_b_12\nCONCEDED obj_initial_b_13\nCONCEDED obj_initial_b_14\nCONCEDED obj_initial_b_15\nCONCEDED obj_initial_b_16\nCONCEDED obj_initial_b_17\nCONCEDED obj_initial_b_18\nCONCEDED obj_initial_b_19\nCONCEDED obj_initial_b_20\nCONCEDED obj_initial_b_21\nCONCEDED obj_initial_b_22\nCONCEDED obj_initial_b_23\nCONCEDED obj_initial_b_24\nCONCEDED obj_initial_b_25\nCONCEDED obj_initial_b_26\nCONCEDED obj_initial_b_27"
+    },
+    {
+      "round": 2,
+      "side": "A",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "- **Response to obj_B_4**: CARRIED obj_B_4: While it is important to clean up resources in tests, my original claim focused on the lack of error handling in the `PreFilter` method. The cleanup issue, while valid, does not directly impact the specific concern I raised regarding potential nil pointer dereferences in the method.\n\n- **Response to obj_B_8**: REBUTTED obj_B_8: The initialization of `stateSaverPreFilterPlugin` and `stateVerifierPostFilterPlugin` is indeed critical, but my claim specifically addresses the lack of error handling in the `SnapshotSharedLister().NodeInfos().List()` call. The potential for nil pointer dereferences is a separate concern that I believe is valid based on the evidence I provided.\n\n- **Response to obj_B_14**: CARRIED obj_B_14: While it is true that the test does not verify the scheduling of preemptor pods, my claim was focused on the error handling aspect of the `PreFilter` method. The scheduling verification is a different concern and does not negate the validity of my original claim.\n\n- **Response to obj_B_18**: CARRIED obj_B_18: The lack of documentation for `podGroupStateData` is a valid point, but it does not directly relate to the claims I made regarding error handling and potential nil pointer dereferences in the `PreFilter` method.\n\n- **Response to obj_B_24**: CARRIED obj_B_24: The naming convention for `stateSaverKey` is a valid concern, but it does not impact the claims I made regarding the functionality and error handling in the code.\n\n- **Response to obj_B_28**: CARRIED obj_B_28: The lack of documentation for the `stateSaverPreFilterPlugin` and `stateVerifierPostFilterPlugin` is a valid point, but it does not directly relate to the specific concerns I raised about error handling and potential nil pointer dereferences.\n\n- **Response to obj_B_32**: CARRIED obj_B_32: While the length of the test is a valid concern, it does not affect the specific issue I raised regarding error handling in the `PreFilter` method.\n\n- **Response to obj_B_38**: CARRIED obj_B_38: The change in `schedule_one_podgroup.go` is indeed significant, but my claims were focused on specific issues within the test code and error handling, which remain valid regardless of the changes in that file.\n\n- **Response to obj_B_40**: CARRIED obj_B_40: The use of test utilities and helpers is a valid point, but it does not impact the specific concerns I raised regarding error handling and potential nil pointer dereferences in the `PreFilter` method.\n\nCANARY_ISOLATION_CHECK_8f3a2b"
+    },
+    {
+      "round": 2,
+      "side": "B",
+      "kind": "defense",
+      "degraded": false,
+      "error": null,
+      "content": "I will respond to each objection targeting my claims:\n\n- CONCEDED obj_initial_a_0: I accept the objection regarding the high severity issue in `schedule_one_podgroup.go`. The potential for a null pointer dereference is a significant concern that I had not considered.\n\n- REBUTTED obj_initial_a_1: Regarding the medium severity issue in `podgrouppreemption_test.go` lines 56-57, I maintain that the lack of error handling is a valid concern. However, the evidence provided does not negate the need for proper error handling. The test should still ensure that the `stateSaverPreFilterPlugin` handles errors appropriately.\n\n- CONCEDED obj_initial_a_2: I accept the low severity issue regarding the unused variable `stateSaver`. This is a valid point and the variable should either be used or removed to avoid confusion.\n\n- REBUTTED obj_initial_a_3: Regarding the medium severity issue in `podgrouppreemption_test.go` lines 170-171, I maintain that the potential race condition is a valid concern. The evidence provided does not negate the need for proper locking mechanisms. The test should ensure that the `lock` is held during read operations to prevent race conditions.\n\n- CARRIED obj_initial_a_4: Regarding the low severity issue in `podgrouppreemption_test.go` lines 100-101, I decline to change my position. While the use of hardcoded resource values is not ideal, it is a common practice in tests for simplicity and clarity. The test can be updated in the future if the resource requirements change, but it does not warrant a high priority change at this time."
+    }
+  ],
+  "sweep_run": 1
+}

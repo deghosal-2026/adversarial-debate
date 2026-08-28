@@ -1,30 +1,24 @@
 #!/usr/bin/env python3
-"""Run a single LLM reviewer against all PRs in the corpus.
+"""Run a single LLM reviewer against all artifacts in the v0.2.0 corpus.
 
-Each model runs independently with its own checkpoint. If interrupted,
-re-run the same command — it picks up where it left off.
+Handles both PRs (git diff) and non-PR artifacts (plain text content).
+Each model runs independently with its own checkpoint.
 
 Usage:
-    # Run GPT-4o-mini (will resume from checkpoint)
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini
+    # Run GPT-4o-mini on all 150 artifacts
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv
 
-    # Run Gemini 2.5 Flash
-    python3 02_run_reviewer.py --model google/gemini-2.5-flash
+    # Test on 5 artifacts first
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --limit 5
 
-    # Run DeepSeek
-    python3 02_run_reviewer.py --model deepseek/deepseek-chat
+    # Dry run
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --dry-run
 
-    # Test on 5 PRs first (cost control)
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini --limit 5
-
-    # Dry run (show what would run, no API calls)
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini --dry-run
-
-    # Run a single PR (debugging)
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini --pr kubernetes_kubernetes_PR12345
+    # Single artifact (debugging)
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --artifact etcd-io_etcd_PR22178
 
 Requires: OPENROUTER_API_KEY env var
-Output: results/field-test/v0.1.0/results/<model_slug>/<pr_id>.json
+Output: results/field-test/v0.2.0/results/<model_slug>/<artifact_id>.json
 """
 
 from __future__ import annotations
@@ -32,14 +26,14 @@ from __future__ import annotations
 import csv
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-CORPUS_CSV = BASE / "results" / "field-test" / "v0.1.0" / "corpus.csv"
-CORPUS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "corpus"
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "results"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
+CORPUS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "corpus"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -62,8 +56,9 @@ def compute_cost(model: str, prompt_tokens: int, completion_tokens: int) -> floa
     return round((prompt_tokens / 1_000_000) * in_price + (completion_tokens / 1_000_000) * out_price, 6)
 
 
-def load_diffs(corpus_csv: Path, pr_filter: str | None = None) -> list[dict]:
-    if not corpus_csv.is_file():
+def load_artifacts(corpus_csv: Path, artifact_filter: str | None = None) -> list[dict]:  # type: ignore[valid-type]
+    """Load artifacts from corpus CSV, resolve content paths."""
+    if not corpus_csv or not corpus_csv.is_file():
         print(f"ERROR: corpus file not found: {corpus_csv}")
         sys.exit(1)
 
@@ -72,39 +67,129 @@ def load_diffs(corpus_csv: Path, pr_filter: str | None = None) -> list[dict]:
 
     result = []
     for row in rows:
-        url = row["url"].strip()
-        repo = row["repo"]
-        pr_num = int(url.rstrip("/").split("/")[-1])
-        prefix = repo.replace("/", "_")
-        pr_id = f"{prefix}_PR{pr_num}"
-        diff_path = CORPUS_DIR / f"{pr_id}.diff"
+        aid = row.get("artifact_id", "").strip()
+        domain = row.get("domain", "").strip()
+        url = row.get("source_url", row.get("url", "")).strip()
 
-        if pr_filter and pr_filter != pr_id:
+        if not aid or not domain:
             continue
 
-        if not diff_path.is_file():
+        if artifact_filter and artifact_filter != aid:
             continue
 
-        result.append({"url": url, "pr_id": pr_id, "diff_path": diff_path})
+        # Resolve content file based on domain
+        artifact_dir = CORPUS_DIR / domain / aid
+        content_path = _find_content(artifact_dir, domain)
+        if content_path is None:
+            continue
+
+        result.append({
+            "artifact_id": aid,
+            "domain": domain,
+            "url": url,
+            "content_path": content_path,
+        })
+
     return result
 
 
-def call_llm(model: str, diff_text: str, api_key: str) -> dict:
-    import urllib.request
+def _find_content(artifact_dir: Path, domain: str) -> Path | None:
+    """Find the primary content file for an artifact."""
+    if domain == "pr_review":
+        # PRs: look for .diff
+        diffs = list(artifact_dir.glob("*.diff"))
+        if diffs:
+            return diffs[0]
+        return None
 
-    system_prompt = (
-        "You are a code reviewer. Review the following git diff and identify "
-        "issues. For each issue, provide: severity (high/medium/low), "
-        "evidence references (file path + line numbers), and a clear "
-        "description. Also note any non-claim risks. Return your response "
-        "as plain text with structured sections."
-    )
+    # Non-PR domains: content.md
+    md = artifact_dir / "content.md"
+    if md.is_file():
+        return md
+
+    # Fallback: any content.* file
+    contents = list(artifact_dir.glob("content.*"))
+    if contents:
+        return contents[0]
+
+    return None
+
+
+def _build_prompt(domain: str, content: str) -> str:
+    """Build a domain-specific review prompt."""
+    prompts = {
+        "pr_review": (
+            "You are a code reviewer. Review the following git diff and identify "
+            "issues. For each issue, provide: severity (high/medium/low), "
+            "evidence references (file path + line numbers), and a clear "
+            "description."
+        ),
+        "incident_response": (
+            "You are an incident analyst. Review the following incident report "
+            "and identify issues: missing root-cause evidence, insufficient "
+            "remediation, timeline gaps, or ambiguous claims. For each issue "
+            "provide severity and specific evidence from the text."
+        ),
+        "change_management": (
+            "You are a change advisory board reviewer. Review the following "
+            "change plan and identify: rollback gaps, unmitigated risks, "
+            "insufficient testing, ambiguous preconditions, or missing "
+            "stakeholder sign-off. For each issue provide severity and "
+            "specific evidence."
+        ),
+        "security_incidents": (
+            "You are a security analyst. Review the following security "
+            "advisory or incident disclosure and identify: exploitability "
+            "ambiguity, insufficient mitigation, scope understatement, or "
+            "missing patch details. For each issue provide severity and "
+            "specific evidence."
+        ),
+    }
+    base = prompts.get(domain, prompts["pr_review"])
+    prepared_content = content if domain == "pr_review" else _prepare_non_pr_content(content)
+    return f"{base}\n\n---\n\n{prepared_content}"
+
+
+def _prepare_non_pr_content(content: str, max_chars: int = 10000) -> str:
+    """Strip HTML chrome and bound non-PR content before sending to the model."""
+    lowered = content.lower()
+    if "<html" in lowered or "<!doctype html" in lowered:
+        content = re.sub(r"<script\b[^>]*>.*?</script>", " ", content, flags=re.IGNORECASE | re.DOTALL)
+        content = re.sub(r"<style\b[^>]*>.*?</style>", " ", content, flags=re.IGNORECASE | re.DOTALL)
+        content = re.sub(r"<[^>]+>", " ", content)
+        content = re.sub(r"&nbsp;", " ", content, flags=re.IGNORECASE)
+        content = re.sub(r"&amp;", "&", content, flags=re.IGNORECASE)
+
+    content = re.sub(r"\s+", " ", content).strip()
+    # De-duplicate obvious repetitive dashboard/history noise.
+    tokens = content.split(" ")
+    compacted: list[str] = []
+    repeat_count = 0
+    previous = ""
+    for token in tokens:
+        if token == previous:
+            repeat_count += 1
+            if repeat_count >= 3:
+                continue
+        else:
+            previous = token
+            repeat_count = 0
+        compacted.append(token)
+    content = " ".join(compacted)
+
+    if len(content) <= max_chars:
+        return content
+    return content[:max_chars] + "\n\n[truncated for prompt budget]"
+
+
+def call_llm(model: str, content: str, api_key: str) -> dict:
+    import urllib.request
 
     body = json.dumps({
         "model": model,
         "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Review this diff:\n\n{diff_text}"},
+            {"role": "system", "content": "You are an expert reviewer. Be thorough and specific."},
+            {"role": "user", "content": content},
         ],
         "temperature": 0.0,
         "max_tokens": 2000,
@@ -121,8 +206,13 @@ def call_llm(model: str, diff_text: str, api_key: str) -> dict:
             start = time.time()
             req = urllib.request.Request(OPENROUTER_URL, data=body, headers=headers)
             with urllib.request.urlopen(req, timeout=120) as resp:
-                data = json.loads(resp.read())
+                raw_body = resp.read()
+                data = json.loads(raw_body)
             elapsed = int((time.time() - start) * 1000)
+
+            if "choices" not in data or not data["choices"]:
+                error_body = raw_body[:500].decode("utf-8", errors="replace")
+                raise ValueError(f"API returned no 'choices': {error_body}")
 
             raw_text = data["choices"][0]["message"]["content"]
             usage = data.get("usage", {})
@@ -143,88 +233,92 @@ def call_llm(model: str, diff_text: str, api_key: str) -> dict:
                 time.sleep(RETRY_DELAY * (attempt + 1))
             else:
                 raise
-    return {}  # unreachable but satisfies type checker
+    return {}
 
 
 def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
-                  pr_filter: str | None = None,
+                  artifact_filter: str | None = None,
                   corpus_csv: Path | None = None) -> None:
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key and not dry_run:
         print("ERROR: OPENROUTER_API_KEY env var not set")
         sys.exit(1)
 
-    csv_path = corpus_csv or CORPUS_CSV
     model_slug = model.replace("/", "_").replace(".", "-").replace(":", "-")
     model_dir = RESULTS_DIR / model_slug
     model_dir.mkdir(parents=True, exist_ok=True)
     checkpoint = model_dir / "CHECKPOINT"
 
-    diffs = load_diffs(csv_path, pr_filter)
-    if not diffs:
-        print("No PRs to process (check corpus.csv and downloaded diffs)")
+    artifacts = load_artifacts(corpus_csv, artifact_filter)  # type: ignore[arg-type]
+    if not artifacts:
+        print("No artifacts to process (check corpus.csv and downloaded content)")
         return
 
     done_ids: set[str] = set()
     if checkpoint.is_file():
         done_ids = set(checkpoint.read_text().strip().split("\n"))
 
-    pending = [d for d in diffs if d["pr_id"] not in done_ids]
+    pending = [a for a in artifacts if a["artifact_id"] not in done_ids]
     if limit:
         pending = pending[:limit]
 
     if not pending:
-        print(f"All {len(diffs)} PRs already done for {model}")
+        print(f"All {len(artifacts)} artifacts already done for {model}")
         return
 
-    # Cost estimate — model-aware
     if model in PRICING:
         in_price, out_price = PRICING[model]
         avg_tokens = 2000
         avg_in = avg_out = avg_tokens / 2
         est_cost = len(pending) * ((avg_in / 1_000_000) * in_price + (avg_out / 1_000_000) * out_price)
     else:
-        est_cost = len(pending) * 0.002  # fallback for unknown models
+        est_cost = len(pending) * 0.002
+
     print(f"Model: {model}")
-    print(f"Pending: {len(pending)}/{len(diffs)} ({len(diffs) - len(pending)} cached)")
+    print(f"Pending: {len(pending)}/{len(artifacts)} ({len(artifacts) - len(pending)} cached)")
+    print(f"Domains: {sorted(set(a['domain'] for a in pending))}")
     print(f"Est cost: ~${est_cost:.2f}")
 
     if dry_run:
         print("\nDRY RUN — would process:")
-        for d in pending:
-            print(f"  {d['pr_id']}")
+        for a in pending:
+            print(f"  {a['domain']}/{a['artifact_id']}")
         return
 
     total_cost = 0.0
-    for i, pr in enumerate(pending):
-        pr_id = pr["pr_id"]
-        print(f"  [{i+1}/{len(pending)}] {pr_id} ...", end=" ", flush=True)
+    for i, art in enumerate(pending):
+        aid = art["artifact_id"]
+        domain = art["domain"]
+        print(f"  [{i+1}/{len(pending)}] {domain}/{aid} ...", end=" ", flush=True)
 
         try:
-            diff_text = pr["diff_path"].read_text()
-            result = call_llm(model, diff_text, api_key)
+            content = art["content_path"].read_text()
+            prompt = _build_prompt(domain, content)
+
+            result = call_llm(model, prompt, api_key)
             total_cost += result["cost"]
 
             output = {
                 "model": model,
-                "pr_url": pr["url"],
-                "pr_id": pr_id,
-                "diff_lines": len(diff_text.splitlines()),
+                "artifact_id": aid,
+                "domain": domain,
+                "artifact_url": art["url"],
+                "content_lines": len(content.splitlines()),
                 "raw_text": result["raw_text"],
                 "latency_ms": result["latency_ms"],
                 "prompt_tokens": result["prompt_tokens"],
                 "completion_tokens": result["completion_tokens"],
                 "cost": result["cost"],
             }
-            (model_dir / f"{pr_id}.json").write_text(json.dumps(output, indent=2))
+            (model_dir / f"{aid}.json").write_text(json.dumps(output, indent=2))
 
-            done_ids.add(pr_id)
+            done_ids.add(aid)
             checkpoint.write_text("\n".join(sorted(done_ids)))
             print(f"ok ({result['latency_ms']}ms, "
                   f"{result['prompt_tokens']}+{result['completion_tokens']} tok, "
                   f"${result['cost']:.4f})")
 
-            time.sleep(1)  # rate limit politeness
+            time.sleep(1)
 
         except Exception as e:
             print(f"ERROR: {e}")
@@ -235,20 +329,15 @@ def run_for_model(model: str, limit: int | None = None, dry_run: bool = False,
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Run a single LLM reviewer")
-    parser.add_argument("--model", required=True,
-                        help="OpenRouter model (e.g. openai/gpt-4o-mini)")
-    parser.add_argument("--corpus", default=None,
-                        help="Path to corpus CSV (default: results/field-test/v0.1.0/corpus.csv)")
-    parser.add_argument("--limit", type=int, default=None,
-                        help="Max PRs to process (for testing)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Show what would run without API calls")
-    parser.add_argument("--pr", default=None,
-                        help="Run a single PR by pr_id (debugging)")
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--corpus", required=True)
+    parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--artifact", default=None)
     args = parser.parse_args()
 
-    corpus_path = Path(args.corpus) if args.corpus else None
-    run_for_model(args.model, args.limit, args.dry_run, args.pr, corpus_path)
+    corpus_path = Path(args.corpus)
+    run_for_model(args.model, args.limit, args.dry_run, args.artifact, corpus_path)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

@@ -5,11 +5,11 @@ Produces a CSV for manual judgment: did any debate pair surface the actual
 cause of the revert/advisory?
 
 Usage:
-    python3 06_ground_truth.py --corpus results/field-test/v0.1.0/corpus0.csv
+    python3 06_ground_truth.py --corpus results/field-test/v0.2.0/corpus.csv
 
 Output:
-    results/field-test/v0.1.0/analysis/ground-truth-comparison.csv
-    Columns: pr_id, outcome, known_reason, pair, claim_id, claim_text, severity,
+    results/field-test/v0.2.0/analysis/ground-truth-comparison.csv
+    Columns: artifact_id, outcome, known_reason, pair, claim_id, claim_text, severity,
              conceded_by_or_status, human_judgment (blank - fill in)
 """
 
@@ -22,8 +22,8 @@ import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
 
 GROUND_TRUTH_OUTCOMES = {
     "Merged-then-reverted",
@@ -72,15 +72,19 @@ def _is_substantive_claim(text: str) -> bool:
 
 
 def load_corpus(corpus_csv: Path) -> dict[str, dict]:
-    """Load corpus rows keyed by pr_id."""
+    """Load PR-review corpus rows keyed by artifact_id."""
     rows = {}
     with open(corpus_csv) as f:
         for row in csv.DictReader(f):
-            repo = row["repo"]
-            pr_num = int(row["url"].strip().rstrip("/").split("/")[-1])
-            pr_id = f"{repo.replace('/', '_')}_PR{pr_num}"
-            row["pr_id"] = pr_id
-            rows[pr_id] = row
+            if row.get("domain") != "pr_review":
+                continue
+            artifact_id = row.get("artifact_id", "").strip()
+            if not artifact_id:
+                repo = row["repo"]
+                pr_num = int(row.get("url", row.get("source_url", "")).strip().rstrip("/").split("/")[-1])
+                artifact_id = f"{repo.replace('/', '_')}_PR{pr_num}"
+            row["artifact_id"] = artifact_id
+            rows[artifact_id] = row
     return rows
 
 
@@ -109,7 +113,7 @@ def main() -> None:
 
         for report_path in sorted(pr_dir.glob("*/report.json")):
             d = json.loads(report_path.read_text())
-            pr_id = d.get("pr_id", "")
+            pr_id = d.get("artifact_id", d.get("pr_id", ""))
 
             if pr_id not in gt_prs:
                 continue
@@ -123,7 +127,7 @@ def main() -> None:
                 if not _is_substantive_claim(claim_text):
                     continue
                 out_rows.append({
-                    "pr_id": pr_id,
+                    "artifact_id": pr_id,
                     "outcome": gt_prs[pr_id]["outcome"],
                     "known_reason": known_reason,
                     "pair": pair_name,
@@ -140,7 +144,7 @@ def main() -> None:
                 if not _is_substantive_claim(text):
                     continue
                 out_rows.append({
-                    "pr_id": pr_id,
+                    "artifact_id": pr_id,
                     "outcome": gt_prs[pr_id]["outcome"],
                     "known_reason": known_reason,
                     "pair": pair_name,
@@ -153,6 +157,7 @@ def main() -> None:
 
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = Path(args.output) if args.output else ANALYSIS_DIR / "ground-truth-comparison.csv"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", newline="") as f:
         if out_rows:
             w = csv.DictWriter(f, fieldnames=out_rows[0].keys())
@@ -166,7 +171,7 @@ def main() -> None:
     print("  PARTIAL  — related but not the exact cause")
     print("  NO_MATCH — unrelated")
     print()
-    matched_prs = {r["pr_id"] for r in out_rows}
+    matched_prs = {r["artifact_id"] for r in out_rows}
     print(f"PRs covered: {len(matched_prs)}")
 
 

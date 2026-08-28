@@ -8,21 +8,21 @@ During debate rounds, calls the LLM API live via OpenRouter using the same
 model that did the initial review. The stored review is round 0 only.
 
 Usage:
-    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv
+    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv
 
     # Run a specific pair only
-    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pair pair1_gpt_gemini
+    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --pair pair1_gpt_gemini
 
     # Run a single PR (debugging)
-    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --pr kubernetes_kubernetes_PR141554
+    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --artifact kubernetes_kubernetes_PR141554
 
     # Limit PRs (testing)
-    python3 04_run_debate.py --corpus results/field-test/v0.1.0/corpus.csv --limit 5
+    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --limit 5
 
 Requires: OPENROUTER_API_KEY env var
 
-Input:  results/field-test/v0.1.0/pairs/<pair_name>/<pr_id>.json
-Output: results/field-test/v0.1.0/debates/<pair_name>/<pr_id>/report.json
+Input:  results/field-test/v0.2.0/pairs/<pair_name>/<artifact_id>.json
+Output: results/field-test/v0.2.0/debates/<pair_name>/<artifact_id>/report.json
 """
 
 from __future__ import annotations
@@ -37,9 +37,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-CORPUS_CSV = BASE / "results" / "field-test" / "v0.1.0" / "corpus.csv"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
-DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
+CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
+
+def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
+    name = corpus_path.name
+    if name == "validation_subset.csv":
+        return ["pair5_deepseek_mistral"]
+    if name == "negative_control_subset.csv":
+        return ["pair1_gpt_gemini"]
+    return ["pair3_gpt_mistral"]
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -67,13 +75,17 @@ DEBATE_SYSTEM_PROMPT = (
 
 
 def load_corpus_ids(corpus_csv: Path) -> list[str]:
-    """Load PR IDs from corpus CSV."""
+    """Load artifact ids from corpus CSV."""
     with open(corpus_csv) as f:
         rows = list(csv.DictReader(f))
     ids = []
     for row in rows:
+        artifact_id = row.get("artifact_id", "").strip()
+        if artifact_id:
+            ids.append(artifact_id)
+            continue
         repo = row["repo"]
-        pr_num = int(row["url"].strip().rstrip("/").split("/")[-1])
+        pr_num = int(row.get("url", row.get("source_url", "")).strip().rstrip("/").split("/")[-1])
         ids.append(f"{repo.replace('/', '_')}_PR{pr_num}")
     return ids
 
@@ -239,22 +251,23 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
     if side_b is None:
         msg = (
             f"side_b is null for pair {pair_data.get('pair', 'unknown')} "
-            f"PR {pair_data.get('pr_id', 'unknown')}. "
+            f"artifact {pair_data.get('artifact_id', 'unknown')}. "
             "Baseline pairs (single-reviewer) should use a different pipeline."
         )
         raise ValueError(msg)
     now = datetime.now(UTC)
 
     # Build Review objects from stored LLM output (round 0)
-    review_id_a = f"rev_A_{side_a['pr_id']}"
-    review_id_b = f"rev_B_{side_b['pr_id']}"
+    artifact_id = side_a.get("artifact_id", side_a.get("pr_id"))
+    review_id_a = f"rev_A_{artifact_id}"
+    review_id_b = f"rev_B_{side_b.get('artifact_id', side_b.get('pr_id'))}"
 
     claims_a = parse_claims_from_review(side_a["raw_text"], "A", review_id_a)
     claims_b = parse_claims_from_review(side_b["raw_text"], "B", review_id_b)
 
     review_a = Review(
         id=review_id_a,
-        session_id=f"sess_{side_a['pr_id']}_A",
+        session_id=f"sess_{artifact_id}_A",
         claims=claims_a,
         risks=[],
         confidence=0.7,
@@ -262,7 +275,7 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
     )
     review_b = Review(
         id=review_id_b,
-        session_id=f"sess_{side_b['pr_id']}_B",
+        session_id=f"sess_{side_b.get('artifact_id', side_b.get('pr_id'))}_B",
         claims=claims_b,
         risks=[],
         confidence=0.7,
@@ -270,8 +283,8 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
     )
 
     session_a = ReviewerSession(
-        id=f"sess_{side_a['pr_id']}_A",
-        artifact_id=side_a["pr_id"],
+        id=f"sess_{artifact_id}_A",
+        artifact_id=artifact_id,
         side="A",
         provider="openrouter",
         model=side_a.get("model", "unknown"),
@@ -279,8 +292,8 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
         status="revealed",
     )
     session_b = ReviewerSession(
-        id=f"sess_{side_b['pr_id']}_B",
-        artifact_id=side_b["pr_id"],
+        id=f"sess_{side_b.get('artifact_id', side_b.get('pr_id'))}_B",
+        artifact_id=side_b.get("artifact_id", side_b.get("pr_id")),
         side="B",
         provider="openrouter",
         model=side_b.get("model", "unknown"),
@@ -302,7 +315,7 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
         session_b=session_b,
         review_a=review_a,
         review_b=review_b,
-        artifact_for_prompt=side_a["pr_id"],
+        artifact_for_prompt=artifact_id,
         max_rounds=2,
         token_budget=TokenBudget(limit=50000),
     )
@@ -323,7 +336,7 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
 
     # Run SynthesisReport (M7)
     report = synthesize_verdict(
-        artifact_id=side_a["pr_id"],
+        artifact_id=artifact_id,
         evidence=evidence,
         claims_by_side={"A": claims_a, "B": claims_b},
         concessions=termination.concessions,
@@ -333,7 +346,7 @@ def run_debate_for_pr(pair_data: dict, api_key: str) -> dict:
 
     # Build output
     return {
-        "pr_id": side_a["pr_id"],
+        "artifact_id": artifact_id,
         "pair": pair_data["pair"],
         "model_a": model_a,
         "model_b": model_b,
@@ -401,8 +414,8 @@ def main() -> None:
                         help="Path to corpus CSV")
     parser.add_argument("--pair", default=None,
                         help="Only run this pair (e.g. pair1_gpt_gemini)")
-    parser.add_argument("--pr", default=None,
-                        help="Only run this PR ID")
+    parser.add_argument("--artifact", default=None,
+                        help="Only run this artifact ID")
     parser.add_argument("--limit", type=int, default=None,
                         help="Max PRs to process")
     parser.add_argument("--force", action="store_true",
@@ -420,14 +433,14 @@ def main() -> None:
         sys.exit(1)
 
     pr_ids = load_corpus_ids(corpus_path)
-    if args.pr:
-        pr_ids = [p for p in pr_ids if p == args.pr]
+    if args.artifact:
+        pr_ids = [p for p in pr_ids if p == args.artifact]
 
-    pair_dirs = [d.name for d in PAIRS_DIR.iterdir() if d.is_dir()]
+    pair_dirs = [p for p in default_pairs_for_corpus(corpus_path) if (PAIRS_DIR / p).is_dir()]
     if args.pair:
         pair_dirs = [p for p in pair_dirs if p == args.pair]
 
-    print(f"Running debate on {len(pr_ids)} PRs across {len(pair_dirs)} pairs")
+    print(f"Running debate on {len(pr_ids)} artifacts across {len(pair_dirs)} pairs")
 
     total = 0
     errors = 0

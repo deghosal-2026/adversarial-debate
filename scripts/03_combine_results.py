@@ -4,8 +4,8 @@
 Usage:
     python3 03_combine_results.py
 
-Reads:  results/field-test/v0.1.0/results/<model>/<pr_id>.json
-Writes: results/field-test/v0.1.0/pairs/<pair_name>/<pr_id>.json
+Reads:  results/field-test/v0.2.0/results/<model>/<artifact_id>.json
+Writes: results/field-test/v0.2.0/pairs/<pair_name>/<artifact_id>.json
 """
 
 from __future__ import annotations
@@ -16,9 +16,9 @@ import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-CORPUS_CSV = BASE / "results" / "field-test" / "v0.1.0" / "corpus.csv"
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "results"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
+CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
 
 PAIRS = {
     "pair1_gpt_gemini": {"a": "openai_gpt-4o-mini", "b": "google_gemini-2-5-flash"},
@@ -29,6 +29,33 @@ PAIRS = {
     "homogeneous_gpt": {"a": "openai_gpt-4o-mini", "b": "openai_gpt-4o-mini"},
     "baseline_gpt": {"a": "openai_gpt-4o-mini", "b": None},
 }
+
+def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
+    name = corpus_path.name
+    if name == "validation_subset.csv":
+        return ["pair5_deepseek_mistral"]
+    if name == "negative_control_subset.csv":
+        return ["pair1_gpt_gemini"]
+    return ["pair3_gpt_mistral", "baseline_gpt"]
+
+
+def load_artifact_ids(rows: list[dict[str, str]]) -> list[str]:
+    """Extract artifact ids from a mixed v0.2.0 corpus CSV."""
+    artifact_ids: list[str] = []
+    for row in rows:
+        artifact_id = row.get("artifact_id", "").strip()
+        if artifact_id:
+            artifact_ids.append(artifact_id)
+            continue
+
+        repo = row.get("repo", "").strip()
+        url = row.get("url", row.get("source_url", "")).strip()
+        if not repo or not url:
+            continue
+
+        pr_num = int(url.rstrip("/").split("/")[-1])
+        artifact_ids.append(f"{repo.replace('/', '_')}_PR{pr_num}")
+    return artifact_ids
 
 
 def load_result(model_slug: str, pr_id: str) -> dict | None:
@@ -42,7 +69,9 @@ def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Combine model results into pairs")
     parser.add_argument("--corpus", default=None,
-                        help="Path to corpus CSV (default: results/field-test/v0.1.0/corpus.csv)")
+                        help="Path to corpus CSV (default: results/field-test/v0.2.0/corpus.csv)")
+    parser.add_argument("--pair", action="append", default=None,
+                        help="Pair(s) to combine. Defaults to the approved v0.2.0 set.")
     args = parser.parse_args()
 
     csv_path = Path(args.corpus) if args.corpus else CORPUS_CSV
@@ -53,24 +82,22 @@ def main() -> None:
     with open(csv_path) as f:
         rows = list(csv.DictReader(f))
 
-    pr_ids = []
-    for row in rows:
-        repo = row["repo"]
-        pr_num = int(row["url"].strip().rstrip("/").split("/")[-1])
-        pr_ids.append(f"{repo.replace('/', '_')}_PR{pr_num}")
+    artifact_ids = load_artifact_ids(rows)
 
-    print(f"Combining {len(pr_ids)} PRs across {len(PAIRS)} pairs\n")
+    selected_pairs = args.pair or default_pairs_for_corpus(csv_path)
+    print(f"Combining {len(artifact_ids)} artifacts across {len(selected_pairs)} pairs\n")
 
-    for pair_name, slots in PAIRS.items():
+    for pair_name in selected_pairs:
+        slots = PAIRS[pair_name]
         pair_dir = PAIRS_DIR / pair_name
         pair_dir.mkdir(parents=True, exist_ok=True)
         combined = 0
         missing_a = 0
         missing_b = 0
 
-        for pr_id in pr_ids:
-            result_a = load_result(slots["a"], pr_id)
-            result_b = load_result(slots["b"], pr_id) if slots["b"] else None
+        for artifact_id in artifact_ids:
+            result_a = load_result(slots["a"], artifact_id)
+            result_b = load_result(slots["b"], artifact_id) if slots["b"] else None
 
             if result_a is None:
                 missing_a += 1
@@ -81,12 +108,12 @@ def main() -> None:
 
             output = {
                 "pair": pair_name,
-                "pr_id": pr_id,
-                "pr_url": result_a["pr_url"],
+                "artifact_id": artifact_id,
+                "artifact_url": result_a.get("artifact_url", result_a.get("pr_url", "")),
                 "side_a": result_a,
                 "side_b": result_b,
             }
-            (pair_dir / f"{pr_id}.json").write_text(json.dumps(output, indent=2))
+            (pair_dir / f"{artifact_id}.json").write_text(json.dumps(output, indent=2))
             combined += 1
 
         print(f"  {pair_name}: {combined} combined")

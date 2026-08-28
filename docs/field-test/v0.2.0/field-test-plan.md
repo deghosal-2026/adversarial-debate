@@ -238,6 +238,13 @@ Use the v0.1.0 learnings to avoid rerunning an unnecessary full 4-model matrix. 
 
 ### 4.2 v0.2.0 Model Strategy
 
+Canonical pair roles for v0.2.0:
+
+- **Primary / positive pair:** `pair3_gpt_mistral`
+- **Validation pair:** `pair5_deepseek_mistral`
+- **Negative control:** `pair1_gpt_gemini`
+- **Homogeneous control:** `homogeneous_gpt`
+
 Primary recommendation:
 
 1. Run the full `150`-artifact corpus on **GPT-4o-mini + Mistral Small 3.2**.

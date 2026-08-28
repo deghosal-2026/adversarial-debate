@@ -13,10 +13,10 @@ Usage:
     python3 04_analyze.py
 
 Output:
-    docs/field-test/v0.1.0/analysis/distinctness-ratings.csv
-    docs/field-test/v0.1.0/analysis/cross-model-overlap.csv
-    docs/field-test/v0.1.0/analysis/cost-latency.csv
-    docs/field-test/v0.1.0/FIELD_TEST_REPORT.md  (placeholder — written manually)
+    results/field-test/v0.2.0/analysis/distinctness-ratings.csv
+    results/field-test/v0.2.0/analysis/cross-model-overlap.csv
+    results/field-test/v0.2.0/analysis/cost-latency.csv
+    results/field-test/v0.2.0/FIELD_TEST_REPORT.md  (placeholder — written manually)
 """
 
 from __future__ import annotations
@@ -29,11 +29,11 @@ from collections import Counter
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "results"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "pairs"
-DEBATES_DIR = BASE / "results" / "field-test" / "v0.1.0" / "debates"
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
-OUT_DIR = BASE / "results" / "field-test" / "v0.1.0"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
+OUT_DIR = BASE / "results" / "field-test" / "v0.2.0"
 
 MODEL_NAMES = [
     "openai_gpt-4o-mini",
@@ -118,10 +118,12 @@ def main() -> None:
             if f.name == "CHECKPOINT":
                 continue
             data = json.loads(f.read_text())
-            all_results[model][data["pr_id"]] = data
+            artifact_id = data.get("artifact_id", data.get("pr_id", ""))
+            if artifact_id:
+                all_results[model][artifact_id] = data
 
     pr_ids = list({pid for m in MODEL_NAMES for pid in all_results[m]})
-    print(f"Loaded results for {len(pr_ids)} PRs across {len(MODEL_NAMES)} models")
+    print(f"Loaded results for {len(pr_ids)} artifacts across {len(MODEL_NAMES)} models")
 
     # 1. Cross-model overlap
     overlap_rows = []
@@ -131,7 +133,7 @@ def main() -> None:
             data = all_results[model].get(pr_id)
             issues_by_model[model] = set(extract_issues(data["raw_text"])) if data else set()
 
-        row = {"pr_id": pr_id}
+        row = {"artifact_id": pr_id}
         for a in MODEL_NAMES:
             for b in MODEL_NAMES:
                 if a < b:
@@ -150,7 +152,7 @@ def main() -> None:
     # 2. Distinctness counts per model
     distinct_rows = []
     for pr_id in pr_ids:
-        row = {"pr_id": pr_id}
+        row = {"artifact_id": pr_id}
         for model in MODEL_NAMES:
             data = all_results[model].get(pr_id)
             row[f"{model}_total_issues"] = str(len(extract_issues(data["raw_text"]))) if data else "0"
@@ -233,7 +235,7 @@ def main() -> None:
                     continue
                 debate_rows.append({
                     "pair": data.get("pair", ""),
-                    "pr_id": data.get("pr_id", ""),
+                    "artifact_id": data.get("artifact_id", data.get("pr_id", "")),
                     "termination": data.get("termination_reason", ""),
                     "rounds": str(data.get("rounds_completed", 0)),
                     "verdict_kind": data.get("verdict_kind", ""),

@@ -23,7 +23,7 @@ import urllib.request
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.1.0" / "analysis"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MAX_RETRIES = 3
@@ -38,6 +38,35 @@ Rules:
 - NO_MATCH: claim is about something unrelated
 
 Answer with exactly one word: MATCH, PARTIAL, or NO_MATCH."""
+
+
+def _row_key(row: dict[str, str]) -> tuple[str, str, str, str]:
+    artifact_id = row.get("artifact_id", row.get("pr_id", ""))
+    return (
+        artifact_id,
+        row.get("pair", ""),
+        row.get("claim_id", ""),
+        row.get("claim_source", ""),
+    )
+
+
+def _merge_chunk_outputs(chunk_dir: Path, rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    merged_dict: dict[tuple[str, str, str, str], dict[str, str]] = {}
+    for cf in sorted(chunk_dir.glob("chunk_*.csv")):
+        with open(cf, newline="") as f:
+            for r in csv.DictReader(f):
+                key = _row_key(r)
+                existing = merged_dict.get(key)
+                if existing is None or (not existing.get("human_judgment") and r.get("human_judgment")):
+                    merged_dict[key] = r
+
+    merged = list(merged_dict.values())
+    judged_keys = {_row_key(r) for r in merged}
+    for r in rows:
+        key = _row_key(r)
+        if key not in judged_keys:
+            merged.append(r)
+    return merged
 
 
 def call_llm(model: str, known_reason: str, claim_text: str, api_key: str) -> str:
@@ -173,24 +202,7 @@ def main() -> None:
             except Exception as e:
                 print(f"  worker {worker_id}: ERROR {e}")
 
-    # Merge all chunk files into the final output using a dict
-    merged_dict: dict[tuple, dict] = {}
-    for cf in sorted(chunk_dir.glob("chunk_*.csv")):
-        with open(cf, newline="") as f:
-            for r in csv.DictReader(f):
-                key = (r.get("pr_id", ""), r.get("pair", ""), r.get("claim_id", ""),
-                       r.get("claim_source", ""))
-                existing = merged_dict.get(key)
-                if existing is None or (not existing.get("human_judgment") and r.get("human_judgment")):
-                    merged_dict[key] = r
-    merged = list(merged_dict.values())
-
-    # Include never-pending original rows too
-    judged_keys = {(r.get("pr_id",""), r.get("pair",""), r.get("claim_id",""), r.get("claim_source","")) for r in merged}
-    for r in rows:
-        key = (r.get("pr_id",""), r.get("pair",""), r.get("claim_id",""), r.get("claim_source",""))
-        if key not in judged_keys:
-            merged.append(r)
+    merged = _merge_chunk_outputs(chunk_dir, rows)
 
     _save(merged, out_path)
     print(f"\nDone: {total_counts}")
