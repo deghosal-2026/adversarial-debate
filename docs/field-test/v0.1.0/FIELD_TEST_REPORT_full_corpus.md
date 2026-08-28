@@ -3,7 +3,7 @@
 > **Date:** 2026-08-25
 > **Provider:** OpenRouter (single API key: `OPENROUTER_API_KEY`)
 > **Models:** GPT-4o-mini, Gemini 2.5 Flash, DeepSeek-V3, Mistral Small 3.2
-> **Corpus:** 70 PRs across 4 repos (kubernetes, golang/go, prometheus, etcd)
+> **Corpus:** 70 PRs across 3 repos (kubernetes, golang/go, prometheus)
 > **Pairs:** 6 (5 heterogeneous + 1 homogeneous)
 > **Cost:** $0.53 · **Debates:** 411 · **Duration:** ~3 hours (6 parallel terminals)
 > **Config:** `results/field-test/v0.1.0/corpus0.csv` + `corpus1.csv`
@@ -81,14 +81,16 @@ A debate is a "pass" if it produced real engagement (non-theater, claims address
 
 Pair diversity ranking by avg convergence score:
 
-| Rank | Pair | Diversity | Avg Score | Verdict Rate | Concessions |
-|------|------|-----------|-----------|-------------|-------------|
-| 1 | pair5 (DeepSeek+Mistral) | China vs EU | 0.982 | 97% | 2,352 |
-| 2 | pair3 (GPT+Mistral) | US vs EU | 0.754 | 48% | 1,728 |
-| 3 | homogeneous (GPT+GPT) | Same model | 0.688 | 57% | 1,444 |
-| 4 | pair2 (Gemini+DeepSeek) | US vs China | 0.622 | 10% | 1,470 |
-| 5 | pair4 (Gemini+Mistral) | US vs EU | 0.512 | 4% | 1,073 |
-| 6 | pair1 (GPT+Gemini) | US vs US | 0.357 | 4% | 727 |
+| Rank | Pair | Diversity | Avg Score | Verdict Rate | Concessions | Capitulation |
+|------|------|-----------|-----------|-------------|-------------|--------------|
+| 1 | pair5 (DeepSeek+Mistral) | China vs EU | 0.982 | 97% ⚠️ (65% capitulation) | 2,352 | 65% |
+| 2 | pair3 (GPT+Mistral) | US vs EU | 0.754 | 48% | 1,728 | 21% |
+| 3 | homogeneous (GPT+GPT) | Same model | 0.688 | 57% | 1,444 | 30% |
+| 4 | pair2 (Gemini+DeepSeek) | US vs China | 0.622 | 10% | 1,470 | 1.4% |
+| 5 | pair4 (Gemini+Mistral) | US vs EU | 0.512 | 4% | 1,073 | 1.5% |
+| 6 | pair1 (GPT+Gemini) | US vs US | 0.357 | 4% | 727 | 0% |
+
+**Caveat:** pair5's high verdict rate is largely capitulation — 65% of its debates are one-sided concedes in round 1, which inflates convergence without genuine debate. High verdict rates should be read alongside capitulation.|
 
 The most diverse pair (DeepSeek+Mistral) produces 3× more verdicts and 3× more concessions than the least diverse pair (GPT+Gemini). Diversity of training data, safety training, and RLHF is the key variable.
 
@@ -288,8 +290,8 @@ pair5 reaches verdict on every PR. pair1 fails to reach verdict on any. The PR c
 | Repo | PRs | Language |
 |------|-----|----------|
 | kubernetes/kubernetes | 46 | Go |
-| prometheus/prometheus | 23 | Go |
 | golang/go | 1 | Go |
+| prometheus/prometheus | 23 | Go |
 
 **By Size:**
 
@@ -530,7 +532,7 @@ Actionable recommendations for v0.2.0 and beyond:
 
 9. **Manually validate cross-model overlap.** Inspect 10 PRs to determine if 0.000 overlap is real diversity or extraction failure. This is the difference between "thesis proven" and "metric broken."
 
-10. **Expand corpus to 150 PRs across more languages.** Current corpus is 100% Go from 4 repos. Need Python, TypeScript, Rust to validate language independence.
+10. **Expand corpus to 150 PRs across more languages.** Current corpus is 100% Go from 3 repos. Need Python, TypeScript, Rust to validate language independence.
 
 ### For the Product
 
@@ -558,7 +560,7 @@ Actionable recommendations for v0.2.0 and beyond:
 | Dimension | Value |
 |-----------|-------|
 | PRs | 70 (from corpus0.csv + corpus1.csv) |
-| Repos | 4 (kubernetes, golang/go, prometheus, etcd) |
+| Repos | 3 (kubernetes, golang/go, prometheus) |
 | Languages | Go (all PRs from Go repos) |
 | Models | 4 (GPT-4o-mini, Gemini 2.5 Flash, DeepSeek-V3, Mistral Small 3.2) |
 | Debate pairs | 6 (5 heterogeneous + 1 homogeneous) |

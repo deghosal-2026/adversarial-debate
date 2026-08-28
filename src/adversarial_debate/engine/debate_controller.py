@@ -27,6 +27,9 @@ from adversarial_debate.schemas import (
 )
 from adversarial_debate.schemas.debate import Concession
 
+CANARY_TOKEN = "CANARY_ISOLATION_CHECK_8f3a2b"
+"""Token injected into side A's output to detect isolation leaks to side B."""
+
 TerminationReason = Literal[
     "rounds_exhausted",
     "all_resolved",
@@ -523,11 +526,16 @@ class DebateController:
             )
             return turn_events
 
-        # Detect degradation
+        # Detect degradation (use original text, not canary-injected)
         degraded = detect_degradation(result.raw_text)
 
+        # Inject canary token into side A's output for isolation leak detection
+        canary_text = result.raw_text
+        if side == "A":
+            canary_text = result.raw_text + f"\n\n{CANARY_TOKEN}"
+
         # Validate point-by-point
-        addressed = validate_point_by_point(result.raw_text, outstanding_objections)
+        addressed = validate_point_by_point(canary_text, outstanding_objections)
 
         unaddressed = [a for a in addressed if not a.addressed]
         if unaddressed:
@@ -582,7 +590,7 @@ class DebateController:
             id=f"msg_{side}_r{round_index}",
             side=side,
             kind="defense",
-            content=result.raw_text,
+            content=canary_text,
         )
 
         turn_events.append(

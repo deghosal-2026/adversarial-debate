@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -35,6 +36,39 @@ GROUND_TRUTH_OUTCOMES = {
     "Breaking API change caught in review",
     "Refactoring that introduced regression",
 }
+
+
+def _is_substantive_claim(text: str) -> bool:
+    """Check if claim text is a substantive issue statement, not metadata.
+
+    Excludes:
+    - Severity labels only (e.g. 'Severity: High', 'high')
+    - Evidence headings (e.g. 'Evidence References:', 'Evidence:')
+    - File paths only
+    - Generic remediation text (e.g. 'Suggest: additional test coverage')
+    - Very short fragments (< 15 chars)
+    """
+    text = text.strip()
+    if len(text) < 15:
+        return False
+
+    # Severity-only patterns
+    if re.match(r"^(severity|priority|risk)[:\s]*", text, re.IGNORECASE) and len(text) < 30:
+        return False
+
+    # Evidence heading patterns
+    if re.match(r"^(evidence|references?|sources?)[:\s]", text, re.IGNORECASE):
+        return False
+
+    # File path only
+    if re.match(r"^[\w./\\-]+\.[a-zA-Z]{2,4}(:\d+)?$", text.strip()):
+        return False
+
+    # Generic remediation template
+    if text.startswith("Suggest:") or text.startswith("suggest:"):
+        return False
+
+    return True
 
 
 def load_corpus(corpus_csv: Path) -> dict[str, dict]:
@@ -85,6 +119,9 @@ def main() -> None:
             # Resolved claims (concessions) — these are claims where one side admitted fault
             report = d.get("report", {})
             for r in report.get("resolved", []):
+                claim_text = r.get("claim_text", r.get("rationale", ""))[:300]
+                if not _is_substantive_claim(claim_text):
+                    continue
                 out_rows.append({
                     "pr_id": pr_id,
                     "outcome": gt_prs[pr_id]["outcome"],
@@ -92,7 +129,7 @@ def main() -> None:
                     "pair": pair_name,
                     "claim_source": "resolved(conceded)",
                     "claim_id": r.get("claim_id", ""),
-                    "claim_text": r.get("claim_text", r.get("rationale", ""))[:300],
+                    "claim_text": claim_text,
                     "severity": "",
                     "human_judgment": "",  # fill: MATCH / NO_MATCH / PARTIAL
                 })
@@ -100,6 +137,8 @@ def main() -> None:
             # Unresolved points — surviving disagreement
             for u in report.get("unresolved", []):
                 text = f"A: {u.get('position_a', '')[:150]} | B: {u.get('position_b', '')[:150]}"
+                if not _is_substantive_claim(text):
+                    continue
                 out_rows.append({
                     "pr_id": pr_id,
                     "outcome": gt_prs[pr_id]["outcome"],

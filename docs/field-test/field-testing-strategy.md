@@ -81,6 +81,7 @@ This is the only honest path to regulated verticals. Any PRD claim about these d
 |--------|--------|-------------|
 | **Ground-truth tiers** (0, 2) | Distinct-issue yield | Did independent pass surface what was actually wrong? Measure vs revert/advisory/postmortem |
 | **All tiers** | Verdict stability (flakiness) | N runs (seed-controlled, N≥5) → % of runs producing same verdict. Flag artifacts where verdict flips |
+| **All tiers** | Homogeneous control falsifiable thresholds | Homogeneous pair (GPT+GPT) must fall within defined band: 0.4–0.8 avg convergence, 30–70% verdict rate. If outside this band, flag for isolation leak investigation. |
 | **All tiers** | Theater rate | % of debates with zero claim-state changes (no concessions, no evidence shifts, no new objections). Exposed in reports |
 | **All tiers** | Pair-diversity sweep | Homogeneous vs heterogeneous pair on identical artifact → delta in distinct-issue yield. Empirically tests the BYOM thesis |
 | **Tiers 1-3** | Expert-rater triad | Domain expert rates: distinctness, `would_resolve_if` actionability, decision impact (binary: would this have changed my call?) |

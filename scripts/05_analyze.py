@@ -228,6 +228,9 @@ def main() -> None:
                 if not report_path.is_file():
                     continue
                 data = json.loads(report_path.read_text())
+                # Exclude zero-claim no-op rows (data integrity failures)
+                if data.get("total_claims", 0) == 0 and data.get("events_count", 0) == 0:
+                    continue
                 debate_rows.append({
                     "pair": data.get("pair", ""),
                     "pr_id": data.get("pr_id", ""),
