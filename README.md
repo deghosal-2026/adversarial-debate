@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![Status](https://img.shields.io/badge/status-v0.2.0-brightgreen)]()
+[![Status](https://img.shields.io/badge/status-v0.2.1-brightgreen)]()
 [![PyPI](https://img.shields.io/pypi/v/adversarial-debate)](https://pypi.org/project/adversarial-debate/)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/14254/badge)](https://www.bestpractices.dev/en/projects/14254/passing)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000)](https://github.com/astral-sh/ruff)
@@ -14,7 +14,9 @@
 </div>
 
 > [!NOTE]
-> **Status:** v0.2.0 shipped Aug 2026. Field-tested on 150 artifacts across 4 domains — 217 debates, $0.42 total cost.
+> **Status:** v0.2.1 shipped Aug 2026. Field-tested on 150 artifacts across 4 domains — 367 debates, $0.57 total cost.
+> **Key finding:** The Mistral effect is confirmed — Mistral is the unique variable driving productive debate, not lab diversity.
+> **Core improvement:** Row-count invariants at all pipeline seams prevent silent data loss. False-negative measurement (1.7–3.4% miss rate) provides recall data for the first time.
 > The core isolation rule is mechanically enforced: **reviewer B cannot see reviewer A's answer until it has fully committed its own.**
 
 ---

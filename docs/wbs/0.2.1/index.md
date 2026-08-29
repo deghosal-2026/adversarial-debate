@@ -2,15 +2,13 @@
 
 > Work breakdown structure for v0.2.1 "Separate the Signal". 3 milestones, 26+ tasks, each task wired to a live GitHub issue attached to milestone `v0.2.1-M1` through `v0.2.1-M3`. This cycle focuses on the three community-raised issues from the v0.2.0 release: the model pairing confound (Heinrich Neb), the row-count invariant gap (Heinrich Neb), and the false-negative blind spot (Heinrich Neb).
 
-**Milestone:** M1-M3 · **Window:** Sep 1-30, 2026 · **Exit bar:** DeepSeek+GPT experiment complete, row-count invariants at all seams, false-negative rate measured, field test re-run, PyPI publish, GitHub release.
+**Milestone:** M1-M3 · **Window:** Sep 1-30, 2026 · **Status:** ✅ COMPLETE — v0.2.1 shipped Aug 28, 2026.
 
-## Milestones
-
-| M | File | Focus | Issues | Depends on |
-|---|------|-------|--------|-----------|
-| M1 | [M1-core-fixes.md](M1-core-fixes.md) | DeepSeek+GPT pairing experiment, row-count invariants, false-negative measurement, unit tests | #127-#129, #153-#155 | — |
-| M2 | [M2-field-test.md](M2-field-test.md) | Field test plan, scripts, execution, conclusions, report | #130-#152 | M1 |
-| M3 | [M3-release-readiness.md](M3-release-readiness.md) | Security scan, tests, docs, PyPI, tag, merge to main | #138-#143 | M2 |
+| M | File | Focus | Issues | Status |
+|---|------|-------|--------|--------|
+| M1 | [M1-core-fixes.md](M1-core-fixes.md) | DeepSeek+GPT pairing experiment, row-count invariants, false-negative measurement, unit tests | #127-#129, #153-#155 | ✅ Complete |
+| M2 | [M2-field-test.md](M2-field-test.md) | Field test plan, scripts, execution, conclusions, report | #130-#152 | ✅ Complete |
+| M3 | [M3-release-readiness.md](M3-release-readiness.md) | Security scan, tests, docs, PyPI, tag, merge to main | #138-#143 | ✅ Complete |
 
 **Total: 26+ issues · 3 milestones (M1-M3)**
 

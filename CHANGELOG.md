@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.2.1 (2026-08-28)
+
+**Separate the Signal** — Mistral effect confirmed, pipeline invariants, false-negative measurement.
+
+### Key Findings
+- **Mistral effect confirmed** — DeepSeek+GPT separating experiment (0.246 convergence) disproves diversity-of-training-objective hypothesis. Mistral is the unique variable driving productive debate.
+- **Pipeline integrity** — 5 row-count invariant assertions added at every pipeline seam. All pass. 2,333→359 collapse class eliminated.
+- **False-negative measurement** — 1.7–3.4% missed-issue rate across 59 known-bad PRs. First recall data the project has ever reported.
+- **0 flaky artifacts**, **0 theatre**, **87.4% MATCH** ground truth (3,008/3,440).
+
+### Model Selection
+- Default production pair remains GPT+Mistral (0.536 convergence)
+- Validation pair: DeepSeek+Mistral (0.572 convergence)
+- Recommendation changes: "include Mistral" replaces "pick from different labs"
+
+### New Code
+- `scripts/_seam_assert.py` — row-count invariant assertion utility
+- `scripts/missed_issues.py` — false-negative measurement module (importable)
+- `scripts/scripts_common.py` — shared pipeline utilities
+- `scripts/09_missed_issues.py` — CLI entry point for missed-issue measurement
+- `pair8_deepseek_gpt_mini` added to pipeline configuration
+
+### Tests
+- 55 new deterministic unit tests (zero LLM calls)
+- `test_pairs.py` — 15 tests for pair configuration
+- `test_seam_assert.py` — 19 tests for assertion logic
+- `test_missed_issues.py` — 21 tests for detection and rate computation
+
+### Field Test
+- 367 debates across 5 pairs (150 artifacts, 4 domains)
+- $0.57 total cost
+- All results in `results/field-test/v0.2.1/`
+
 ## v0.2.0 (2026-08-27)
 
 **Fix the Data** — Mixed-domain corpus, corrected pipeline, postmortem fixes.
