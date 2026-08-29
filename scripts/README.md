@@ -1,4 +1,4 @@
-# Field Test Scripts — v0.2.0
+# Field Test Scripts — v0.2.2
 
 Scripts to run the field test. Run in order.
 
@@ -99,7 +99,33 @@ python3 scripts/07_llm_judge.py --model openai/gpt-4o-mini --workers 10 --input 
 python3 scripts/08_flakiness.py --corpus results/field-test/v0.2.0/corpus.csv --runs 5 --limit 12
 ```
 
-### Step 7 — Expert ratings (non-PR domains only)
+### Step 7 — Missed-issue (recall) measurement
+
+```bash
+python3 scripts/09_missed_issues.py
+```
+
+### Step 8 — Noise-floor baseline
+
+Measures statistical uncertainty of aggregate metrics via bootstrap resampling. Run after debates complete. Zero LLM calls.
+
+```bash
+python3 scripts/noise_floor.py --trials 10000 --seed 42
+```
+
+Output: `results/field-test/v0.2.2/noise-floor-report.json` and `.md`
+
+### Step 9 — Permutation control
+
+Validates the LLM judge's match rate is discrimination, not vocabulary overlap. Run after ground-truth judging. Zero LLM calls.
+
+```bash
+python3 scripts/permutation_control.py --shuffles 500 --seed 42
+```
+
+Output: `results/field-test/v0.2.2/permutation-control-report.json` and `.md`
+
+### Step 10 — Expert ratings (non-PR domains only)
 
 Rate incident response, change management, and security incidents on the expert-rater triad:
 
@@ -149,7 +175,15 @@ python3 scripts/04_run_debate.py --corpus results/field-test/v0.2.0/negative_con
 ## Output Structure
 
 ```
-results/field-test/v0.2.0/
+results/field-test/v0.2.0/    # results from the debate pipeline
+results/field-test/v0.2.1/    # results from the v0.2.1 sweep
+results/field-test/v0.2.2/    # measurement infrastructure outputs
+├── noise-floor-report.json   # bootstrap CIs per pair
+├── noise-floor-report.md     # summary table
+├── permutation-control-report.json  # null distribution analysis
+└── permutation-control-report.md    # summary table
+
+results/field-test/
 ├── corpus.csv
 ├── corpus_part1.csv
 ├── corpus_part2.csv
