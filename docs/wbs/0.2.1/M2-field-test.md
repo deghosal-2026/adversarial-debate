@@ -44,13 +44,13 @@ M2 runs the field test sweep after M1 code is merged. It validates that the new 
 
 ## Exit gate
 
-- [ ] 8 remaining issues closed
-- [ ] Field test sweep complete: 150 artifacts, 4 domains, 5 pairs
-- [ ] Row-count invariants: all 5 seams pass
-- [ ] False-negative rate reported with survivorship boundary
-- [ ] Conclusions updated for all 3 M1 changes
-- [ ] Field test report committed to `docs/field-test/v0.2.1/`
-- [ ] Ruff clean, mypy strict clean
-- [ ] Full test suite green
-- [ ] Code review completed
-- [ ] Merged to `rel-v0.2.1`
+- [x] 8 remaining issues closed
+- [x] Field test sweep complete: 150 artifacts, 4 domains, 5 pairs
+- [x] Row-count invariants: all 5 seams pass
+- [x] False-negative rate reported with survivorship boundary
+- [x] Conclusions updated for all 3 M1 changes
+- [x] Field test report committed to `docs/field-test/v0.2.1/`
+- [x] Ruff clean, mypy strict clean
+- [x] Full test suite green
+- [x] Code review completed
+- [x] Merged to `rel-v0.2.1`
