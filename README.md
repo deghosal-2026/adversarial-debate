@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![Status](https://img.shields.io/badge/status-v0.2.1-brightgreen)]()
+[![Status](https://img.shields.io/badge/status-v0.2.2-brightgreen)]()
 [![PyPI](https://img.shields.io/pypi/v/adversarial-debate)](https://pypi.org/project/adversarial-debate/)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/14254/badge)](https://www.bestpractices.dev/en/projects/14254/passing)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000)](https://github.com/astral-sh/ruff)
@@ -14,9 +14,9 @@
 </div>
 
 > [!NOTE]
-> **Status:** v0.2.1 shipped Aug 2026. Field-tested on 150 artifacts across 4 domains — 367 debates, $0.57 total cost.
-> **Key finding:** The Mistral effect is confirmed — Mistral is the unique variable driving productive debate, not lab diversity.
-> **Core improvement:** Row-count invariants at all pipeline seams prevent silent data loss. False-negative measurement (1.7–3.4% miss rate) provides recall data for the first time.
+> **Status:** v0.2.2 shipped Aug 2026. Measurement infrastructure release adding statistical rigor to every published metric.
+> **Key finding:** LLM judge validated (87.4% match rate, 77.8 sigma above vocabulary floor). Convergence noise floor measured at ±0.020.
+> **Core improvement:** Every published metric now has a known confidence interval. Causal mechanism for Mistral effect formally documented.
 > The core isolation rule is mechanically enforced: **reviewer B cannot see reviewer A's answer until it has fully committed its own.**
 
 ---
@@ -96,7 +96,7 @@ See [docs/reference/quickstart.md](docs/reference/quickstart.md) for the full wa
 | **Evidence over rhetoric** | Confidence tied to cited evidence and failure modes, not tone |
 | **Auditability** | Full transcript lineage: every claim, objection, concession, verdict |
 
-## Architecture (v0.2.1)
+## Architecture (v0.2.2)
 
 | Component | Responsibility |
 |-----------|----------------|
@@ -141,56 +141,50 @@ audit: transcripts/2026-08-pr482.jsonl
 | v0.1.0 | Independent dual-review pass, bounded debate, claims/objections/concessions schema, consensus + disagreement reports, PR-review domain adapter, transcripts, field test on real public-repo PRs |
 | v0.2.0 | Corrected field-test pipeline, mixed-domain corpus (PR review, incident response, change management, security incidents), subset-based model validation, stronger report integrity |
 | **v0.2.1** | Mistral effect confirmed, pipeline integrity invariants at 5 seams, false-negative measurement (1.7–3.4% miss rate), 55 new tests |
+| **v0.2.2** | Noise-floor baseline (CIs for all metrics), permutation control (77.8 sigma above null), shared RLHF priors documented |
 | v0.3.0 | N-agent mode, side-by-side debate visualization, diversity/convergence-quality metrics |
 | v0.4.0 | Eval benchmark scenarios, approval-workflow integration, learning from past unresolved disagreements |
 
 ## Field Test Reports & Release Docs
 
-- [v0.2.1 Full Corpus Report](docs/field-test/v0.2.1/FIELD_TEST_REPORT.md) — Mistral effect confirmed, 367 debates, pipeline integrity, false-negative measurement
-- [v0.2.1 Release Notes](docs/reference/release-notes-v0.2.1.md) — what changed, model selection guidance, upgrade notes
-- [v0.2.1 Field Test Plan](docs/field-test/v0.2.1/field-test-plan.md) — separating experiment design, pass/fail criteria, methodology
-- [v0.2.1 Findings & Learnings](docs/field-test/v0.2.1/findings-learnings.md) — detailed analysis of all results
-- [CHANGELOG](CHANGELOG.md) — full version history
-- [v0.2.0 Full Corpus Report](docs/field-test/v0.2.0/FIELD_TEST_REPORT_full_corpus.md) — 150 artifacts, 4 domains, 217 debates, $0.42
-- [v0.2.0 Field Test Plan](docs/field-test/v0.2.0/field-test-plan.md) — corpus design, model strategy, success criteria
-- [v0.1.0 Full Corpus Report](docs/field-test/v0.1.0/FIELD_TEST_REPORT_full_corpus.md) — 70 PRs, 6 pairs, 411 debates, $0.53
-- [v0.1.0 Field Test Plan](docs/field-test/v0.1.0/field-test-plan.md) — original PR-only field test plan
+### v0.2.2 (current)
+- [Full Field Test Report](docs/field-test/v0.2.2/FIELD_TEST_REPORT.md) — noise-floor CIs, permutation control, shared RLHF priors
+- [Release Notes](docs/reference/release-notes-v0.2.2.md) — what changed, model selection guidance, upgrade notes
+- [Field Test Plan](docs/field-test/v0.2.2/field-test-plan.md) — experimental methodology
+- [Learnings](docs/field-test/v0.2.2/learnings.md) — findings and causal mechanism documentation
 
-### v0.2.1 Key Results
+### v0.2.1
+- [Full Corpus Report](docs/field-test/v0.2.1/FIELD_TEST_REPORT.md) — Mistral effect confirmed, 367 debates, pipeline integrity, false-negative measurement
+- [Release Notes](docs/reference/release-notes-v0.2.1.md)
+- [Field Test Plan](docs/field-test/v0.2.1/field-test-plan.md)
+- [Findings & Learnings](docs/field-test/v0.2.1/findings-learnings.md)
 
-| Metric | v0.2.0 | v0.2.1 |
-|--------|--------|--------|
-| Artifacts | 150 across 4 domains | 150 across 4 domains |
-| Model pairs | 3 | 5 (+ DeepSeek+GPT separating experiment) |
-| Debates | 217 | 367 |
-| Theatre | 0% | 0% |
-| Binary bar (MATCH) | 88.7% | 87.4% |
-| Pipeline integrity | Join bug (2,333→359) | 5 invariant assertions, all pass |
-| Missed-issue rate | Not measured | 1.7–3.4% (lower bound) |
-| Flaky artifacts | 0 | 0 |
-| Total cost | $0.42 | $0.57 |
-| Primary pair | GPT+Mistral | GPT+Mistral (Mistral effect confirmed) |
+### v0.2.0
+- [Full Corpus Report](docs/field-test/v0.2.0/FIELD_TEST_REPORT_full_corpus.md) — 150 artifacts, 4 domains, 217 debates
+- [Field Test Plan](docs/field-test/v0.2.0/field-test-plan.md)
 
-### v0.2.1 Artifacts
+### v0.1.0
+- [Full Corpus Report](docs/field-test/v0.1.0/FIELD_TEST_REPORT_full_corpus.md) — 70 PRs, 6 pairs, 411 debates
+- [Field Test Plan](docs/field-test/v0.1.0/field-test-plan.md)
 
-- Corpus: `results/field-test/v0.2.1/corpus.csv` (reused from v0.2.0)
-- Model results: `results/field-test/v0.2.1/results/<model>/`
-- Pairs: `results/field-test/v0.2.1/pairs/` (includes pair8_deepseek_gpt_mini)
-- Debates: `results/field-test/v0.2.1/debates/pair8_deepseek_gpt_mini/`
-- Analysis CSVs: `results/field-test/v0.2.1/analysis/` (8 CSVs including missed-issue-report)
-- Field test scripts: `scripts/README.md`
+[CHANGELOG](CHANGELOG.md) — full version history
 
-### v0.2.0 Key Results
+### v0.2.2 Key Results
 
-| Metric | v0.1.0 | v0.2.0 |
-|--------|--------|--------|
-| Artifacts | 70 PRs | 150 across 4 domains |
-| Debates | 411 | 217 |
-| Theater | 0.2% | 0% |
-| Binary bar (MATCH) | 81% | 88.7% |
-| Verdict stability | 96% | 100% (sampled) |
-| Total cost | $0.53 | $0.42 |
-| Primary pair | pair5 (DeepSeek+Mistral) | pair3 (GPT+Mistral) |
+| Metric | Value | vs v0.2.1 |
+|--------|-------|-----------|
+| New LLM calls | **0** | 480 debates |
+| Noise-floor CIs | **5 pairs measured** | None |
+| Permutation control z-score | **77.8 sigma** | Not measured |
+| Shared RLHF priors | **Documented** | Implicit |
+| New unit tests | **+21** (all deterministic) | +55 |
+| Total cost | **$0.00** | $0.57 |
+
+### v0.2.2 Artifacts
+
+- Noise-floor report: `results/field-test/v0.2.2/noise-floor-report.json`
+- Permutation control: `results/field-test/v0.2.2/permutation-control-report.json`
+- Field test scripts: `scripts/README.md` (see steps 8-9)
 
 ## Non-Goals
 

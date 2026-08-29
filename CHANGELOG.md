@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.2.2 (2026-08-29)
+
+**Measurement Infrastructure** — Statistical rigor for published metrics: noise-floor CIs, permutation control, and causal mechanism documentation.
+
+### Key Findings
+- **Noise-floor baseline** — Convergence std ranges from ±0.009 to ±0.075 across pairs. Pairs with >= 150 debates are stable; pairs with < 30 are uninterpretable as point estimates.
+- **Permutation control** — LLM judge's 87.4% match rate sits 77.8 standard deviations above the vocabulary floor (0.3%). The matcher is discriminating well.
+- **Shared RLHF priors** — Two competing causal mechanisms for the Mistral effect are now documented. Next experiment should test RLHF-distance, not lab diversity.
+
+### New Scripts
+- `scripts/noise_floor.py` — bootstrap resampling for metric confidence intervals
+- `scripts/permutation_control.py` — shuffles claim-reason pairings to measure vocabulary floor
+
+### Tests
+- 21 new deterministic unit tests (zero LLM calls)
+- 9 tests for noise floor bootstrap logic
+- 12 tests for permutation control logic
+
+### Field Test
+- Zero new LLM calls — all analysis is post-hoc on existing v0.2.1 data
+- All results in `results/field-test/v0.2.2/`
+
 ## v0.2.1 (2026-08-28)
 
 **Separate the Signal** — Mistral effect confirmed, pipeline invariants, false-negative measurement.
