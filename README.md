@@ -96,7 +96,7 @@ See [docs/reference/quickstart.md](docs/reference/quickstart.md) for the full wa
 | **Evidence over rhetoric** | Confidence tied to cited evidence and failure modes, not tone |
 | **Auditability** | Full transcript lineage: every claim, objection, concession, verdict |
 
-## Architecture (v0.2.0)
+## Architecture (v0.2.1)
 
 | Component | Responsibility |
 |-----------|----------------|
@@ -139,17 +139,46 @@ audit: transcripts/2026-08-pr482.jsonl
 | Version | Scope |
 |---------|-------|
 | v0.1.0 | Independent dual-review pass, bounded debate, claims/objections/concessions schema, consensus + disagreement reports, PR-review domain adapter, transcripts, field test on real public-repo PRs |
-| **v0.2.0** | Corrected field-test pipeline, mixed-domain corpus (PR review, incident response, change management, security incidents), subset-based model validation, stronger report integrity |
+| v0.2.0 | Corrected field-test pipeline, mixed-domain corpus (PR review, incident response, change management, security incidents), subset-based model validation, stronger report integrity |
+| **v0.2.1** | Mistral effect confirmed, pipeline integrity invariants at 5 seams, false-negative measurement (1.7–3.4% miss rate), 55 new tests |
 | v0.3.0 | N-agent mode, side-by-side debate visualization, diversity/convergence-quality metrics |
 | v0.4.0 | Eval benchmark scenarios, approval-workflow integration, learning from past unresolved disagreements |
 
-## Field Test Reports
+## Field Test Reports & Release Docs
 
+- [v0.2.1 Full Corpus Report](docs/field-test/v0.2.1/FIELD_TEST_REPORT.md) — Mistral effect confirmed, 367 debates, pipeline integrity, false-negative measurement
+- [v0.2.1 Release Notes](docs/reference/release-notes-v0.2.1.md) — what changed, model selection guidance, upgrade notes
+- [v0.2.1 Field Test Plan](docs/field-test/v0.2.1/field-test-plan.md) — separating experiment design, pass/fail criteria, methodology
+- [v0.2.1 Findings & Learnings](docs/field-test/v0.2.1/findings-learnings.md) — detailed analysis of all results
+- [CHANGELOG](CHANGELOG.md) — full version history
 - [v0.2.0 Full Corpus Report](docs/field-test/v0.2.0/FIELD_TEST_REPORT_full_corpus.md) — 150 artifacts, 4 domains, 217 debates, $0.42
 - [v0.2.0 Field Test Plan](docs/field-test/v0.2.0/field-test-plan.md) — corpus design, model strategy, success criteria
 - [v0.1.0 Full Corpus Report](docs/field-test/v0.1.0/FIELD_TEST_REPORT_full_corpus.md) — 70 PRs, 6 pairs, 411 debates, $0.53
 - [v0.1.0 Field Test Plan](docs/field-test/v0.1.0/field-test-plan.md) — original PR-only field test plan
-- [Field Testing Strategy](docs/field-test/field-testing-strategy.md) — 4-tier cross-domain plan
+
+### v0.2.1 Key Results
+
+| Metric | v0.2.0 | v0.2.1 |
+|--------|--------|--------|
+| Artifacts | 150 across 4 domains | 150 across 4 domains |
+| Model pairs | 3 | 5 (+ DeepSeek+GPT separating experiment) |
+| Debates | 217 | 367 |
+| Theatre | 0% | 0% |
+| Binary bar (MATCH) | 88.7% | 87.4% |
+| Pipeline integrity | Join bug (2,333→359) | 5 invariant assertions, all pass |
+| Missed-issue rate | Not measured | 1.7–3.4% (lower bound) |
+| Flaky artifacts | 0 | 0 |
+| Total cost | $0.42 | $0.57 |
+| Primary pair | GPT+Mistral | GPT+Mistral (Mistral effect confirmed) |
+
+### v0.2.1 Artifacts
+
+- Corpus: `results/field-test/v0.2.1/corpus.csv` (reused from v0.2.0)
+- Model results: `results/field-test/v0.2.1/results/<model>/`
+- Pairs: `results/field-test/v0.2.1/pairs/` (includes pair8_deepseek_gpt_mini)
+- Debates: `results/field-test/v0.2.1/debates/pair8_deepseek_gpt_mini/`
+- Analysis CSVs: `results/field-test/v0.2.1/analysis/` (8 CSVs including missed-issue-report)
+- Field test scripts: `scripts/README.md`
 
 ### v0.2.0 Key Results
 
@@ -162,19 +191,6 @@ audit: transcripts/2026-08-pr482.jsonl
 | Verdict stability | 96% | 100% (sampled) |
 | Total cost | $0.53 | $0.42 |
 | Primary pair | pair5 (DeepSeek+Mistral) | pair3 (GPT+Mistral) |
-
-### v0.2.0 Artifacts
-
-- Corpus: `results/field-test/v0.2.0/corpus.csv`
-- Candidate lists: `docs/field-test/v0.2.0/{incident_response,change_management,security_incidents}_corpus_candidates.csv`
-- PR reuse list: `docs/field-test/v0.2.0/pr_reuse_80.csv`
-- Validation subset: `results/field-test/v0.2.0/validation_subset.csv`
-- Negative control subset: `results/field-test/v0.2.0/negative_control_subset.csv`
-- Pair roles: `results/field-test/v0.2.0/SUBSETS.md`
-- Analysis CSVs: `results/field-test/v0.2.0/analysis/`
-- Ground truth: `results/field-test/v0.2.0/analysis/ground-truth-judged.csv`
-- Flakiness: `results/field-test/v0.2.0/analysis/flakiness-summary.csv`
-- Field test scripts: `scripts/README.md`
 
 ## Non-Goals
 
