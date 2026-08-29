@@ -1,8 +1,10 @@
-# WBS — AdversarialDebate v0.2.1-M1: Core Fixes
+# WBS — AdversarialDebate v0.2.1-M1: Core Fixes ✅ COMPLETE
 
 > Part of the v0.2.1 release. See [index](index.md) for milestone overview.
 >
 > **Branch:** `rel-v0.2.1` · **Milestone:** [v0.2.1-M1](https://github.com/deghosal-2026/adversarial-debate/milestone/10)
+>
+> **Status:** ✅ COMPLETE — all 6 issues closed, 55 tests passing, committed to `rel-v0.2.1`.
 >
 > **Scope:** DeepSeek+GPT pairing experiment, row-count invariant assertions, false-negative measurement, and all associated unit tests. No LLM calls in any test.
 
@@ -58,20 +60,20 @@ M1 addresses the three community-raised issues from the v0.2.0 release. Each iss
 
 ## Issue Summary
 
-| Issue | Title | Type | Tests |
-|-------|-------|------|-------|
-| #127 | Model Pairing Separating Experiment | Code change | 15 |
-| #128 | Row-Count Invariant Assertion | Code change | 19 |
-| #129 | False-Negative Measurement | Code change | 21 |
-| #153 | Unit tests — pair config | Test | — |
-| #154 | Unit tests — seam assertion | Test | — |
-| #155 | Unit tests — false-negative | Test | — |
+| Issue | Title | Type | Tests | Status |
+|-------|-------|------|-------|--------|
+| #127 | Model Pairing Separating Experiment | Code change | 15 | ✅ Closed |
+| #128 | Row-Count Invariant Assertion | Code change | 19 | ✅ Closed |
+| #129 | False-Negative Measurement | Code change | 21 | ✅ Closed |
+| #153 | Unit tests — pair config | Test | — | ✅ Closed |
+| #154 | Unit tests — seam assertion | Test | — | ✅ Closed |
+| #155 | Unit tests — false-negative | Test | — | ✅ Closed |
 
 ## Exit gate
 
-- [ ] All 6 issues closed
-- [ ] 55 new tests pass with zero LLM calls
-- [ ] Ruff clean, mypy strict clean
-- [ ] Full existing test suite green
-- [ ] Code review completed
-- [ ] Merged to `rel-v0.2.1`
+- [x] All 6 issues closed
+- [x] 55 new tests pass with zero LLM calls
+- [x] Ruff clean, mypy strict clean
+- [x] Full existing test suite green
+- [x] Code review completed
+- [x] Merged to `rel-v0.2.1`

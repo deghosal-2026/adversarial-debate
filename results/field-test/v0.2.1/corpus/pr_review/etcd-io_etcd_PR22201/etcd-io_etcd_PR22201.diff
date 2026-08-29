@@ -1,0 +1,167 @@
+diff --git a/server/storage/storage.go b/server/storage/storage.go
+index 8fd5c1cb367d..a16df9a17f10 100644
+--- a/server/storage/storage.go
++++ b/server/storage/storage.go
+@@ -15,7 +15,6 @@
+ package storage
+ 
+ import (
+-	"errors"
+ 	"sync"
+ 
+ 	"github.com/coreos/go-semver/semver"
+@@ -110,18 +109,12 @@ func (st *storage) Sync() error {
+ func (st *storage) MinimalEtcdVersion() *semver.Version {
+ 	st.mux.Lock()
+ 	defer st.mux.Unlock()
+-	walsnap := walpb.Snapshot{}
+ 
+-	sn, err := st.s.Load()
+-	if err != nil && !errors.Is(err, snap.ErrNoSnapshot) {
++	walsnap, err := st.w.LatestSnapshotEntry()
++	if err != nil {
+ 		panic(err)
+ 	}
+-	if sn != nil {
+-		walsnap.Index = sn.Metadata.Index
+-		walsnap.Term = sn.Metadata.Term
+-		walsnap.ConfState = sn.Metadata.GetConfState()
+-	}
+-	w, err := st.w.Reopen(st.lg, &walsnap)
++	w, err := st.w.Reopen(st.lg, walsnap)
+ 	if err != nil {
+ 		panic(err)
+ 	}
+diff --git a/server/storage/wal/wal.go b/server/storage/wal/wal.go
+index e6c1a5d1e72c..8f6169ee7314 100644
+--- a/server/storage/wal/wal.go
++++ b/server/storage/wal/wal.go
+@@ -53,6 +53,7 @@ var (
+ 	// value should be used, but this is defined as an exported variable
+ 	// so that tests can set a different segment size.
+ 	SegmentSizeBytes int64 = 64 * 1000 * 1000 // 64MB
++	openWALFilesFn         = openWALFiles
+ 
+ 	ErrMetadataConflict = errors.New("wal: conflicting metadata found")
+ 	ErrFileNotFound     = errors.New("wal: file not found")
+@@ -593,9 +594,45 @@ func (w *WAL) ReadAll() (metadata []byte, state *raftpb.HardState, ents []*raftp
+ 	return metadata, state, ents, err
+ }
+ 
++func (w *WAL) LatestSnapshotEntry() (*walpb.Snapshot, error) {
++	walSnaps, err := ValidSnapshotEntries(w.lg, w.dir)
++	if err != nil || len(walSnaps) == 0 {
++		return &walpb.Snapshot{}, err
++	}
++
++	return walSnaps[len(walSnaps)-1], nil
++}
++
+ // ValidSnapshotEntries returns all the valid snapshot entries in the wal logs in the given directory.
+ // Snapshot entries are valid if their index is less than or equal to the most recent committed hardstate.
+ func ValidSnapshotEntries(lg *zap.Logger, walDir string) ([]*walpb.Snapshot, error) {
++	const maxReadAttempts = 3
++
++	var lastErr error
++	for attempt := 1; attempt <= maxReadAttempts; attempt++ {
++		snaps, err := validSnapshotEntries(lg, walDir)
++		if err == nil {
++			return snaps, nil
++		}
++		if !errors.Is(err, os.ErrNotExist) {
++			return nil, err
++		}
++		lastErr = err
++		if attempt < maxReadAttempts {
++			lg.Warn(
++				"retrying WAL snapshot scan after transient file removal",
++				zap.String("wal-dir", walDir),
++				zap.Int("attempt", attempt),
++				zap.Int("max-attempts", maxReadAttempts),
++				zap.Error(err),
++			)
++		}
++	}
++
++	return nil, lastErr
++}
++
++func validSnapshotEntries(lg *zap.Logger, walDir string) ([]*walpb.Snapshot, error) {
+ 	var snaps []*walpb.Snapshot
+ 	state := &raftpb.HardState{}
+ 	var err error
+@@ -608,7 +645,7 @@ func ValidSnapshotEntries(lg *zap.Logger, walDir string) ([]*walpb.Snapshot, err
+ 
+ 	// open wal files in read mode, so that there is no conflict
+ 	// when the same WAL is opened elsewhere in write mode
+-	rs, _, closer, err := openWALFiles(lg, walDir, names, 0, false)
++	rs, _, closer, err := openWALFilesFn(lg, walDir, names, 0, false)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/server/storage/wal/wal_test.go b/server/storage/wal/wal_test.go
+index 940b877993d9..c86c30263c8b 100644
+--- a/server/storage/wal/wal_test.go
++++ b/server/storage/wal/wal_test.go
+@@ -31,6 +31,7 @@ import (
+ 	"github.com/google/go-cmp/cmp"
+ 	"github.com/stretchr/testify/assert"
+ 	"github.com/stretchr/testify/require"
++	"go.uber.org/zap"
+ 	"go.uber.org/zap/zaptest"
+ 	"google.golang.org/protobuf/testing/protocmp"
+ 
+@@ -1126,6 +1127,53 @@ func TestValidSnapshotEntriesAfterPurgeWal(t *testing.T) {
+ 	}
+ }
+ 
++func TestValidSnapshotEntriesRetryOnTransientNotExist(t *testing.T) {
++	p := t.TempDir()
++	snap1 := walpb.Snapshot{Index: new(uint64(1)), Term: new(uint64(1)), ConfState: &confState}
++	state1 := raftpb.HardState{Commit: new(uint64(1)), Term: new(uint64(1))}
++	snap2 := walpb.Snapshot{Index: new(uint64(2)), Term: new(uint64(1)), ConfState: &confState}
++	state2 := raftpb.HardState{Commit: new(uint64(2)), Term: new(uint64(1))}
++
++	func() {
++		w, err := Create(zaptest.NewLogger(t), p, nil)
++		require.NoError(t, err)
++		defer w.Close()
++
++		err = w.SaveSnapshot(&snap1)
++		require.NoError(t, err)
++		err = w.Save(&state1, nil)
++		require.NoError(t, err)
++		err = w.SaveSnapshot(&snap2)
++		require.NoError(t, err)
++		err = w.Save(&state2, nil)
++		require.NoError(t, err)
++	}()
++
++	expected, err := ValidSnapshotEntries(zaptest.NewLogger(t), p)
++	require.NoError(t, err)
++
++	originalOpen := openWALFilesFn
++	t.Cleanup(func() {
++		openWALFilesFn = originalOpen
++	})
++
++	injected := false
++	openWALFilesFn = func(lg *zap.Logger, dirpath string, names []string, nameIndex int, write bool) ([]fileutil.FileReader, []*fileutil.LockedFile, func() error, error) {
++		if !injected {
++			injected = true
++			return nil, nil, nil, &os.PathError{Op: "open", Path: filepath.Join(dirpath, names[nameIndex]), Err: os.ErrNotExist}
++		}
++		return originalOpen(lg, dirpath, names, nameIndex, write)
++	}
++
++	got, err := ValidSnapshotEntries(zaptest.NewLogger(t), p)
++	require.NoError(t, err)
++
++	if diff := cmp.Diff(expected, got, protocmp.Transform()); diff != "" {
++		t.Errorf("walSnaps mismatch (-want +got):\n%s", diff)
++	}
++}
++
+ func TestLastRecordLengthExceedFileEnd(t *testing.T) {
+ 	/* The data below was generated by code something like below. The length
+ 	 * of the last record was intentionally changed to 1000 in order to make

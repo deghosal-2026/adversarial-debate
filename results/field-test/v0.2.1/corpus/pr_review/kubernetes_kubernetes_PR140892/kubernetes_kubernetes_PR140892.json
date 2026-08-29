@@ -1,0 +1,368 @@
+{
+  "additions": 28,
+  "author": {
+    "id": "MDQ6VXNlcjQ1MTYzMzAy",
+    "is_bot": false,
+    "login": "weizhoublue",
+    "name": "weizhoublue"
+  },
+  "body": "<!--  Thanks for sending a pull request!  Here are some tips for you:\r\n\r\n1. If this is your first time, please read our contributor guidelines: https://git.k8s.io/community/contributors/guide/first-contribution.md#your-first-contribution and developer guide https://git.k8s.io/community/contributors/devel/development.md#development-guide\r\n2. Please label this pull request according to what type of issue you are addressing, especially if this is a release targeted pull request. For reference on required PR/issue labels, read here:\r\nhttps://git.k8s.io/community/contributors/devel/sig-release/release.md#issuepr-kind-label\r\n3. Ensure you have added or ran the appropriate tests for your PR: https://git.k8s.io/community/contributors/devel/sig-testing/testing.md\r\n4. If you want *faster* PR reviews, read how: https://git.k8s.io/community/contributors/guide/pull-requests.md#best-practices-for-faster-reviews\r\n5. If the PR is unfinished, see how to mark it: https://git.k8s.io/community/contributors/guide/pull-requests.md#marking-unfinished-pull-requests\r\n-->\r\n\r\n#### What type of PR is this?\r\n\r\n<!--\r\nAdd one of the following kinds:\r\n/kind bug\r\n/kind dependency\r\n/kind cleanup\r\n/kind documentation\r\n/kind feature\r\n\r\nOptionally add one or more of the following kinds if applicable:\r\n/kind api-change\r\n/kind deprecation\r\n/kind failing-test\r\n/kind flake\r\n/kind regression\r\n-->\r\n\r\n/kind bug\r\n\r\n#### What this PR does / why we need it:\r\n\r\nWhen pod.Spec.HostUsers is nil (unset), it should be treated as true by default.\r\n\r\nExisting code in the repository confirms this:\r\n\r\n(1) The pod spec declaration states: \"Default to true.\" \"If set to true or not present\" (i.e. nil), both mean the pod shares the host user namespace. Only an explicit false means an isolated namespace.\r\n\r\nhttps://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/api/core/v1/types.go#L4629\r\n\r\n```\r\n    // Use the host's user namespace.\r\n    // Optional: Default to true.\r\n    // If set to true or not present, the pod will be run in the host user namespace, useful\r\n    // for when the pod needs a feature only available to the host user namespace, such as\r\n    // loading a kernel module with CAP_SYS_MODULE.\r\n    // When set to false, a new userns is created for the pod. Setting false is useful for\r\n    // mitigating container breakout vulnerabilities even allowing users to run their\r\n    // containers as root without actually having root privileges on the host.\r\n    // +optional\r\n    HostUsers *bool `json:\"hostUsers,omitempty\" protobuf:\"bytes,37,opt,name=hostUsers\"`\r\n```\r\n\r\n(2)  In kubelet's actual userns handling code, pod.Spec.HostUsers == nil goes directly into the NamespaceMode_NODE branch (reusing the host's userns, i.e. shared), returning the exact same value as when *pod.Spec.HostUsers == true\r\n\r\nhttps://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/userns/userns_manager.go#L396\r\n\r\n```\r\nfunc (m *UsernsManager) GetOrCreateUserNamespaceMappings(logger klog.Logger, pod *v1.Pod, runtimeHandler string) (*runtimeapi.UserNamespace, error) {\r\n    featureEnabled := utilfeature.DefaultFeatureGate.Enabled(features.UserNamespacesSupport)\r\n\r\n    if pod == nil || pod.Spec.HostUsers == nil {    \r\n        // if the feature is enabled, specify to use the node mode...\r\n        if featureEnabled {\r\n            return &runtimeapi.UserNamespace{\r\n                Mode: runtimeapi.NamespaceMode_NODE,\r\n            }, nil\r\n        }\r\n        return nil, nil\r\n    }\r\n\r\n    // pod.Spec.HostUsers is set to true/false\r\n    if *pod.Spec.HostUsers {\r\n        return &runtimeapi.UserNamespace{\r\n            Mode: runtimeapi.NamespaceMode_NODE,\r\n        }, nil\r\n    }\r\n\r\n    // From here onwards, hostUsers=false and it creates the isolated userns\r\n}\r\n```\r\n\r\n\r\nTherefore, in the code for the DefaultPodSysctls feature, the following line treats pod.Spec.HostUsers = nil as hostUsers = false, which contradicts the existing convention in this repository:\r\n\r\n```\r\nhostUsers := pod.Spec.HostUsers != nil && *pod.Spec.HostUsers\r\n```\r\n\r\nright way shoule be \r\n\r\n```\r\nhostUsers := pod.Spec.HostUsers == nil || *pod.Spec.HostUsers\r\n```\r\n\r\nFinally, when kubelet with --allowed-unsafe-sysctls=user.* set, pods that share the host user namespace (the default, spec.hostUsers unset) can set user.* sysctls that should be forbidden, silently bypassing the intended host-user-namespace security boundary.\r\n\r\n#### Which issue(s) this PR is related to:\r\n<!--\r\nPlease link relevant issues to help with tracking.\r\n\r\nTo automatically close the linked issue(s) when this PR is merged,\r\nadd the word \"Fixes\" before the issue number or link.\r\nDo not use \"Fixes\" if the PR is of kind `failing-test` or `flake`.\r\n\r\nReference KEPs when applicable in addition to specific issues.\r\n\r\nExamples:\r\nFixes #<issue number>\r\n<issue link> (issue in a different repository)\r\nKEP: https://github.com/kubernetes/enhancements/issues/<kep-issue-number>\r\n\r\nIf there is no associated issue, then write \"N/A\".\r\n-->\r\n\r\n#### Special notes for your reviewer:\r\n\r\n#### Does this PR introduce a user-facing change?\r\n<!--\r\nIf no, just write \"NONE\" in the release-note block below.\r\nIf yes, a release note is required:\r\nEnter your extended release note in the block below. If the PR requires additional action from users switching to the new release, include the string \"action required\".\r\n\r\nFor more information on release notes see: https://git.k8s.io/community/contributors/guide/release-notes.md\r\n-->\r\n```release-note\r\nkubelet: The new DefaultPodSysctls feature treats an unset `spec.hostUsers` as true when evaluating `user.*` sysctls.\r\n```\r\n\r\n#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:\r\n\r\n<!--\r\nThis section can be blank if this pull request does not require a release note.\r\n\r\nWhen adding links which point to resources within git repositories, like\r\nKEPs or supporting documentation, please reference a specific commit and avoid\r\nlinking directly to the master branch. This ensures that links reference a\r\nspecific point in time, rather than a document that may change over time.\r\n\r\nSee here for guidance on getting permanent links to files: https://help.github.com/en/articles/getting-permanent-links-to-files\r\n\r\nPlease use the following format for linking documentation:\r\n- [KEP]: <link>\r\n- [Usage]: <link>\r\n- [Other doc]: <link>\r\n-->\r\n```docs\r\n\r\n```\r\n",
+  "changedFiles": 4,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABLeylQQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-24T02:09:11Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5065450817",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLeynlA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Hi @weizhoublue. Thanks for your PR.\n\nI'm waiting for a [kubernetes](https://github.com/orgs/kubernetes/people) member to verify that this patch is reasonable to test. If it is, they should reply with `/ok-to-test` on its own line. Until that is done, I will not automatically test new commits in this PR, but the usual testing commands by org members will still work.\n\n>[!TIP]\n>**We noticed you've done this a few times! Consider [joining the org](https://git.k8s.io/community/community-membership.md#member) to skip this step and gain `/lgtm` and other bot rights.** We recommend asking approvers on your previous PRs to sponsor you.\n\nOnce the patch is verified, the new status will be reflected by the `ok-to-test` label.\n\nI understand the commands that are listed [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>\n",
+      "createdAt": "2026-07-24T02:09:18Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5065451412",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLe0d2A",
+      "author": {
+        "login": "weizhoublue"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@SergeyKanzhelev @VeraQin  hi , I submit this follow-up PR for PR #140052\r\nCould you help check whether it makes sense , thanks ",
+      "createdAt": "2026-07-24T02:14:58Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5065481688",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLf2ZSQ",
+      "author": {
+        "login": "VeraQin"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@weizhoublue thanks for the fix, it makes sense!\r\n\r\nIf possible, could you help fix another usage of `HostUsers` in kuberuntime_sandbox.go [kuberuntime_sandbox.go](https://github.com/kubernetes/kubernetes/blob/da21aa3d3454e7f257db039ef7c22b6f375b2011/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go#L397) func:\r\n\r\nConvert `if pod.Spec.HostUsers == nil || !*pod.Spec.HostUsers ` \r\n=> `if pod.Spec.HostUsers != nil && !*pod.Spec.HostUsers`\r\n\r\nThe intention is to apply `user.*` sysctls when hostUsers is false.",
+      "createdAt": "2026-07-24T05:45:31Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5066561865",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLgMsmg",
+      "author": {
+        "login": "weizhoublue"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> @weizhoublue thanks for the fix, it makes sense!\r\n> \r\n> If possible, could you help fix another usage of `HostUsers` in kuberuntime_sandbox.go [kuberuntime_sandbox.go](https://github.com/kubernetes/kubernetes/blob/da21aa3d3454e7f257db039ef7c22b6f375b2011/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go#L397) func:\r\n> \r\n> Convert `if pod.Spec.HostUsers == nil || !*pod.Spec.HostUsers ` => `if pod.Spec.HostUsers != nil && !*pod.Spec.HostUsers`\r\n> \r\n> The intention is to apply `user.*` sysctls when hostUsers is false.\r\n\r\nsure\r\n\r\nIn addtion, the original test `pkg/kubelet/kuberuntime/kuberuntime_manager_test.go\u200e` asserted that pods with unset hostUsers (the default, meaning shared host user namespace) should still receive `user.max_user_namespaces`, which encoded the same nil-handling bug being fixed, so the expectation was corrected to exclude it for those cases.\r\n\r\n",
+      "createdAt": "2026-07-24T06:43:54Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5066927258",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLlhgRQ",
+      "author": {
+        "login": "VeraQin"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> > @weizhoublue thanks for the fix, it makes sense!\r\n> > If possible, could you help fix another usage of `HostUsers` in kuberuntime_sandbox.go [kuberuntime_sandbox.go](https://github.com/kubernetes/kubernetes/blob/da21aa3d3454e7f257db039ef7c22b6f375b2011/pkg/kubelet/kuberuntime/kuberuntime_sandbox.go#L397) func:\r\n> > Convert `if pod.Spec.HostUsers == nil || !*pod.Spec.HostUsers ` => `if pod.Spec.HostUsers != nil && !*pod.Spec.HostUsers`\r\n> > The intention is to apply `user.*` sysctls when hostUsers is false.\r\n> \r\n> sure\r\n> \r\n> In addtion, the original test `pkg/kubelet/kuberuntime/kuberuntime_manager_test.go\u200e` asserted that pods with unset hostUsers (the default, meaning shared host user namespace) should still receive `user.max_user_namespaces`, which encoded the same nil-handling bug being fixed, so the expectation was corrected to exclude it for those cases.\r\n\r\nThanks! The change lgtm.",
+      "createdAt": "2026-07-24T17:14:15Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5072511045",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLlig3Q",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/ok-to-test\r\n/priority important-soon\r\n/triage accepted\r\n\r\nseems important update to the code shipped in 1.37. I would suggest we take it for 1.37 milestone",
+      "createdAt": "2026-07-24T17:15:52Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5072527581",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLljnug",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "@weizhoublue can you please change the release note so it is clear that this is for the code of a new KEP and not a problem that we fixed comparing to 1.36 release ",
+      "createdAt": "2026-07-24T17:17:35Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5072545722",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLlpZow",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/milestone v1.37",
+      "createdAt": "2026-07-24T17:26:42Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5072640419",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLmH2PA",
+      "author": {
+        "login": "VeraQin"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/retest",
+      "createdAt": "2026-07-24T18:25:00Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5073139260",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLofqVg",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "> /milestone v1.37\r\n\r\ncc @kubernetes/release-managers FYI",
+      "createdAt": "2026-07-24T23:46:12Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 1
+          }
+        }
+      ],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5075626582",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLo32Vg",
+      "author": {
+        "login": "weizhoublue"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> @weizhoublue can you please change the release note so it is clear that this is for the code of a new KEP and not a problem that we fixed comparing to 1.36 release\r\n\r\nthanks , that is a good tip.  \r\nI have updated the release note and PR title in a better way\r\n Please review , or you may suggest a better one",
+      "createdAt": "2026-07-25T01:14:35Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5076022870",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLqCZ_g",
+      "author": {
+        "login": "weizhoublue"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> @weizhoublue: The following test **failed**, say `/retest` to rerun all failed tests or `/retest-required` to rerun all mandatory failed tests:\r\n> \r\n> Test name\tCommit\tDetails\tRequired\tRerun command\r\n> pull-kubernetes-integration\t[666ea95](https://github.com/kubernetes/kubernetes/commit/666ea9565928266f89ba41a27403e7c76ae3a4a0)\t[link](https://prow.k8s.io/view/gs/kubernetes-ci-logs/pr-logs/pull/140892/pull-kubernetes-integration/2080840718426836992)\ttrue\t`/test pull-kubernetes-integration`\r\n> [Full PR test history](https://prow.k8s.io/pr-history?org=kubernetes&repo=kubernetes&pr=140892). [Your PR dashboard](https://prow.k8s.io/pr?query=is%3Apr%20state%3Aopen%20author%3Aweizhoublue). Please help us cut down on flakes by [linking to](https://git.k8s.io/community/contributors/devel/sig-testing/flaky-tests.md#filing-issues-for-flaky-tests) an [open issue](https://github.com/kubernetes/kubernetes/issues?q=is:issue+is:open) when you hit one in your PR.\r\n> \r\n> Details\r\n\r\nthe failing cases are about DRA, which is not related to this PR's changes.",
+      "createdAt": "2026-07-25T06:06:03Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5077244414",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMErjTg",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest\r\n\r\nis there an open issue for the TestDRA integration flakes?",
+      "createdAt": "2026-07-28T14:05:48Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5105181518",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMFTe_w",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm\r\n/approve",
+      "createdAt": "2026-07-28T15:00:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5105835775",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMFTlVQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 46795e3011baf0443f9c210b4c955468c57a9f6d</details>",
+      "createdAt": "2026-07-28T15:00:53Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5105837397",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMFTu3A",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5105835775\" title=\"Approved\">SergeyKanzhelev</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/140892#\" title=\"Author self-approved\">weizhoublue</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[pkg/kubelet/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/OWNERS)~~ [SergeyKanzhelev]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-28T15:01:06Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140892#issuecomment-5105839836",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 29,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTQ1MjgyMjM=",
+      "name": "priority/important-soon",
+      "description": "Must be staffed and worked on either currently, or very soon, ideally in time for the next release.",
+      "color": "eb6420"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTY3MTk4Mjk=",
+      "name": "area/kubelet",
+      "description": "",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTM2NjU=",
+      "name": "sig/node",
+      "description": "Categorizes an issue or PR as relevant to SIG Node.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyMDAxNDk4MzM=",
+      "name": "release-note",
+      "description": "Denotes a PR that will be considered when it comes time to generate release notes.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA5MzQ=",
+      "name": "size/M",
+      "description": "Denotes a PR that changes 30-99 lines, ignoring generated files.",
+      "color": "eebb00"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWwxMDg2Nzg3MjYw",
+      "name": "ok-to-test",
+      "description": "Indicates a non-member PR verified by an org member that is safe to test.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODU2NjU2",
+      "name": "triage/accepted",
+      "description": "Indicates an issue or PR is ready to be actively worked on.",
+      "color": "8fc951"
+    }
+  ],
+  "mergedAt": "2026-07-28T16:54:01Z",
+  "state": "MERGED",
+  "title": "kubelet: handle default HostUsers in default pod sysctls"
+}

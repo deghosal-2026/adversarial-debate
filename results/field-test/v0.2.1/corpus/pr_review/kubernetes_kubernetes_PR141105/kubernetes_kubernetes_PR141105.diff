@@ -1,0 +1,90 @@
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint.go b/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint.go
+index 45916999c3918..d42314d67ad46 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint.go
+@@ -54,7 +54,7 @@ func (e endpoint) listen(ctx context.Context) (net.Listener, error) {
+ 	listener, err := cfg.Listen(ctx, "unix", socketpath)
+ 	if err != nil {
+ 		if removeErr := e.removeSocket(); removeErr != nil {
+-			err = errors.Join(err, err)
++			err = errors.Join(err, removeErr)
+ 		}
+ 		return nil, err
+ 	}
+@@ -77,7 +77,7 @@ type unixListener struct {
+ func (l *unixListener) Close() error {
+ 	err := l.Listener.Close()
+ 	if removeErr := l.endpoint.removeSocket(); removeErr != nil {
+-		err = errors.Join(err, err)
++		err = errors.Join(err, removeErr)
+ 	}
+ 	return err
+ }
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint_test.go b/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint_test.go
+index 77944f38f8092..0a4bc101b31ca 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint_test.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/kubeletplugin/endpoint_test.go
+@@ -18,7 +18,9 @@ package kubeletplugin
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"net"
++	"os"
+ 	"path"
+ 	"testing"
+ 
+@@ -53,3 +55,53 @@ func TestEndpointListener(t *testing.T) {
+ 	assert.NoFileExists(t, path.Join(tempDir, socketname))
+ 	assert.Nil(t, listener)
+ }
++
++// closeErrorListener is a net.Listener whose Close returns a fixed error. Only
++// Close is called here, so the embedded Listener is left nil.
++type closeErrorListener struct {
++	net.Listener
++	closeErr error
++}
++
++func (l closeErrorListener) Close() error { return l.closeErr }
++
++// unremovableSocket puts something at the socket path that os.Remove refuses to
++// delete. A directory that is not empty fails without depending on file
++// permissions or on which user runs the test.
++func unremovableSocket(t *testing.T, dir, file string) {
++	t.Helper()
++	require.NoError(t, os.Mkdir(path.Join(dir, file), 0700))
++	require.NoError(t, os.WriteFile(path.Join(dir, file, "occupied"), nil, 0600))
++}
++
++func TestEndpointCloseReportsFailedSocketRemoval(t *testing.T) {
++	tempDir := t.TempDir()
++	socketname := "test.sock"
++	unremovableSocket(t, tempDir, socketname)
++	listener := &unixListener{
++		Listener: closeErrorListener{},
++		endpoint: endpoint{dir: tempDir, file: socketname},
++	}
++
++	err := listener.Close()
++
++	require.Error(t, err, "closing must report the socket that was left behind")
++	assert.Contains(t, err.Error(), "remove Unix domain socket")
++}
++
++func TestEndpointCloseKeepsBothErrors(t *testing.T) {
++	tempDir := t.TempDir()
++	socketname := "test.sock"
++	unremovableSocket(t, tempDir, socketname)
++	closeErr := errors.New("close failed")
++	listener := &unixListener{
++		Listener: closeErrorListener{closeErr: closeErr},
++		endpoint: endpoint{dir: tempDir, file: socketname},
++	}
++
++	err := listener.Close()
++
++	require.Error(t, err)
++	require.ErrorIs(t, err, closeErr, "the listener's own error")
++	assert.Contains(t, err.Error(), "remove Unix domain socket", "the removal error")
++}

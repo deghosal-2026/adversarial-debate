@@ -1,0 +1,92 @@
+diff --git a/pkg/kubelet/cm/dra/claiminfo.go b/pkg/kubelet/cm/dra/claiminfo.go
+index c3dd650500ec0..e54f6e90c0f8f 100644
+--- a/pkg/kubelet/cm/dra/claiminfo.go
++++ b/pkg/kubelet/cm/dra/claiminfo.go
+@@ -92,6 +92,22 @@ func (info *ClaimInfo) addDevice(driverName string, deviceState state.Device) {
+ 	info.DriverState[driverName] = driverState
+ }
+ 
++// resetDevices clears the device list for a given driver, keeping the
++// entry present in DriverState. Used to discard stale devices left over
++// from a previous NodePrepareResources attempt before applying the
++// new response.
++func (info *ClaimInfo) resetDevices(driverName string) {
++	if info.DriverState == nil {
++		return
++	}
++	driverState, ok := info.DriverState[driverName]
++	if !ok {
++		return
++	}
++	driverState.Devices = nil
++	info.DriverState[driverName] = driverState
++}
++
+ // addPodReference adds a pod reference to the claim info.
+ func (info *ClaimInfo) addPodReference(podUID types.UID) {
+ 	info.PodUIDs.Insert(string(podUID))
+diff --git a/pkg/kubelet/cm/dra/manager.go b/pkg/kubelet/cm/dra/manager.go
+index ea468f5787785..3f924d114675f 100644
+--- a/pkg/kubelet/cm/dra/manager.go
++++ b/pkg/kubelet/cm/dra/manager.go
+@@ -413,12 +413,19 @@ func (m *Manager) prepareResources(ctx context.Context, pod *v1.Pod) error {
+ 
+ 			claim := resourceClaims[types.UID(claimUID)]
+ 
+-			// Add the prepared CDI devices to the claim info
++			// Add the prepared CDI devices to the claim info. The
++			// driver's response is authoritative for this (claim, driver)
++			// pair, so drop any previously appended devices before
++			// rebuilding the list. Otherwise a retry of a prepare that
++			// had partially succeeded (this driver appended devices,
++			// another driver in the batch failed, setPrepared was
++			// skipped) would end up with the devices duplicated.
+ 			err := m.cache.withLock(logger, func() error {
+ 				info, exists := m.cache.get(claim.Name, claim.Namespace)
+ 				if !exists {
+ 					return fmt.Errorf("internal error: unable to get claim info for ResourceClaim %s in namespace %s", claim.Name, claim.Namespace)
+ 				}
++				info.resetDevices(plugin.DriverName())
+ 				for _, device := range result.GetDevices() {
+ 					info.addDevice(plugin.DriverName(), state.Device{PoolName: device.PoolName,
+ 						DeviceName: device.DeviceName, ShareID: (*types.UID)(device.ShareId),
+diff --git a/pkg/kubelet/cm/dra/manager_test.go b/pkg/kubelet/cm/dra/manager_test.go
+index 4863f5ae548c0..66329f3c9dce4 100644
+--- a/pkg/kubelet/cm/dra/manager_test.go
++++ b/pkg/kubelet/cm/dra/manager_test.go
+@@ -1036,6 +1036,35 @@ dra_grpc_operations_duration_seconds_count{driver_name="test-driver",grpc_status
+ dra_operations_duration_seconds_bucket{is_error="false",operation_name="PrepareResources",le="+Inf"} 1
+ dra_operations_duration_seconds_sum{is_error="false",operation_name="PrepareResources"} 0
+ dra_operations_duration_seconds_count{is_error="false",operation_name="PrepareResources"} 1
++`,
++		},
++		{
++			// Regression test: if a previous PrepareResources attempt
++			// appended devices to the cached ClaimInfo but returned before
++			// reaching setPrepared (e.g. a driver in the same batch failed),
++			// a retry must not duplicate those devices in the cache. The
++			// seeded ClaimInfo mimics that leftover state: prepared=false,
++			// DriverState already populated with the device the fake driver
++			// will return on retry. After the retry, DriverState must
++			// contain exactly one device, not two.
++			description:            "should not duplicate devices on prepare retry",
++			driverName:             driverName,
++			pod:                    genTestPod(),
++			claim:                  genTestClaim(claimName, driverName, deviceName, podUID),
++			claimInfo:              genTestClaimInfo(claimUID, []string{podUID}, false, nil),
++			resp:                   genPrepareResourcesResponse(claimUID),
++			expectedClaimInfoState: genClaimInfoState(cdiID),
++			expectedPrepareCalls:   1,
++			expectedMetric: `# HELP dra_grpc_operations_duration_seconds [ALPHA] Duration in seconds of the DRA gRPC operations
++# TYPE dra_grpc_operations_duration_seconds histogram
++dra_grpc_operations_duration_seconds_bucket{driver_name="test-driver",grpc_status_code="OK",method_name="/k8s.io.kubelet.pkg.apis.dra.v1.DRAPlugin/NodePrepareResources",le="+Inf"} 1
++dra_grpc_operations_duration_seconds_sum{driver_name="test-driver",grpc_status_code="OK",method_name="/k8s.io.kubelet.pkg.apis.dra.v1.DRAPlugin/NodePrepareResources"} 0
++dra_grpc_operations_duration_seconds_count{driver_name="test-driver",grpc_status_code="OK",method_name="/k8s.io.kubelet.pkg.apis.dra.v1.DRAPlugin/NodePrepareResources"} 1
++# HELP dra_operations_duration_seconds [ALPHA] Latency histogram in seconds for the duration of handling all ResourceClaims referenced by a pod when the pod starts or stops. Identified by the name of the operation (PrepareResources or UnprepareResources) and separated by the success of the operation. The number of failed operations is provided through the histogram's overall count.
++# TYPE dra_operations_duration_seconds histogram
++dra_operations_duration_seconds_bucket{is_error="false",operation_name="PrepareResources",le="+Inf"} 1
++dra_operations_duration_seconds_sum{is_error="false",operation_name="PrepareResources"} 0
++dra_operations_duration_seconds_count{is_error="false",operation_name="PrepareResources"} 1
+ `,
+ 		},
+ 		{

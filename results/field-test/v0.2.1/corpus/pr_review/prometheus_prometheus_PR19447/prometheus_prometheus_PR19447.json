@@ -1,0 +1,17 @@
+{
+  "additions": 1,
+  "author": {
+    "id": "MDQ6VXNlcjg0MDQ1OTc1",
+    "is_bot": false,
+    "login": "thc1006",
+    "name": "\u79c0\u5409"
+  },
+  "body": "This adds `./cmd/promtool/...` to the `slicelabels` test run in the \"More Go tests\" job.\n\nThat job runs the whole tree under `dedupelabels`, but the `slicelabels` line covers four packages. The list looks deliberate rather than accidental: it arrived with the fix for the labels memory corruption in the protobuf scrape path, and it names the packages that bug ran through. `cmd/promtool` was not part of that story, so there was no reason to include it at the time.\n\n## Why this package belongs on that line\n\n`slicelabels` is where aliasing mistakes become visible. With the default build a `labels.Labels` is a string and holding on to one is harmless. Under `slicelabels` it is a `[]Label`, so a value kept past the point where a builder reuses its backing array starts to change underneath the code holding it.\n\n`cmd/promtool` does that kind of holding. The rule importer keeps a `labels.Labels` per rule while it backfills, `readPrometheusLabels` returns a `[]labels.Labels` that the TSDB benchmark holds for the length of the run, and the backfiller builds label sets one at a time. None of that is exercised under `slicelabels` today.\n\nTo be clear about what this is: the package passes as it stands, so this protects against a regression rather than fixing one.\n\n## About the cost\n\nI ran the modified command as CI would:\n\n```console\n$ go test --tags=slicelabels -race ./cmd/prometheus ./cmd/promtool/... ./model/textparse ./prompb/...\nok      github.com/prometheus/prometheus/cmd/prometheus 52.952s\nok      github.com/prometheus/prometheus/cmd/promtool   11.744s\nok      github.com/prometheus/prometheus/model/textparse 1.949s\nok      github.com/prometheus/prometheus/prompb/io/prometheus/client 1.029s\nok      github.com/prometheus/prometheus/prompb/io/prometheus/write/v2 1.026s\nok      github.com/prometheus/prometheus/prompb/rwcommon 1.028s\nwall=186.79s\n```\n\n`cmd/promtool` is 12s of that.\n\nIn CI the difference does not come out above the noise. The \"More Go tests\" job took 717s on this branch, against 669s, 701s, 708s, 715s, 728s, 745s and 791s on seven recent runs without the change.\n\n## About widening it instead\n\nThe obvious alternative is to drop the package list and match the `dedupelabels` line. I checked that it works: `go test --tags=slicelabels ./...` on current `main` passes, 89 packages, no failures.\n\nI did not propose it because the same job already runs the tree once under `dedupelabels`, and a second full pass is a much larger bill than the twelve seconds above. If you would rather have the broader coverage, the change is a one-line edit and I am happy to switch.\n\n#### Which issue(s) does the PR fix:\n\nNone. This came out of #18432, which adds coverage reporting to `promtool test rules` and leans on `labels.Labels` fairly heavily. I have been running the build tags locally for that PR and would rather CI did it.\n\n#### Release notes for end users (**ALL** commits must be considered).\n\n```release-notes\nNONE\n```\n",
+  "changedFiles": 1,
+  "comments": [],
+  "deletions": 1,
+  "labels": [],
+  "mergedAt": "2026-08-25T11:09:03Z",
+  "state": "MERGED",
+  "title": "ci: run slicelabels tests over cmd/promtool"
+}

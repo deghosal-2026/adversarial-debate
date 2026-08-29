@@ -1,0 +1,415 @@
+{
+  "additions": 69,
+  "author": {
+    "id": "MDQ6VXNlcjM5ODA5ODQ=",
+    "is_bot": false,
+    "login": "karlkfi",
+    "name": "Karl Isenberg"
+  },
+  "body": "#### What type of PR is this?\n\n/kind bug\n/kind regression\n/sig node\n\n#### What this PR does / why we need it:\n\nSince #130487 (v1.35.0), probe workers inherit the pod worker's sync context via `probeManager.AddPod(ctx, pod)`. The pod worker cancels that context as soon as a pod begins terminating (\"Cancelling current pod sync\"), so every subsequent exec probe fails with `rpc error: code = Canceled desc = context canceled`, `doProbe` discards the errored result, and the pod's Ready condition stays frozen for the entire graceful termination. Before #130487 the workers ran on `context.Background()` and readiness probes kept working during shutdown.\n\nThis PR detaches the workers' context with `context.WithoutCancel`, preserving the logger and trace values. Worker lifecycle is unchanged: workers are stopped explicitly via their stop channel (`RemovePod`/`CleanupPods`).\n\nVerified on kind with a v1.35.0 kubelet carrying this change: a pod with an exec readiness probe (period 1s, failureThreshold 1) whose probe starts failing on SIGTERM flips Ready to False 1s after `kubectl delete`, where stock v1.35.0 stays Ready=True for the full 60s grace period. Full test matrix and `--v=4` logs in #140881.\n\nThe regression test probes through the real exec prober backed by a `CommandRunner` that honors context cancellation (mirroring CRI `ExecSync`), and fails without the fix.\n\n#### Which issue(s) this PR is related to:\n\nFixes #140881\n\nRelated: #124648, #116965, #139167\n\n#### Special notes for your reviewer:\n\nOnly exec probes are affected by the regression; the HTTP, TCP, and gRPC probers do not take the probe context. The `ready = !workerExists` latching issue discussed in #116965 is real but separate; fixing it is only observable once this lands.\n\n#### Does this PR introduce a user-facing change?\n\n```release-note\nFixed a v1.35 regression where exec readiness probes stopped executing (failing with \"context canceled\") once a pod began graceful termination, leaving the pod's Ready condition frozen during shutdown.\n```\n",
+  "changedFiles": 2,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABLaQUMA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-23T16:10:54Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5060695088",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLaQXYw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-07-23T16:10:59Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5060695907",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLaYBlA",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/retest",
+      "createdAt": "2026-07-23T16:24:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5060821396",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLaaPRQ",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/retest",
+      "createdAt": "2026-07-23T16:28:01Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5060857669",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABLac-Gg",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/retest",
+      "createdAt": "2026-07-23T16:33:04Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5060902426",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL5g0YA",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: ad3b175d32cdd2c29bd86bef231756b0e90cea86</details>",
+      "createdAt": "2026-07-27T15:43:33Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5093471328",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL5h9YA",
+      "author": {
+        "login": "HirazawaUi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/assign @SergeyKanzhelev  @tallclair \r\n\r\nfor approval\r\n\r\nGiven that this is an urgent fix, I think this PR needs to be merged in the v1.37 release. WDYT?\r\n\r\n",
+      "createdAt": "2026-07-27T15:45:15Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5093490016",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL5iRcg",
+      "author": {
+        "login": "HirazawaUi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/priority important-soon\r\n\r\n",
+      "createdAt": "2026-07-27T15:45:43Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5093495154",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL6BA1Q",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/milestone v1.37\r\n\r\n/cc @kubernetes/release-managers \r\n\r\nI agree that this regression is quite severe to include in 1.37 and previous versions.\r\n\r\nI want to keep implementation as-is (just add comment I asked). And have a follow up PR with the e2e tests as well as handling in-flight probe cancelling when pod is removed",
+      "createdAt": "2026-07-27T16:32:26Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5093998805",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL9ZNgA",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "TODO comment added in 581edb1, amended into the existing commit so the backport stays a single cherry-pick. No functional change.\n\nFollow-ups filed:\n\n- #140977: stopping a probe worker does not cancel an in-flight exec probe\n- #140978: no e2e coverage for readiness probes during graceful pod termination\n\n@HirazawaUi the push dropped the lgtm, mind re-applying?\n\nThe red `pull-kubernetes-unit-windows-master` is #140900, a VM provisioning failure hitting every PR, not this change.\n",
+      "createdAt": "2026-07-27T22:35:12Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5097540992",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL-Z8IA",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/test pull-kubernetes-unit",
+      "createdAt": "2026-07-28T00:53:55Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5098601504",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL-lW5A",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Tests back to passing.",
+      "createdAt": "2026-07-28T01:24:42Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5098788580",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABL-8KQw",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "e2e coverage for this is up at #140980, per #140978. It is on `/hold` behind this PR, since two of its three tests are red without the fix here.\n\nWhile validating it I found the affected-version story is not monotonic, which matters for the backport plan:\n\n| release | `startPodSync` context handling | affected |\n| --- | --- | --- |\n| v1.35.x | `status.ctx` stored and reused across syncs | yes, verified on kindest/node:v1.35.0 |\n| v1.36.0 - v1.36.2 | fresh ctx every sync, `status.ctx` never stored | no, verified on kindest/node:v1.36.1 |\n| v1.36.3+ | reuse restored by ccca5a96bfb (#140066, cherry-pick of #139850) | yes |\n| master, v1.37.0-alpha.3+ | reuse restored by 83c796592b2 (#139850) | yes |\n\nv1.36.0 through v1.36.2 pass by accident. They leak a context per sync, so the ctx the probe worker captured in `AddPod` is not the one `pod_workers.go` cancels at teardown. The memory-leak fix restored the reuse and re-armed this bug along with it.\n\nTwo consequences:\n\n1. release-1.36 does want this cherry-pick, but the repro only reproduces from v1.36.3 on. Anyone checking the branch against v1.36.1 or v1.36.2 will see it pass and conclude 1.36 is clean.\n2. `context.WithoutCancel` is the right fix either way. Probe worker lifetime should not be coupled to the sync context under either arrangement, and the v1.36.0-1.36.2 behavior was luck rather than design.\n\nI confirmed on v1.36.1 at `--v=4` that probes really do keep landing in the container after `Cancelling current pod sync` fires, so the difference is context identity and not something further down the CRI path:\n\n```\n01:04:49.945 pod_workers.go:991] \"Cancelling current pod sync\" pod=\"probe-term/probe-exec\" workType=\"terminating\"\n01:04:50.885 kuberuntime_container.go:908] \"Killing container with a grace period\" gracePeriod=120\n01:04:51.871 prober.go:156] \"Exec-Probe runProbe\" pod=\"probe-term/probe-exec\" execCommand=[\"cat\",\"/tmp/ready\"]\n01:04:51.889 prober.go:122] \"Probe failed\" probeType=\"Readiness\" probeResult=\"failure\" output=<\n        Readiness probe failed: cat: can't open '/tmp/ready': No such file or directory\n```\n\nSame trace on v1.35.0 shows the pod holding `Ready=True` for the entire 120s grace period with the container still `Running`, then flipping to `False` at the instant of SIGKILL.\n",
+      "createdAt": "2026-07-28T02:16:46Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5099162179",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMFZd1A",
+      "author": {
+        "login": "HirazawaUi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@karlkfi\r\n\r\nThanks for validating the version-specific behavior. My understanding of the backport scope is:\r\n\r\n- All v1.35.x releases are affected, so this fix should be backported to v1.35.\r\n- v1.36.0 through v1.36.2 avoid the regression only accidentally because the probe worker retains a different, leaked context.\r\n- v1.36.3 and later are affected after context reuse was restored, so this fix should also be backported to v1.36.\r\n- master and v1.37 are affected and will be fixed by merging this PR.\r\n\r\nSo the proposed rollout is to merge #140882 into `master`, then cherry-pick it to both v1.35 and v1.36. No backport is needed for v1.34.",
+      "createdAt": "2026-07-28T15:08:55Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5105933780",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMGdrXw",
+      "author": {
+        "login": "HirazawaUi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "/lgtm\r\n\r\nSince this PR is merely a partial semantic rollback of PR #130487, I think it is safe.\r\n\r\n\r\n",
+      "createdAt": "2026-07-28T16:43:31Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5107051359",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMGdwfQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 76411aac4e17f432d05deb5d2c403040a790daaa</details>",
+      "createdAt": "2026-07-28T16:43:39Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5107052669",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMHWhZw",
+      "author": {
+        "login": "SergeyKanzhelev"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm\r\n/approve\r\n\r\n@karlkfi can you create a cherry-picks",
+      "createdAt": "2026-07-28T18:12:51Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5107982695",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMHWxdg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/140882#\" title=\"Author self-approved\">karlkfi</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5107982695\" title=\"Approved\">SergeyKanzhelev</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[pkg/kubelet/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/OWNERS)~~ [SergeyKanzhelev]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-28T18:13:11Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5107986806",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMImlsQ",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@SergeyKanzhelev cherry-picks are up, per your ask:\n\n- #141005 for release-1.35\n- #141006 for release-1.36\n\nNeither is a clean pick, so they need a real review rather than a rubber stamp. The fix in `prober_manager.go` is byte-identical to what merged here. The regression test needed one adaptation, kept as a separate commit so it is obvious the shipped behavior change was not touched: `cleanup()` takes `*testing.T` on both release branches rather than `ktesting.TB`, so the `SyncTest` wrapper does not compile there. The test calls `ktesting.Init(t)` directly instead, which is how every other test in that file is already written on those branches.\n\nVerified on each branch before opening: `go test ./pkg/kubelet/prober/...` passes with the fix and fails without it, so the regression test bites on both and is not vacuously green.\n\nOne thing worth flagging on the 1.36 pick. The affected range there starts at v1.36.3, so anyone spot-checking release-1.36 against v1.36.1 or v1.36.2 will see it pass and conclude the branch is clean. Details in that PR body.\n\n#140980 (the e2e) is off hold now that this merged. Its e2e jobs ran about 16 hours before the merge, so the two red tests there were failing against a master without the fix. I have kicked off a re-run to confirm they pass now and will report back either way.\n",
+      "createdAt": "2026-07-28T20:24:54Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5109294513",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMKf0Hw",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Correction to my earlier comment: #140980 adds two tests, not three. Six tests match on name in the junit, but four of them already existed.\n\nBoth of the new ones are red without this fix and green with it. Re-running that PR against 7ed622c80f3 now that this has merged:\n\n| test | before | after |\n| --- | --- | --- |\n| `should mark readiness on pods to false while a preStop hook fails the readiness probe during termination` | FAILED | PASSED |\n| `should mark readiness on pods to false while pod is in progress of terminating when a pod has an http readiness probe` | FAILED | PASSED |\n\nSame result on `pull-kubernetes-e2e-kind` and `pull-kubernetes-e2e-gce`. The four probe tests that predate that PR passed in every run, before and after, so the flip is attributable to this change rather than environment noise.\n\n#140980 is off hold. The only red left on it is `[sig-auth] Projected PodCertificate ... mTLS connection`, unrelated, 1 failure out of 3281 cases in a run where both probe tests passed.\n",
+      "createdAt": "2026-07-29T00:29:16Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5111280671",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMRBJmg",
+      "author": {
+        "login": "karlkfi"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@SergeyKanzhelev @liggitt e2e tests in https://github.com/kubernetes/kubernetes/pull/140980 are green and ready for review.",
+      "createdAt": "2026-07-29T13:03:28Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5118118298",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABPM-htA",
+      "author": {
+        "login": "pohly"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> Since this PR is merely a partial semantic rollback of PR https://github.com/kubernetes/kubernetes/pull/130487, I think it is safe.\r\n\r\ncc @bart0sh ",
+      "createdAt": "2026-08-17T11:04:40Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/140882#issuecomment-5315207604",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 0,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxMDUxNDYwNzE=",
+      "name": "kind/bug",
+      "description": "Categorizes issue or PR as related to a bug.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTQ1MjgyMjM=",
+      "name": "priority/important-soon",
+      "description": "Must be staffed and worked on either currently, or very soon, ideally in time for the next release.",
+      "color": "eb6420"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTY3MTk4Mjk=",
+      "name": "area/kubelet",
+      "description": "",
+      "color": "0052cc"
+    },
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTM2NjU=",
+      "name": "sig/node",
+      "description": "Categorizes an issue or PR as relevant to SIG Node.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyMDAxNDk4MzM=",
+      "name": "release-note",
+      "description": "Denotes a PR that will be considered when it comes time to generate release notes.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA5MzQ=",
+      "name": "size/M",
+      "description": "Denotes a PR that changes 30-99 lines, ignoring generated files.",
+      "color": "eebb00"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWwxOTY3Mjc2NTYw",
+      "name": "kind/regression",
+      "description": "Categorizes issue or PR as related to a regression from a prior release.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-07-28T19:26:02Z",
+  "state": "MERGED",
+  "title": "kubelet: detach probe workers from the pod sync context"
+}

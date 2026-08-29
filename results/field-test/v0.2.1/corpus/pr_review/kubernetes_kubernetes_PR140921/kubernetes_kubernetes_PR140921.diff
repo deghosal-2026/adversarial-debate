@@ -1,0 +1,132 @@
+diff --git a/pkg/kubelet/podcertificate/podcertificatemanager_test.go b/pkg/kubelet/podcertificate/podcertificatemanager_test.go
+index 94091b9049400..32b1d2b28547a 100644
+--- a/pkg/kubelet/podcertificate/podcertificatemanager_test.go
++++ b/pkg/kubelet/podcertificate/podcertificatemanager_test.go
+@@ -366,7 +366,7 @@ func TestFullFlow(t *testing.T) {
+ 	if err != nil {
+ 		t.Fatalf("Unexpected error generating CA hierarchy: %v", err)
+ 	}
+-	pcrSigner := hermeticpodcertificatesigner.New(clock, signerName, caKeys, caCerts, kc)
++	pcrSigner := hermeticpodcertificatesigner.New(clock, signerName, "", caKeys, caCerts, kc)
+ 	go pcrSigner.Run(ctx)
+ 	//
+ 	// Configure and boot up enough Kubelet subsystems to run an IssuingManager.
+diff --git a/test/e2e/auth/projected_podcertificate.go b/test/e2e/auth/projected_podcertificate.go
+index ae0091953df70..ecfd2310d6853 100644
+--- a/test/e2e/auth/projected_podcertificate.go
++++ b/test/e2e/auth/projected_podcertificate.go
+@@ -69,7 +69,7 @@ var _ = SIGDescribe("Projected PodCertificate",
+ 				framework.Failf("failed to generate CA for signer: %v", err)
+ 			}
+ 
+-			signer := hermeticpodcertificatesigner.New(clock.RealClock{}, spiffeSignerName, caKeys, caCerts, f.ClientSet)
++			signer := hermeticpodcertificatesigner.New(clock.RealClock{}, spiffeSignerName, framework.TestContext.ClusterDNSDomain, caKeys, caCerts, f.ClientSet)
+ 			go signer.Run(signerCtx)
+ 		})
+ 
+@@ -440,7 +440,9 @@ func createServerObjects(namespace string, spiffeSignerName string, securityCont
+ func createClientObjects(namespace string, spiffeSignerName string, securityContext *v1.SecurityContext) *appsv1.Deployment {
+ 	replicas := int32(1)
+ 	clientLabels := map[string]string{"app": "client"}
+-	fetchURL := "https://server." + namespace + ".svc/spiffe-echo"
++	// Make sure to always include the cluster DNS domain so that
++	// Windows pods are able to resolve the hostname.
++	fetchURL := fmt.Sprintf("https://server.%s.svc.%s/spiffe-echo", namespace, framework.TestContext.ClusterDNSDomain)
+ 	signerNameVar := spiffeSignerName
+ 
+ 	return &appsv1.Deployment{
+diff --git a/test/images/agnhost/podcertificatesigner/podcertificatesigner.go b/test/images/agnhost/podcertificatesigner/podcertificatesigner.go
+index ccb9ecb1cdec5..fc7598b8a8e01 100644
+--- a/test/images/agnhost/podcertificatesigner/podcertificatesigner.go
++++ b/test/images/agnhost/podcertificatesigner/podcertificatesigner.go
+@@ -43,10 +43,12 @@ var CmdPodCertificateSigner = &cobra.Command{
+ 
+ var kubeconfigPath string
+ var signerName string
++var clusterDNSDomain string
+ 
+ func init() {
+ 	CmdPodCertificateSigner.Flags().StringVar(&kubeconfigPath, "kubeconfig", "", "Path to kubeconfig file to use for connection.  If omitted, in-cluster config will be used.")
+ 	CmdPodCertificateSigner.Flags().StringVar(&signerName, "signer-name", "", "The signer name to sign certificates for")
++	CmdPodCertificateSigner.Flags().StringVar(&clusterDNSDomain, "cluster-dns-domain", "", "The cluster DNS domain to sign certificates for")
+ }
+ 
+ func run(cmd *cobra.Command, args []string) error {
+@@ -71,7 +73,7 @@ func run(cmd *cobra.Command, args []string) error {
+ 		return fmt.Errorf("while generating CA hierarchy: %w", err)
+ 	}
+ 
+-	c := hermeticpodcertificatesigner.New(clock.RealClock{}, signerName, caKeys, caCerts, kc)
++	c := hermeticpodcertificatesigner.New(clock.RealClock{}, signerName, clusterDNSDomain, caKeys, caCerts, kc)
+ 	go c.Run(ctx)
+ 
+ 	// Wait for a shutdown signal.
+diff --git a/test/integration/kubelet/podcertificatemanager_integration_test.go b/test/integration/kubelet/podcertificatemanager_integration_test.go
+index d99bdc0deeb75..831270263ab0e 100644
+--- a/test/integration/kubelet/podcertificatemanager_integration_test.go
++++ b/test/integration/kubelet/podcertificatemanager_integration_test.go
+@@ -135,7 +135,7 @@ func TestPodCertificateManager(t *testing.T) {
+ 	if err != nil {
+ 		t.Fatalf("Unexpected error generating CA hierarchy: %v", err)
+ 	}
+-	pcrSigner := hermeticpodcertificatesigner.New(clock.RealClock{}, signerName, caKeys, caCerts, signerClient)
++	pcrSigner := hermeticpodcertificatesigner.New(clock.RealClock{}, signerName, "", caKeys, caCerts, signerClient)
+ 	go pcrSigner.Run(ctx)
+ 
+ 	//
+diff --git a/test/utils/hermeticpodcertificatesigner/hermeticpodcertificatesigner.go b/test/utils/hermeticpodcertificatesigner/hermeticpodcertificatesigner.go
+index 252158101f4b6..c7483c659e944 100644
+--- a/test/utils/hermeticpodcertificatesigner/hermeticpodcertificatesigner.go
++++ b/test/utils/hermeticpodcertificatesigner/hermeticpodcertificatesigner.go
+@@ -53,6 +53,8 @@ type Controller struct {
+ 	clock      clock.PassiveClock
+ 	signerName string
+ 
++	clusterDNSDomain string
++
+ 	kc          kubernetes.Interface
+ 	pcrInformer cache.SharedIndexInformer
+ 	pcrQueue    workqueue.TypedRateLimitingInterface[string]
+@@ -62,7 +64,7 @@ type Controller struct {
+ }
+ 
+ // New creates a new Controller.
+-func New(clock clock.PassiveClock, signerName string, caKeys []crypto.PrivateKey, caCerts [][]byte, kc kubernetes.Interface) *Controller {
++func New(clock clock.PassiveClock, signerName, clusterDNSDomain string, caKeys []crypto.PrivateKey, caCerts [][]byte, kc kubernetes.Interface) *Controller {
+ 	pcrInformer := certinformersv1.NewFilteredPodCertificateRequestInformer(kc, metav1.NamespaceAll, 24*time.Hour, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+ 		func(opts *metav1.ListOptions) {
+ 			opts.FieldSelector = fields.OneTermEqualSelector("spec.signerName", signerName).String()
+@@ -70,14 +72,15 @@ func New(clock clock.PassiveClock, signerName string, caKeys []crypto.PrivateKey
+ 	)
+ 
+ 	sc := &Controller{
+-		clock:       clock,
+-		signerName:  signerName,
+-		kc:          kc,
+-		pcrInformer: pcrInformer,
+-		pcrQueue:    workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]()),
+-		pcrLister:   certlistersv1.NewPodCertificateRequestLister(pcrInformer.GetIndexer()),
+-		caKeys:      caKeys,
+-		caCerts:     caCerts,
++		clock:            clock,
++		signerName:       signerName,
++		clusterDNSDomain: clusterDNSDomain,
++		kc:               kc,
++		pcrInformer:      pcrInformer,
++		pcrQueue:         workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]()),
++		pcrLister:        certlistersv1.NewPodCertificateRequestLister(pcrInformer.GetIndexer()),
++		caKeys:           caKeys,
++		caCerts:          caCerts,
+ 	}
+ 
+ 	sc.pcrInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+@@ -262,6 +265,9 @@ func (c *Controller) handlePCR(ctx context.Context, pcr *certsv1.PodCertificateR
+ 	dnsNames := []string{
+ 		fmt.Sprintf("server.%s.svc", pcr.ObjectMeta.Namespace),
+ 	}
++	if c.clusterDNSDomain != "" {
++		dnsNames = append(dnsNames, fmt.Sprintf("server.%s.svc.%s", pcr.ObjectMeta.Namespace, c.clusterDNSDomain))
++	}
+ 	template := &x509.Certificate{
+ 		URIs:        []*url.URL{spiffeURI},
+ 		NotBefore:   notBefore,

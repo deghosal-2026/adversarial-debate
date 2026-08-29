@@ -1,0 +1,208 @@
+{
+  "additions": 1,
+  "author": {
+    "id": "MDQ6VXNlcjIzMzA0",
+    "is_bot": false,
+    "login": "dims",
+    "name": "Davanum Srinivas"
+  },
+  "body": "**What type of PR is this?**\n\n/kind failing-test\n\n**What this PR does / why we need it:**\n\nThe test added in #139505 builds a FieldsV1 value with the `FieldsV1{Raw: ...}` struct literal. The `Raw` field does not exist when the `fieldsv1string` build tag is set, so the package fails to compile. Because of this, the ci-kubernetes-unit-fieldsv1string job has failed every run since 2026-07-09.\n\nThis change uses the `NewFieldsV1` constructor instead. The constructor exists for both build tag variants.\n\nJob history: https://prow.k8s.io/job-history/gs/kubernetes-ci-logs/logs/ci-kubernetes-unit-fieldsv1string\n\ncc @aaron-prindle\n\n**Which issue(s) this PR fixes:**\n\nNone\n\n**Does this PR introduce a user-facing change?**\n\n```release-note\nNONE\n```",
+  "changedFiles": 1,
+  "comments": [
+    {
+      "id": "IC_kwDOAToIks8AAAABMkAs4g",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Please note that we're already in [Code Freeze](https://github.com/kubernetes/sig-release/blob/master/releases/release_phases.md#code-freeze) for the upcoming v1.37.0 release.\n\n**Adding the milestone to this PR is strictly prohibited without proper approval.** If this PR needs to be included in the v1.37.0 release:\n1. Technical review: get the PR reviewed and approved as usual (`/lgtm` and `/approve`)\n2. Inclusion in release: ping `@sig-release-leads` on the [#sig-release Slack channel](https://kubernetes.slack.com/archives/C2C40FMNF) and suggest to add the `v1.37.0` milestone to the PR\n\n",
+      "createdAt": "2026-07-31T01:14:30Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5138033890",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMkAvBg",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "This issue is currently awaiting triage.\n\nIf a SIG or subproject determines this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n\nThe `triage/accepted` label can be added by org members by writing `/triage accepted` in a comment.\n\n\n<details>\n\nInstructions for interacting with me using PR comments are available [here](https://git.k8s.io/community/contributors/guide/pull-requests.md).  If you have questions or suggestions related to my behavior, please file an issue against the [kubernetes-sigs/prow](https://github.com/kubernetes-sigs/prow/issues/new?title=Prow%20issue:) repository.\n</details>",
+      "createdAt": "2026-07-31T01:14:35Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5138034438",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMkBA2A",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/sig api-machinery\r\n\r\n/assign @aaron-prindle @liggitt ",
+      "createdAt": "2026-07-31T01:15:14Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5138039000",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMkGzrg",
+      "author": {
+        "login": "liggitt"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/lgtm\r\n/approve\r\n",
+      "createdAt": "2026-07-31T01:28:08Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5138133934",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMkG2gw",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "LGTM label has been added.  <details>Git tree hash: 38431e2713fca44a10f2c3b268075a9298c4b9a5</details>",
+      "createdAt": "2026-07-31T01:28:14Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5138134659",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMkG7JQ",
+      "author": {
+        "login": "kubernetes-prow"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nThis pull-request has been approved by: *<a href=\"https://github.com/kubernetes/kubernetes/pull/141066#\" title=\"Author self-approved\">dims</a>*, *<a href=\"https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5138133934\" title=\"Approved\">liggitt</a>*\n\nThe full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=kubernetes%2Fkubernetes).\n\nThe pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)\n\n<details >\nNeeds approval from an approver in each of these files:\n\n- ~~[staging/src/k8s.io/apiextensions-apiserver/OWNERS](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apiextensions-apiserver/OWNERS)~~ [dims,liggitt]\n\nApprovers can indicate their approval by writing `/approve` in a comment\nApprovers can cancel approval by writing `/approve cancel` in a comment\n</details>\n<!-- META={\"approvers\":[]} -->",
+      "createdAt": "2026-07-31T01:28:25Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5138135845",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMpU-ag",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "one line change in a test case to ensure https://prow.k8s.io/job-history/gs/kubernetes-ci-logs/logs/ci-kubernetes-unit-fieldsv1string goes green. \r\n\r\n/milestone v1.37",
+      "createdAt": "2026-07-31T13:51:34Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5143608938",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMpcyog",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "cc @kubernetes/release-team-leads \r\n\r\n/retest",
+      "createdAt": "2026-07-31T14:04:25Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5143736994",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOAToIks8AAAABMqvpIQ",
+      "author": {
+        "login": "dims"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "/retest",
+      "createdAt": "2026-07-31T16:22:50Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/kubernetes/kubernetes/pull/141066#issuecomment-5145094433",
+      "viewerDidAuthor": false
+    }
+  ],
+  "deletions": 1,
+  "labels": [
+    {
+      "id": "MDU6TGFiZWwxNDgyMjUxNzk=",
+      "name": "lgtm",
+      "description": "\"Looks good to me\", indicates that a PR is ready to be merged.",
+      "color": "15dd18"
+    },
+    {
+      "id": "MDU6TGFiZWwxNzM0OTM4MzU=",
+      "name": "sig/api-machinery",
+      "description": "Categorizes an issue or PR as relevant to SIG API Machinery.",
+      "color": "d2b48c"
+    },
+    {
+      "id": "MDU6TGFiZWwyNTM0NTA3OTM=",
+      "name": "size/XS",
+      "description": "Denotes a PR that changes 0-9 lines, ignoring generated files.",
+      "color": "009900"
+    },
+    {
+      "id": "MDU6TGFiZWwzNDk1MzAyNDk=",
+      "name": "release-note-none",
+      "description": "Denotes a PR that doesn't merit a release note.",
+      "color": "c2e0c6"
+    },
+    {
+      "id": "MDU6TGFiZWw0MTQ4ODM5ODI=",
+      "name": "approved",
+      "description": "Indicates a PR has been approved by an approver from all required OWNERS files.",
+      "color": "0ffa16"
+    },
+    {
+      "id": "MDU6TGFiZWw0NzczOTcwODY=",
+      "name": "cncf-cla: yes",
+      "description": "Indicates the PR's author has signed the CNCF CLA.",
+      "color": "bfe5bf"
+    },
+    {
+      "id": "MDU6TGFiZWw0OTY3NTI0Njg=",
+      "name": "kind/failing-test",
+      "description": "Categorizes issue or PR as related to a consistently or frequently failing test.",
+      "color": "e11d21"
+    },
+    {
+      "id": "MDU6TGFiZWwxMTExOTkyMDU3",
+      "name": "needs-priority",
+      "description": "Indicates a PR lacks a `priority/foo` label and requires one.",
+      "color": "ededed"
+    },
+    {
+      "id": "MDU6TGFiZWwyMzg5ODE1NjA1",
+      "name": "needs-triage",
+      "description": "Indicates an issue or PR lacks a `triage/foo` label and requires one.",
+      "color": "ededed"
+    }
+  ],
+  "mergedAt": "2026-07-31T17:13:41Z",
+  "state": "MERGED",
+  "title": "Fix unit test compile failure under the fieldsv1string build tag"
+}
