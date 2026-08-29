@@ -36,6 +36,8 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+from scripts._seam_assert import assert_seam
+
 BASE = Path(__file__).resolve().parent.parent
 CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
 PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
@@ -48,7 +50,7 @@ def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
         return ["pair5_deepseek_mistral"]
     if name == "negative_control_subset.csv":
         return ["pair1_gpt_gemini"]
-    return ["pair3_gpt_mistral"]
+    return ["pair3_gpt_mistral", "pair8_deepseek_gpt_mini"]
 
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -459,6 +461,7 @@ def main() -> None:
         pair_out.mkdir(parents=True, exist_ok=True)
 
         count = 0
+        skipped_ids: list[str] = []
         for pr_id in pr_ids:
             if args.limit and count >= args.limit:
                 break
@@ -480,6 +483,7 @@ def main() -> None:
 
             pair_data = load_pair(pair_name, pr_id)
             if pair_data is None:
+                skipped_ids.append(pr_id)
                 continue
 
             print(f"  [{pair_name}] {pr_id} ...", end=" ", flush=True)
@@ -504,6 +508,9 @@ def main() -> None:
             except Exception as e:
                 print(f"ERROR: {e}")
                 errors += 1
+
+        assert_seam("pair→debate", len(pr_ids), count,
+                    expected="less_equal", skipped_ids=skipped_ids or None)
 
         print(f"  {pair_name}: {count} debates run")
 

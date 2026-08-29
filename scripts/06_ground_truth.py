@@ -20,6 +20,8 @@ import json
 import re
 from pathlib import Path
 
+from scripts._seam_assert import assert_seam
+
 BASE = Path(__file__).resolve().parent.parent
 DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
 ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
@@ -110,6 +112,8 @@ def main() -> None:
     print(f"PRs with ground truth: {len(gt_prs)}")
 
     out_rows = []
+    pre_filter_count = 0
+    post_filter_count = 0
     for pr_dir in sorted(DEBATES_DIR.iterdir()):
         if not pr_dir.is_dir():
             continue
@@ -127,9 +131,11 @@ def main() -> None:
             # Resolved claims (concessions) — these are claims where one side admitted fault
             report = d.get("report", {})
             for r in report.get("resolved", []):
+                pre_filter_count += 1
                 claim_text = r.get("claim_text", r.get("rationale", ""))[:300]
                 if not _is_substantive_claim(claim_text):
                     continue
+                post_filter_count += 1
                 out_rows.append(
                     {
                         "artifact_id": pr_id,
@@ -146,9 +152,11 @@ def main() -> None:
 
             # Unresolved points — surviving disagreement
             for u in report.get("unresolved", []):
+                pre_filter_count += 1
                 text = f"A: {u.get('position_a', '')[:150]} | B: {u.get('position_b', '')[:150]}"
                 if not _is_substantive_claim(text):
                     continue
+                post_filter_count += 1
                 out_rows.append(
                     {
                         "artifact_id": pr_id,
@@ -162,6 +170,9 @@ def main() -> None:
                         "human_judgment": "",
                     }
                 )
+
+    assert_seam("analysis→ground_truth", pre_filter_count, post_filter_count,
+                expected="less_equal", strict=True)
 
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = Path(args.output) if args.output else ANALYSIS_DIR / "ground-truth-comparison.csv"

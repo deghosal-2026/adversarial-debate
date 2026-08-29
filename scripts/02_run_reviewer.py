@@ -58,6 +58,9 @@ def compute_cost(model: str, prompt_tokens: int, completion_tokens: int) -> floa
     )
 
 
+from scripts._seam_assert import assert_seam
+
+
 def load_artifacts(corpus_csv: Path, artifact_filter: str | None = None) -> list[dict]:  # type: ignore[valid-type]
     """Load artifacts from corpus CSV, resolve content paths."""
     if not corpus_csv or not corpus_csv.is_file():
@@ -67,22 +70,27 @@ def load_artifacts(corpus_csv: Path, artifact_filter: str | None = None) -> list
     with open(corpus_csv) as f:
         rows = list(csv.DictReader(f))
 
+    count_pre = len(rows)
     result = []
+    skipped_ids: list[str] = []
     for row in rows:
         aid = row.get("artifact_id", "").strip()
         domain = row.get("domain", "").strip()
         url = row.get("source_url", row.get("url", "")).strip()
 
         if not aid or not domain:
+            skipped_ids.append(aid or "unknown")
             continue
 
         if artifact_filter and artifact_filter != aid:
+            skipped_ids.append(aid)
             continue
 
         # Resolve content file based on domain
         artifact_dir = CORPUS_DIR / domain / aid
         content_path = _find_content(artifact_dir, domain)
         if content_path is None:
+            skipped_ids.append(aid)
             continue
 
         result.append(
@@ -94,6 +102,8 @@ def load_artifacts(corpus_csv: Path, artifact_filter: str | None = None) -> list
             }
         )
 
+    assert_seam("corpus→review", count_pre, len(result),
+                expected="less_equal", skipped_ids=skipped_ids or None)
     return result
 
 

@@ -15,6 +15,8 @@ import json
 import sys
 from pathlib import Path
 
+from scripts._seam_assert import assert_seam
+
 BASE = Path(__file__).resolve().parent.parent
 CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
 RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
@@ -37,6 +39,7 @@ PAIRS = {
     },
     "homogeneous_gpt": {"a": "openai_gpt-4o-mini", "b": "openai_gpt-4o-mini"},
     "baseline_gpt": {"a": "openai_gpt-4o-mini", "b": None},
+    "pair8_deepseek_gpt_mini": {"a": "deepseek_deepseek-chat", "b": "openai_gpt-4o-mini"},
 }
 
 
@@ -46,7 +49,7 @@ def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
         return ["pair5_deepseek_mistral"]
     if name == "negative_control_subset.csv":
         return ["pair1_gpt_gemini"]
-    return ["pair3_gpt_mistral", "baseline_gpt"]
+    return ["pair3_gpt_mistral", "pair8_deepseek_gpt_mini", "baseline_gpt"]
 
 
 def load_artifact_ids(rows: list[dict[str, str]]) -> list[str]:
@@ -110,18 +113,18 @@ def main() -> None:
         pair_dir = PAIRS_DIR / pair_name
         pair_dir.mkdir(parents=True, exist_ok=True)
         combined = 0
-        missing_a = 0
-        missing_b = 0
+        missing_a: list[str] = []
+        missing_b: list[str] = []
 
         for artifact_id in artifact_ids:
             result_a = load_result(slots["a"], artifact_id)
             result_b = load_result(slots["b"], artifact_id) if slots["b"] else None
 
             if result_a is None:
-                missing_a += 1
+                missing_a.append(artifact_id)
                 continue
             if slots["b"] and result_b is None:
-                missing_b += 1
+                missing_b.append(artifact_id)
                 continue
 
             output = {
@@ -134,11 +137,14 @@ def main() -> None:
             (pair_dir / f"{artifact_id}.json").write_text(json.dumps(output, indent=2))
             combined += 1
 
+        assert_seam("review→pair", len(artifact_ids), combined,
+                    expected="less_equal",
+                    skipped_ids=(missing_a + missing_b) or None)
         print(f"  {pair_name}: {combined} combined")
         if missing_a:
-            print(f"    missing A ({slots['a']}): {missing_a}")
+            print(f"    missing A ({slots['a']}): {len(missing_a)} — {missing_a[:5]}")
         if missing_b:
-            print(f"    missing B ({slots['b']}): {missing_b}")
+            print(f"    missing B ({slots['b']}): {len(missing_b)} — {missing_b[:5]}")
 
 
 if __name__ == "__main__":

@@ -27,6 +27,8 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from scripts._seam_assert import assert_seam
+
 BASE = Path(__file__).resolve().parent.parent
 RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
 PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
@@ -248,6 +250,7 @@ def main() -> None:
     # 5. Debate summary
     debate_rows = []
     if DEBATES_DIR.is_dir():
+        all_reports = []
         for pair_dir in sorted(DEBATES_DIR.iterdir()):
             if not pair_dir.is_dir():
                 continue
@@ -255,26 +258,36 @@ def main() -> None:
                 report_path = pr_dir / "report.json"
                 if not report_path.is_file():
                     continue
-                data = json.loads(report_path.read_text())
-                # Exclude zero-claim no-op rows (data integrity failures)
-                if data.get("total_claims", 0) == 0 and data.get("events_count", 0) == 0:
-                    continue
-                debate_rows.append(
-                    {
-                        "pair": data.get("pair", ""),
-                        "artifact_id": data.get("artifact_id", data.get("pr_id", "")),
-                        "termination": data.get("termination_reason", ""),
-                        "rounds": str(data.get("rounds_completed", 0)),
-                        "verdict_kind": data.get("verdict_kind", ""),
-                        "convergence_score": str(round(data.get("convergence_score", 0), 3)),
-                        "theater": str(data.get("theater", False)),
-                        "capitulation": str(data.get("capitulation_cascade", False)),
-                        "resolved_count": str(data.get("resolved_count", 0)),
-                        "total_claims": str(data.get("total_claims", 0)),
-                        "concessions": str(data.get("concessions_count", 0)),
-                        "unresolved": str(len(data.get("report", {}).get("unresolved", []))),
-                    }
-                )
+                all_reports.append((pair_dir.name, pr_dir.name, json.loads(report_path.read_text())))
+
+        count_pre = len(all_reports)
+        excluded_count = 0
+        for pair_name, pr_name, data in all_reports:
+            # Exclude zero-claim no-op rows (data integrity failures)
+            if data.get("total_claims", 0) == 0 and data.get("events_count", 0) == 0:
+                excluded_count += 1
+                continue
+            debate_rows.append(
+                {
+                    "pair": data.get("pair", ""),
+                    "artifact_id": data.get("artifact_id", data.get("pr_id", "")),
+                    "termination": data.get("termination_reason", ""),
+                    "rounds": str(data.get("rounds_completed", 0)),
+                    "verdict_kind": data.get("verdict_kind", ""),
+                    "convergence_score": str(round(data.get("convergence_score", 0), 3)),
+                    "theater": str(data.get("theater", False)),
+                    "capitulation": str(data.get("capitulation_cascade", False)),
+                    "resolved_count": str(data.get("resolved_count", 0)),
+                    "total_claims": str(data.get("total_claims", 0)),
+                    "concessions": str(data.get("concessions_count", 0)),
+                    "unresolved": str(len(data.get("report", {}).get("unresolved", []))),
+                }
+            )
+
+        assert_seam("debate→analysis", count_pre, len(debate_rows),
+                    expected="less_equal", strict=True)
+        if excluded_count:
+            print(f"  FILTER: excluded {excluded_count} zero-claim no-op rows")
 
     if debate_rows:
         debate_path = ANALYSIS_DIR / "debate-summary.csv"

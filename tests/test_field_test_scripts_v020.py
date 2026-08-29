@@ -101,10 +101,12 @@ def test_default_pair_selection_depends_on_corpus_filename() -> None:
 
     assert combine.default_pairs_for_corpus(Path("results/field-test/v0.2.0/corpus.csv")) == [
         "pair3_gpt_mistral",
+        "pair8_deepseek_gpt_mini",
         "baseline_gpt",
     ]
     assert debate.default_pairs_for_corpus(Path("results/field-test/v0.2.0/corpus.csv")) == [
         "pair3_gpt_mistral",
+        "pair8_deepseek_gpt_mini",
     ]
 
     assert combine.default_pairs_for_corpus(
