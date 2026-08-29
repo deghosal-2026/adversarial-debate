@@ -164,11 +164,25 @@ The 5 seam assertions prevent the 2,333→359 collapse from recurring. Every joi
 
 The false-negative measurement (#129) turns "invisible" into "invisible below this line." The 1.7–3.4% missed-issue rate is a lower bound, but reporting a number with a stated boundary is a meaningful improvement over acknowledging an unknown.
 
-### 4. The product default recommendation changes
+### 4. The product default recommendation changes — and the guidance is now more specific
 
 The model selection guidance shifts from "pick from different labs" (v0.2.0) to "always include Mistral" (v0.2.1). GPT+Mistral remains the best full-corpus default at 0.536 convergence with zero theatre.
 
-### 5. v0.2.1 is a measurement methodology release, not a coverage release
+### 5. Model Selection Guidance for Future Releases
+
+The v0.2.1 field test provides the clearest model selection guidance the project has ever produced:
+
+**Default production pair:** GPT-4o-mini + Mistral Small 3.2. Best convergence (0.536), zero theatre, tested across 150 artifacts. At $0.30 for 150 reviews, it is also the most cost-effective option.
+
+**Validation pair:** DeepSeek-V3 + Mistral Small 3.2. Higher convergence (0.572) but with a known capitulation risk (2.8%). Use for high-stakes artifacts where capitulation is acceptable in exchange for stronger verdicts.
+
+**What does not work:** Any pair without Mistral. DeepSeek+GPT (0.246) performs at the same level as two identical GPT models. GPT+Gemini (0.033) is nearly unproductive. Lab diversity alone is not sufficient.
+
+**What is still unknown:** Whether the Mistral effect is specific to Mistral Small 3.2 or generalizes to other Mistral models (Large, Medium). Whether a Llama model (open-weight, different training provenance) paired with Mistral would produce even stronger results. Whether RAG grounding could compensate for the absence of Mistral in domain-specific pairs.
+
+**Recommendation for builders:** If you are building a multi-agent debate system, include Mistral on at least one side. No other model tested produces the same asymmetric debate dynamics. The v0.2.0 advice was "pick from different labs." The v0.2.1 advice is "pick Mistral and any other lab."
+
+### 6. v0.2.1 is a measurement methodology release, not a coverage release
 
 No new domains, no new artifacts, no new models. The value is entirely in the measurement framework: one separating experiment, five invariant assertions, and one recall metric. Future releases will extend this framework to new domains and new models.
 
