@@ -113,6 +113,7 @@ def test_seam_assert_importable() -> None:
 def test_noise_floor_script_loads() -> None:
     """The noise-floor script should import without errors."""
     import importlib.util
+
     base = Path(__file__).resolve().parent.parent
     script_path = base / "scripts" / "noise_floor.py"
     spec = importlib.util.spec_from_file_location("noise_floor", script_path)

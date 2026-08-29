@@ -43,14 +43,16 @@ def load_debates() -> list[dict[str, Any]]:
             data = json.loads(report_path.read_text())
             if data.get("total_claims", 0) == 0 and data.get("events_count", 0) == 0:
                 continue
-            rows.append({
-                "pair": data.get("pair", pair_dir.name),
-                "convergence_score": data.get("convergence_score", 0),
-                "verdict": 1 if data.get("verdict_kind") == "verdict" else 0,
-                "theater": 1 if data.get("theater") else 0,
-                "capitulation": 1 if data.get("capitulation_cascade") else 0,
-                "concessions": data.get("concessions_count", 0),
-            })
+            rows.append(
+                {
+                    "pair": data.get("pair", pair_dir.name),
+                    "convergence_score": data.get("convergence_score", 0),
+                    "verdict": 1 if data.get("verdict_kind") == "verdict" else 0,
+                    "theater": 1 if data.get("theater") else 0,
+                    "capitulation": 1 if data.get("capitulation_cascade") else 0,
+                    "concessions": data.get("concessions_count", 0),
+                }
+            )
     return rows
 
 
