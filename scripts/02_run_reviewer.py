@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""Run a single LLM reviewer against all artifacts in the v0.2.0 corpus.
+"""Run a single LLM reviewer against all artifacts in the v0.2.1 corpus.
 
 Handles both PRs (git diff) and non-PR artifacts (plain text content).
 Each model runs independently with its own checkpoint.
 
 Usage:
     # Run GPT-4o-mini on all 150 artifacts
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.1/corpus.csv
 
     # Test on 5 artifacts first
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --limit 5
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.1/corpus.csv --limit 5
 
     # Dry run
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --dry-run
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.1/corpus.csv --dry-run
 
     # Single artifact (debugging)
-    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.0/corpus.csv --artifact etcd-io_etcd_PR22178
+    python3 02_run_reviewer.py --model openai/gpt-4o-mini --corpus results/field-test/v0.2.1/corpus.csv --artifact etcd-io_etcd_PR22178
 
 Requires: OPENROUTER_API_KEY env var
-Output: results/field-test/v0.2.0/results/<model_slug>/<artifact_id>.json
+Output: results/field-test/v0.2.1/results/<model_slug>/<artifact_id>.json
 """
 
 from __future__ import annotations
@@ -32,8 +32,8 @@ import time
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
-CORPUS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "corpus"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "results"
+CORPUS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "corpus"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 

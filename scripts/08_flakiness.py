@@ -6,7 +6,7 @@ Each run is stored separately. Then computes stability: % of runs with same
 verdict per artifact.
 
 Usage:
-    python3 08_flakiness.py --corpus results/field-test/v0.2.0/corpus.csv --runs 5 --limit 10
+    python3 08_flakiness.py --corpus results/field-test/v0.2.1/corpus.csv --runs 5 --limit 10
 
 Requires OPENROUTER_API_KEY.
 """
@@ -24,10 +24,10 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 
-CORPUS_DEFAULT = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
-FLAKINESS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "flakiness"
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
+CORPUS_DEFAULT = BASE / "results" / "field-test" / "v0.2.1" / "corpus.csv"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "pairs"
+FLAKINESS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "flakiness"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "analysis"
 
 PAIR = "pair3_gpt_mistral"
 

@@ -5,10 +5,10 @@ Produces a CSV for manual judgment: did any debate pair surface the actual
 cause of the revert/advisory?
 
 Usage:
-    python3 06_ground_truth.py --corpus results/field-test/v0.2.0/corpus.csv
+    python3 06_ground_truth.py --corpus results/field-test/v0.2.1/corpus.csv
 
 Output:
-    results/field-test/v0.2.0/analysis/ground-truth-comparison.csv
+    results/field-test/v0.2.1/analysis/ground-truth-comparison.csv
     Columns: artifact_id, outcome, known_reason, pair, claim_id, claim_text, severity,
              conceded_by_or_status, human_judgment (blank - fill in)
 """
@@ -23,8 +23,8 @@ from pathlib import Path
 from scripts._seam_assert import assert_seam
 
 BASE = Path(__file__).resolve().parent.parent
-DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.1" / "debates"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "analysis"
 
 GROUND_TRUTH_OUTCOMES = {
     "Merged-then-reverted",

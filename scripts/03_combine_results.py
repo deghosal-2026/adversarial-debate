@@ -4,8 +4,8 @@
 Usage:
     python3 03_combine_results.py
 
-Reads:  results/field-test/v0.2.0/results/<model>/<artifact_id>.json
-Writes: results/field-test/v0.2.0/pairs/<pair_name>/<artifact_id>.json
+Reads:  results/field-test/v0.2.1/results/<model>/<artifact_id>.json
+Writes: results/field-test/v0.2.1/pairs/<pair_name>/<artifact_id>.json
 """
 
 from __future__ import annotations
@@ -18,9 +18,9 @@ from pathlib import Path
 from scripts._seam_assert import assert_seam
 
 BASE = Path(__file__).resolve().parent.parent
-CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
+CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.1" / "corpus.csv"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "results"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "pairs"
 
 PAIRS = {
     "pair1_gpt_gemini": {"a": "openai_gpt-4o-mini", "b": "google_gemini-2-5-flash"},
@@ -53,7 +53,7 @@ def default_pairs_for_corpus(corpus_path: Path) -> list[str]:
 
 
 def load_artifact_ids(rows: list[dict[str, str]]) -> list[str]:
-    """Extract artifact ids from a mixed v0.2.0 corpus CSV."""
+    """Extract artifact ids from a mixed v0.2.1 corpus CSV."""
     artifact_ids: list[str] = []
     for row in rows:
         artifact_id = row.get("artifact_id", "").strip()
@@ -85,13 +85,13 @@ def main() -> None:
     parser.add_argument(
         "--corpus",
         default=None,
-        help="Path to corpus CSV (default: results/field-test/v0.2.0/corpus.csv)",
+        help="Path to corpus CSV (default: results/field-test/v0.2.1/corpus.csv)",
     )
     parser.add_argument(
         "--pair",
         action="append",
         default=None,
-        help="Pair(s) to combine. Defaults to the approved v0.2.0 set.",
+        help="Pair(s) to combine. Defaults to the approved v0.2.1 set.",
     )
     args = parser.parse_args()
 

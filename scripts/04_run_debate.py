@@ -8,21 +8,21 @@ During debate rounds, calls the LLM API live via OpenRouter using the same
 model that did the initial review. The stored review is round 0 only.
 
 Usage:
-    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv
+    python3 04_run_debate.py --corpus results/field-test/v0.2.1/corpus.csv
 
     # Run a specific pair only
-    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --pair pair1_gpt_gemini
+    python3 04_run_debate.py --corpus results/field-test/v0.2.1/corpus.csv --pair pair1_gpt_gemini
 
     # Run a single PR (debugging)
-    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --artifact kubernetes_kubernetes_PR141554
+    python3 04_run_debate.py --corpus results/field-test/v0.2.1/corpus.csv --artifact kubernetes_kubernetes_PR141554
 
     # Limit PRs (testing)
-    python3 04_run_debate.py --corpus results/field-test/v0.2.0/corpus.csv --limit 5
+    python3 04_run_debate.py --corpus results/field-test/v0.2.1/corpus.csv --limit 5
 
 Requires: OPENROUTER_API_KEY env var
 
-Input:  results/field-test/v0.2.0/pairs/<pair_name>/<artifact_id>.json
-Output: results/field-test/v0.2.0/debates/<pair_name>/<artifact_id>/report.json
+Input:  results/field-test/v0.2.1/pairs/<pair_name>/<artifact_id>.json
+Output: results/field-test/v0.2.1/debates/<pair_name>/<artifact_id>/report.json
 """
 
 from __future__ import annotations
@@ -39,9 +39,9 @@ from pathlib import Path
 from scripts._seam_assert import assert_seam
 
 BASE = Path(__file__).resolve().parent.parent
-CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.0" / "corpus.csv"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
-DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
+CORPUS_CSV = BASE / "results" / "field-test" / "v0.2.1" / "corpus.csv"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "pairs"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.1" / "debates"
 
 
 def default_pairs_for_corpus(corpus_path: Path) -> list[str]:

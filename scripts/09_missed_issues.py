@@ -2,10 +2,10 @@
 """CLI entry point for missed-issue measurement.
 
 Usage:
-    python3 09_missed_issues.py --corpus results/field-test/v0.2.0/corpus.csv
+    python3 09_missed_issues.py --corpus results/field-test/v0.2.1/corpus.csv
 
 Output:
-    results/field-test/v0.2.0/analysis/missed-issue-report.csv
+    results/field-test/v0.2.1/analysis/missed-issue-report.csv
 """
 
 from __future__ import annotations

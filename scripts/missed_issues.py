@@ -16,8 +16,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "results"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "analysis"
 
 STOP_WORDS: set[str] = {
     "the", "a", "an", "is", "was", "are", "were", "be", "been",

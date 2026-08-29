@@ -1,6 +1,6 @@
-"""Regression tests for v0.2.0 field-test script helpers.
+"""Regression tests for v0.2.1 field-test script helpers.
 
-These cover the mixed-corpus layout introduced for v0.2.0:
+These cover the mixed-corpus layout introduced for v0.2.1:
 - corpus rows are keyed by ``artifact_id`` and ``domain``
 - PR artifacts live under ``corpus/pr_review/<artifact_id>/``
 - non-PR artifacts live under ``corpus/<domain>/<artifact_id>/content.md``
@@ -27,7 +27,7 @@ def _load_script_module(script_name: str):  # type: ignore[no-untyped-def]
 def test_load_artifacts_handles_mixed_v020_layout(tmp_path: Path) -> None:
     reviewer = _load_script_module("02_run_reviewer.py")
 
-    corpus_root = tmp_path / "results" / "field-test" / "v0.2.0" / "corpus"
+    corpus_root = tmp_path / "results" / "field-test" / "v0.2.1" / "corpus"
     pr_dir = corpus_root / "pr_review" / "repo_owner_PR1"
     incident_dir = corpus_root / "incident_response" / "ir-001"
     pr_dir.mkdir(parents=True)
@@ -99,34 +99,34 @@ def test_default_pair_selection_depends_on_corpus_filename() -> None:
     combine = _load_script_module("03_combine_results.py")
     debate = _load_script_module("04_run_debate.py")
 
-    assert combine.default_pairs_for_corpus(Path("results/field-test/v0.2.0/corpus.csv")) == [
+    assert combine.default_pairs_for_corpus(Path("results/field-test/v0.2.1/corpus.csv")) == [
         "pair3_gpt_mistral",
         "pair8_deepseek_gpt_mini",
         "baseline_gpt",
     ]
-    assert debate.default_pairs_for_corpus(Path("results/field-test/v0.2.0/corpus.csv")) == [
+    assert debate.default_pairs_for_corpus(Path("results/field-test/v0.2.1/corpus.csv")) == [
         "pair3_gpt_mistral",
         "pair8_deepseek_gpt_mini",
     ]
 
     assert combine.default_pairs_for_corpus(
-        Path("results/field-test/v0.2.0/validation_subset.csv")
+        Path("results/field-test/v0.2.1/validation_subset.csv")
     ) == [
         "pair5_deepseek_mistral",
     ]
     assert debate.default_pairs_for_corpus(
-        Path("results/field-test/v0.2.0/validation_subset.csv")
+        Path("results/field-test/v0.2.1/validation_subset.csv")
     ) == [
         "pair5_deepseek_mistral",
     ]
 
     assert combine.default_pairs_for_corpus(
-        Path("results/field-test/v0.2.0/negative_control_subset.csv")
+        Path("results/field-test/v0.2.1/negative_control_subset.csv")
     ) == [
         "pair1_gpt_gemini",
     ]
     assert debate.default_pairs_for_corpus(
-        Path("results/field-test/v0.2.0/negative_control_subset.csv")
+        Path("results/field-test/v0.2.1/negative_control_subset.csv")
     ) == [
         "pair1_gpt_gemini",
     ]

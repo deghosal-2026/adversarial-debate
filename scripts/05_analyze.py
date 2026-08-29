@@ -13,10 +13,10 @@ Usage:
     python3 04_analyze.py
 
 Output:
-    results/field-test/v0.2.0/analysis/distinctness-ratings.csv
-    results/field-test/v0.2.0/analysis/cross-model-overlap.csv
-    results/field-test/v0.2.0/analysis/cost-latency.csv
-    results/field-test/v0.2.0/FIELD_TEST_REPORT.md  (placeholder — written manually)
+    results/field-test/v0.2.1/analysis/distinctness-ratings.csv
+    results/field-test/v0.2.1/analysis/cross-model-overlap.csv
+    results/field-test/v0.2.1/analysis/cost-latency.csv
+    results/field-test/v0.2.1/FIELD_TEST_REPORT.md  (placeholder — written manually)
 """
 
 from __future__ import annotations
@@ -30,11 +30,11 @@ from pathlib import Path
 from scripts._seam_assert import assert_seam
 
 BASE = Path(__file__).resolve().parent.parent
-RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "results"
-PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "pairs"
-DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.0" / "debates"
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
-OUT_DIR = BASE / "results" / "field-test" / "v0.2.0"
+RESULTS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "results"
+PAIRS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "pairs"
+DEBATES_DIR = BASE / "results" / "field-test" / "v0.2.1" / "debates"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "analysis"
+OUT_DIR = BASE / "results" / "field-test" / "v0.2.1"
 
 MODEL_NAMES = [
     "openai_gpt-4o-mini",

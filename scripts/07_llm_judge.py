@@ -22,7 +22,7 @@ import urllib.request
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.0" / "analysis"
+ANALYSIS_DIR = BASE / "results" / "field-test" / "v0.2.1" / "analysis"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MAX_RETRIES = 3

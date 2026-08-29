@@ -10,6 +10,9 @@ import csv
 import json
 from pathlib import Path
 
+FIELD_TEST_VERSION = "v0.2.1"
+
+
 GROUND_TRUTH_OUTCOMES = {
     "Merged-then-reverted",
     "Merged-then-hotfixed",
